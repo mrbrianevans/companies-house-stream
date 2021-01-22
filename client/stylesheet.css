@@ -1,0 +1,139 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins&family=Roboto+Mono:wght@500&display=swap');
+
+#events{
+    background-color: aliceblue;
+    padding: 1em;
+    display: flex;
+    flex-wrap: wrap;
+    font-family: 'Poppins', sans-serif;
+}
+
+#events>div{
+    margin: 1em;
+    padding: 1em;
+    display: inline;
+    transition: width 1s ease-in-out;
+    background-color: cornsilk;
+    border: 2px solid bisque;
+    border-radius: 0.25em;
+    animation: pop 0.5s ease;
+}
+#events>div>div{
+    margin: 0;
+    padding: 0;
+    /*animation: pop 0.5s ease;*/
+    /*transition: all ease 1s;*/
+    /*flex-basis: calc(49% - 2em);*/
+    overflow: hidden;
+    white-space:nowrap;
+}
+
+@keyframes pop {
+    0%{
+        opacity: 0;
+        width: 0;
+    }
+    100%{
+        opacity: 1;
+        width: 20em;
+    }
+}
+
+
+h1{
+    font-family: 'Roboto Mono', monospace;
+    text-align: center;
+}
+
+#connection-status.connected{
+    background-color: dodgerblue;
+    color: aliceblue;
+}
+#connection-status.disconnected{
+    background-color: tomato;
+    color: honeydew;
+}
+#connection-status{
+    border-radius: 0.25em;
+    padding: 0.25em;
+    margin: 0.25em;
+    display: inline-block;
+    border: none;
+    font-size: inherit;
+}
+body{
+    margin: 0;
+}
+#clock{
+    display: inline-block;
+    margin: 0.25em;
+    padding: 0.25em;
+    border-radius: 0.25em;
+    background-color: darksalmon;
+    color: #801c00;
+    transition: all 1.5s ease-in;
+}
+#clock-container:hover #clock{
+    transform: rotate(360deg);
+}
+#clock-container{
+    display: inline-block;
+    width: 200px;
+}
+sup.event-timestamp{
+    align-self: flex-end;
+}
+
+#events>div.heartbeat{
+    background-color: transparent;
+    border: none;
+    width: 150px;
+    height: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.heart1{
+  width: 50px;
+  height: 50px;
+  border-radius: 25px;
+  position: absolute;
+  top: 10px;
+  background: crimson;
+  left: 10px;
+}
+.heart2{
+  position: absolute;
+  top: 10px;
+  left: 40px;
+  background: crimson;
+
+  width: 50px;
+  height: 50px;
+  border-radius: 25px;
+}
+.heart3{
+  width: 0;
+  height: 0;
+  border-left: 35px solid transparent;
+  border-right: 35px solid transparent;
+  border-top: 35px solid crimson;
+  position: absolute;
+  top: 50px;
+  left: 15px;
+  background: transparent;
+}
+.heart-outer{
+    position: relative;
+    width: 100px;
+    height: 100px;
+}
+
+.row{
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+}
