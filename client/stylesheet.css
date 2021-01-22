@@ -11,31 +11,54 @@
 }
 
 #events>div{
-    margin: 1em;
-    padding: 1em;
-    display: inline;
-    transition: all 1s ease-in-out;
-    background-color: cornsilk;
-    border: 2px solid bisque;
-    border-radius: 0.25em;
-    animation: pop 0.5s ease-in;
-}
-#events>div>div{
     margin: 0;
     padding: 0;
-    /*animation: pop 0.5s ease;*/
-    /*transition: all ease 1s;*/
-    /*flex-basis: calc(49% - 2em);*/
+    display: inline;
+    transition: all 1s ease-in-out;
+    animation: pop 0.5s ease-in;
+}
+
+#events > div > div {
+    border-width: 2px;
+    border-style: solid;
+    border-radius: 0.25em;
+    margin: 1em;
+    padding: 1em;
     overflow: hidden;
-    white-space:nowrap;
+    white-space: nowrap;
+}
+
+.filing-card {
+    background-color: lightgrey;
+    border-color: darkgray;
+}
+
+.companies-card {
+    background-color: cornsilk;
+    border-color: bisque;
+}
+
+.insolvency-card {
+    background-color: lightpink;
+    border-color: firebrick;
+}
+
+.charges-card {
+    background-color: lightsteelblue;
+    border-color: steelblue;
+}
+
+.alert {
+    background-color: tomato;
+    border-color: firebrick;
 }
 
 @keyframes pop {
-    0%{
+    0% {
         opacity: 0;
         max-width: 0;
     }
-    90%{
+    90% {
         opacity: 0;
         max-width: 100%;
         transform: scale(1.2);
@@ -103,11 +126,11 @@ p.new-company{
 .row h3{
     margin-bottom: 0;
 }
-#clock{
-
-}
-#clock-container:hover #clock{
+#clock {
     transform: scale(2);
+}
+#clock-container:hover #clock {
+    transform: scale(3);
 }
 
 #counter-container:hover .bubble{
@@ -131,47 +154,58 @@ sup.event-timestamp{
     align-items: center;
     justify-content: center;
 }
-
-.heart1{
-  width: 50px;
-  height: 50px;
-  border-radius: 25px;
-  position: absolute;
-  top: 10px;
-  background: crimson;
-  left: 10px;
-}
-.heart2{
-  position: absolute;
-  top: 10px;
-  left: 40px;
-  background: crimson;
-
-  width: 50px;
-  height: 50px;
-  border-radius: 25px;
-}
-.heart3{
-  width: 0;
-  height: 0;
-  border-left: 35px solid transparent;
-  border-right: 35px solid transparent;
-  border-top: 35px solid crimson;
-  position: absolute;
-  top: 50px;
-  left: 15px;
-  background: transparent;
-}
-.heart-outer{
+.heart1 {
+    width: 50%;
+    height: 50%;
+    border-radius: 50%;
     position: relative;
+    top: 10%;
+    background: crimson;
+    left: 10%;
+}
+.heart2 {
+    position: relative;
+    top: -40%;
+    left: 40%;
+    background: crimson;
+
+    width: 50%;
+    height: 50%;
+    border-radius: 50%;
+}
+.heart3 {
+    width: 0;
+    height: 0;
+    border-left: 35px solid transparent;
+    border-right: 35px solid transparent;
+    border-top: 40px solid crimson;
+    position: relative;
+    top: -50%;
+    left: 15%;
+    background: transparent;
+}
+
+#events > div.heartbeat > .heart-outer {
+    margin: 0;
     width: 100px;
     height: 100px;
+    animation: scale 1s ease-out 1s Infinite alternate;
+    border: none;
 }
 
-.row{
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  align-items: center;
-  justify-content: space-between;
+@keyframes scale {
+    0% {
+        transform: scale(0.9);
+    }
+    100% {
+        transform: scale(1.1);
+    }
+}
+
+.row {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
 }
