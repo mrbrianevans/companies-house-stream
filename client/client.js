@@ -14,6 +14,7 @@ const setConnected = (bool) => {
 }
 
 const pushEvent = (e) => {
+  document.querySelector("#notification-counter").innerHTML = (Number(document.querySelector("#notification-counter").innerHTML) + 1).toString()
   const eventCard = document.createElement('div')
   
   switch(e.resource_kind) {

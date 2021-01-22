@@ -64,7 +64,7 @@ h1{
 body{
     margin: 0;
 }
-#clock{
+div.bubble{
     display: inline-block;
     margin: 0.25em;
     padding: 0.25em;
@@ -73,12 +73,20 @@ body{
     color: #801c00;
     transition: all 1.5s ease-in;
 }
+#clock{
+
+}
 #clock-container:hover #clock{
-    transform: rotate(360deg);
+    transform: scale(2);
+}
+
+#counter-container:hover .bubble{
+    transform: scale(2) translateX(-25%);
 }
 #clock-container{
-    display: inline-block;
-    width: 200px;
+    display: grid;
+    place-items: center;
+    width: 500px;
 }
 sup.event-timestamp{
     align-self: flex-end;
