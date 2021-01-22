@@ -19,7 +19,7 @@ server.get('/css', (req: Request, res: Response)=>{
     res.sendFile(path.resolve(__dirname, 'client', 'stylesheet.css'))
 })
 io.on('connection', ()=> {
-  console.log("\n\x1b[36mNew connection started\x1b[0m")
+  // console.log("\n\x1b[36mNew connection started\x1b[0m")
 })
 
 //Variables for status update:
@@ -31,12 +31,12 @@ let numberOfNewCompanies = 0
 let startTime = Date.now()
 let streamPaused = false
 
-const printUpdate = () => {
-  process.stdout.clearLine(-1, ()=>{
-    process.stdout.cursorTo(0)
-    process.stdout.write(`Running for ${Math.round((Date.now()-startTime)/1000)}s | Latest timepoint: ${latestTimepoint} | Packets: ${numberOfPackets} | Heartbeats: ${numberOfHeartbeats} | Events: ${numberOfEvents} | New companies: ${numberOfNewCompanies} | Stream ${streamPaused?'\x1b[31mpaused\x1b[0m':'\x1b[32mready\x1b[0m'}`)
-  })
-}
+// const printUpdate = () => {
+//   process.stdout.clearLine(-1, ()=>{
+//     process.stdout.cursorTo(0)
+//     process.stdout.write(`Running for ${Math.round((Date.now()-startTime)/1000)}s | Latest timepoint: ${latestTimepoint} | Packets: ${numberOfPackets} | Heartbeats: ${numberOfHeartbeats} | Events: ${numberOfEvents} | New companies: ${numberOfNewCompanies} | Stream ${streamPaused?'\x1b[31mpaused\x1b[0m':'\x1b[32mready\x1b[0m'}`)
+//   })
+// }
 
 const logEvent = (e: BasicCompanyEvent) => {
   io.emit('event', e)
@@ -48,14 +48,18 @@ const logEvent = (e: BasicCompanyEvent) => {
 }
 
 let dataBuffer = ''
+if(!process.env.APIUSER) {
+  console.error("API USERNAME not set in environment variable")
+  process.exit()
+}
 const reqStream = request.get('https://stream.companieshouse.gov.uk/companies')
-  .auth('q5YBtCQHw5a-T-I3HBkJsOfRG4szpz2y1VHa2gQ2', '')
+  .auth(process.env.APIUSER, '')
   .on('response', (r: any) => {
     console.log("Headers received, status", r.statusCode)
     switch (r.statusCode) {
       case 200:
         httpServer.listen(3000, ()=>console.log(`\x1b[32mListening on http://localhost:3000\x1b[0m`))
-        setInterval(printUpdate, 500)
+        // setInterval(printUpdate, 500)
         break;
       case 416:
         console.log("Timepoint out of data")

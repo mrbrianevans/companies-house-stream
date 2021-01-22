@@ -4,8 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "ts-node server.ts",
-    "build": ""
+    "start": "ts-node server.ts"
   },
   "keywords": [],
   "author": "Brian Evans",
