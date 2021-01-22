@@ -1,22 +1,24 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins&family=Roboto+Mono:wght@500&display=swap');
-
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Roboto+Mono:wght@500&display=swap');
 #events{
     background-color: aliceblue;
     padding: 1em;
     display: flex;
     flex-wrap: wrap;
     font-family: 'Poppins', sans-serif;
+    font-weight: 400;
+    justify-content: space-between;
+    bottom: 0;
 }
 
 #events>div{
     margin: 1em;
     padding: 1em;
     display: inline;
-    transition: width 1s ease-in-out;
+    transition: all 1s ease-in-out;
     background-color: cornsilk;
     border: 2px solid bisque;
     border-radius: 0.25em;
-    animation: pop 0.5s ease;
+    animation: pop 0.5s ease-in;
 }
 #events>div>div{
     margin: 0;
@@ -31,11 +33,16 @@
 @keyframes pop {
     0%{
         opacity: 0;
-        width: 0;
+        max-width: 0;
+    }
+    90%{
+        opacity: 0;
+        max-width: 100%;
+        transform: scale(1.2);
     }
     100%{
         opacity: 1;
-        width: 20em;
+        transform: scale(1);
     }
 }
 
@@ -43,8 +50,16 @@
 h1{
     font-family: 'Roboto Mono', monospace;
     text-align: center;
+    margin: 1.5em 0 0 0;
 }
-
+.view-source{
+    margin-bottom: 1.5em;
+    display: grid;
+    place-items: center;
+}
+a{
+    color: royalblue;
+}
 #connection-status.connected{
     background-color: dodgerblue;
     color: aliceblue;
@@ -71,7 +86,22 @@ div.bubble{
     border-radius: 0.25em;
     background-color: darksalmon;
     color: #801c00;
-    transition: all 1.5s ease-in;
+    transition: all 0.5s ease-in;
+}
+code{
+    font-family: 'Roboto Mono', monospace;
+    background-color: rgba(0,0,0,0.2);
+    border-radius: 0.1em;
+    padding: 0.1em;
+    margin: 0.3em;
+}
+p.new-company{
+    color: green;
+    font-weight: 600;
+    margin: 0;
+}
+.row h3{
+    margin-bottom: 0;
 }
 #clock{
 

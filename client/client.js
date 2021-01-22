@@ -1,5 +1,6 @@
 const socket = io()
 let connected = false
+document.querySelector('#clock').innerHTML = new Date().toLocaleTimeString()
 const setConnected = (bool) => {
   connected = bool
   document.querySelector('#connection-status').innerHTML = connected?"Connected":"Disconnected"
@@ -16,23 +17,24 @@ const setConnected = (bool) => {
 const pushEvent = (e) => {
   document.querySelector("#notification-counter").innerHTML = (Number(document.querySelector("#notification-counter").innerHTML) + 1).toString()
   const eventCard = document.createElement('div')
-  
   switch(e.resource_kind) {
-    case 'company-profile':
-    eventCard.innerHTML = `<div>
-  <div class="row">
-    <h3>${e.data.company_name}</h3>
-    <sub>${e.data.company_number}</sub>
-  </div>
- 
-  <p>${e.event.type} ${e.resource_kind} at ${new Date(e.event.published_at).toLocaleTimeString()}</p>
-  </div>`
-      break;
-    case '': // psc or something else
-      break;
-    default:
-      break;
-  }
+      case 'company-profile': // layout for company profile change card
+        const newCompany = (new Date(e.data.date_of_creation).valueOf()>Date.now()-86400000)
+      eventCard.innerHTML = `<div>
+    <div class="row">
+      <h3>${e.data.company_name}</h3>
+      <sub><code>${e.data.company_number}</code></sub>
+    </div>
+    <p class="new-company">${newCompany?'New company':''}</p>
+    <p>${e.event.type} ${e.resource_kind} at ${new Date(e.event.published_at).toLocaleTimeString()}</p>
+    </div>`
+        break;
+      case '': // psc or something else
+        break;
+      default:
+        break;
+    }
+  
   let events = document.querySelector("#events");
   if(events.childElementCount === 15) events.removeChild(events.lastChild)
   events.insertAdjacentElement('afterbegin', eventCard)
@@ -50,10 +52,11 @@ socket.on('connect', ()=>{
 
     socket.on('disconnect', ()=> {
         setConnected(false)
+        clearInterval(clock)
     })
   socket.on('event', pushEvent)
   socket.on('heartbeat', heartbeat)
-  setInterval(()=>{
+  const clock = setInterval(()=>{
     document.querySelector('#clock').innerHTML = new Date().toLocaleTimeString()
   }, 1000)
 })
