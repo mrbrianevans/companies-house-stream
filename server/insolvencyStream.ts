@@ -71,7 +71,7 @@ export const StreamInsolvencies = (io, mode: 'test' | 'live') => {
                 console.log("INSOLVENCY EVENT!!")
                 console.log(JSON.stringify(jsonObject))
               } catch (e) {
-                console.error(`\x1b[31mCOULD NOT PARSE: \x1b[0m*${jsonText}*`)
+                console.error(`\x1b[31mCOULD NOT PARSE insolvency: \x1b[0m*${jsonText}*`)
               }
             }
             reqStream.resume()
@@ -79,5 +79,6 @@ export const StreamInsolvencies = (io, mode: 'test' | 'live') => {
             io.emit('heartbeat', {})
           }
         })
+        .on('end', () => console.error("Insolvency stream ended"))
   }
 }

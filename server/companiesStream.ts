@@ -164,15 +164,19 @@ export const StreamCompanies = (io, mode: 'test' | 'live') => {
                     reqStream.pause()
 
                     dataBuffer += d.toString('utf8')
+                    dataBuffer = dataBuffer.replace('}}{', '}}\n{')
                     while (dataBuffer.includes('\n')) {
                         let newLinePosition = dataBuffer.search('\n')
                         let jsonText = dataBuffer.slice(0, newLinePosition)
                         dataBuffer = dataBuffer.slice(newLinePosition + 1)
+                        if (jsonText.length === 0) continue;
                         try {
                             let jsonObject: CompanyProfileEvent.CompanyProfileEvent = JSON.parse(jsonText)
+                            // query database for previous information held on company to detect what has changed
+                            // also update the database with this new knowledge
                             io.emit('event', jsonObject)
                         } catch (e) {
-                            console.error(`\x1b[31mCOULD NOT PARSE: \x1b[0m*${jsonText}*`)
+                            console.error(`\x1b[31mCOULD NOT PARSE company profile: \x1b[0m*${jsonText}*`)
                         }
                     }
                     reqStream.resume()
@@ -180,5 +184,6 @@ export const StreamCompanies = (io, mode: 'test' | 'live') => {
                     io.emit('heartbeat', {})
                 }
             })
+            .on('end', () => console.error("Company profile stream ended"))
     }
 }

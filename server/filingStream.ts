@@ -92,21 +92,27 @@ export const StreamFilings = (io, mode: 'test' | 'live') => {
                     reqStream.pause()
 
                     dataBuffer += d.toString('utf8')
+                    dataBuffer = dataBuffer.replace('}}{', '}}\n{')
                     while (dataBuffer.includes('\n')) {
                         let newLinePosition = dataBuffer.search('\n')
                         let jsonText = dataBuffer.slice(0, newLinePosition)
                         dataBuffer = dataBuffer.slice(newLinePosition + 1)
                         try {
                             let jsonObject: FilingEvent.FilingEvent = JSON.parse(jsonText)
+                            // query enumeration map in database to figure out what the company has filed
+                            // slow down the stream and send more meaningful information in teh notification
                             io.emit('event', jsonObject)
                         } catch (e) {
-                            console.error(`\x1b[31mCOULD NOT PARSE: \x1b[0m*${jsonText}*`)
+                            console.error(`\x1b[31mCOULD NOT PARSE filing: \x1b[0m*${jsonText}*`)
                         }
                     }
                     reqStream.resume()
                 } else {
                     io.emit('heartbeat', {})
                 }
+            })
+            .on('end', () => {
+                console.error("Filing stream ended")
             })
     }
 }

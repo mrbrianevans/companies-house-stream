@@ -319,12 +319,12 @@ export declare module ChargesEvent {
     }
 
     export interface Particular {
-        chargor_acting_as_bare_trustee: boolean;
+        chargor_acting_as_bare_trustee?: boolean;
         contains_fixed_charge: boolean;
-        contains_floating_charge: boolean;
+        contains_floating_charge?: boolean;
         contains_negative_pledge: boolean;
         description: string;
-        floating_charge_covers_all: boolean;
+        floating_charge_covers_all?: boolean;
         type: string;
     }
 
@@ -347,43 +347,43 @@ export declare module ChargesEvent {
 
     export interface Link3 {
         filing: string;
-        insolvency_case: string;
+        insolvency_case?: string;
     }
 
     export interface Transaction {
         delivered_on: string;
         filing_type: string;
-        insolvency_case_number: number;
-        links: Link3[];
-        transaction_id: number;
+        insolvency_case_number?: number;
+        links: Link3;
+        transaction_id?: number;
     }
 
     export interface Data {
-        acquired_on: string;
-        assests_ceased_released: string;
+        acquired_on?: string;
+        assests_ceased_released?: string;
         charge_code: string;
         charge_number: number;
-        classification: Classification[];
-        covering_instrument_date: string;
+        classification: Classification;
+        covering_instrument_date?: string;
         created_on: string;
         delivered_on: string;
         etag: string;
-        id: string;
-        insolvency_cases: InsolvencyCas[];
-        links: Link2[];
-        more_than_four_persons_entitled: boolean;
-        particulars: Particular[];
+        id?: string;
+        insolvency_cases?: InsolvencyCas[];
+        links: Link2;
+        more_than_four_persons_entitled?: boolean;
+        particulars: Particular;
         persons_entitled: PersonsEntitled[];
-        resolved_on: string;
+        resolved_on?: string;
         satisfied_on: string;
-        scottish_alterations: ScottishAlteration[];
-        secured_details: SecuredDetail[];
+        scottish_alterations?: ScottishAlteration[];
+        secured_details?: SecuredDetail[];
         status: string;
         transactions: Transaction[];
     }
 
     export interface Event {
-        fields_changed: string[];
+        fields_changed?: string[];
         published_at: string;
         timepoint: number;
         type: string;

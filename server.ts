@@ -4,7 +4,6 @@ import {StreamCharges} from "./server/chargesStream";
 import {StreamFilings} from "./server/filingStream";
 import {StreamInsolvencies} from "./server/insolvencyStream";
 
-const request = require('request');
 const express = require('express');
 const server = express()
 const httpServer = require('http').Server(server)
@@ -30,84 +29,3 @@ StreamCompanies(io, 'live')
 StreamCharges(io, 'live')
 StreamFilings(io, 'live')
 StreamInsolvencies(io, 'live')
-
-//
-// //Variables for status update:
-// let latestTimepoint = ''
-// let numberOfPackets = 0
-// let numberOfHeartbeats = 0
-// let numberOfEvents = 0
-// let numberOfNewCompanies = 0
-// let startTime = Date.now()
-// let streamPaused = false
-//
-// //TODO: Change this to an IO emit rather than a console log, and allow users to view the log rather
-// // const printUpdate = () => {
-// //   process.stdout.clearLine(-1, ()=>{
-// //     process.stdout.cursorTo(0)
-// //     process.stdout.write(`Running for ${Math.round((Date.now()-startTime)/1000)}s | Latest timepoint: ${latestTimepoint} | Packets: ${numberOfPackets} | Heartbeats: ${numberOfHeartbeats} | Events: ${numberOfEvents} | New companies: ${numberOfNewCompanies} | Stream ${streamPaused?'\x1b[31mpaused\x1b[0m':'\x1b[32mready\x1b[0m'}`)
-// //   })
-// // }
-//
-// const logEvent = (e: BasicCompanyEvent) => {
-//   io.emit('event', e)
-//   let timepoint = e.event.timepoint
-//   latestTimepoint = timepoint.toString()
-//   numberOfEvents++
-//   let dateOfCreation = e.data.date_of_creation
-//   if(new Date(dateOfCreation).valueOf()>Date.now()-86400000) numberOfNewCompanies++
-// }
-//
-// let dataBuffer = ''
-// if(!process.env.APIUSER) {
-//   console.error("API USERNAME not set in environment variable")
-//   process.exit()
-// }
-// const reqStream = request.get('https://stream.companieshouse.gov.uk/companies')
-//   .auth(process.env.APIUSER, '')
-//   .on('response', (r: any) => {
-//     console.log("Headers received, status", r.statusCode)
-//     switch (r.statusCode) {
-//       case 200:
-//
-//         // setInterval(printUpdate, 500)
-//         break;
-//       case 416:
-//         console.log("Timepoint out of data")
-//         break;
-//       case 429:
-//         console.log("RATE LIMITED, exiting now")
-//         process.exit()
-//         break;
-//       default:
-//         process.exit()
-//     }
-//   })
-//   .on('error', (e: any) => console.error('error', e))
-//   .on('data', async (d: any) => {
-//     if(d.toString().length > 1) {
-//       streamPaused = true
-//       reqStream.pause()
-//
-//       numberOfPackets++
-//       dataBuffer += d.toString('utf8')
-//       while (dataBuffer.includes('\n')) {
-//         let newLinePosition = dataBuffer.search('\n')
-//         let jsonText = dataBuffer.slice(0, newLinePosition)
-//         dataBuffer = dataBuffer.slice(newLinePosition + 1)
-//         try {
-//           let jsonObject = JSON.parse(jsonText)
-//           logEvent(jsonObject)
-//         } catch (e) {
-//           console.error(`\x1b[31mCOULD NOT PARSE: \x1b[0m*${jsonText}*`)
-//         }
-//       }
-//       streamPaused = false
-//       reqStream.resume()
-//     }else{
-//       numberOfHeartbeats++
-//       io.emit('heartbeat', {})
-//     }
-//   })
-//
-//

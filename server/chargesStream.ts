@@ -109,7 +109,7 @@ export const StreamCharges = (io, mode: 'test' | 'live') => {
                             console.log("CHARGES EVENT!!")
                             console.log(JSON.stringify(jsonObject))
                         } catch (e) {
-                            console.error(`\x1b[31mCOULD NOT PARSE: \x1b[0m*${jsonText}*`)
+                            console.error(`\x1b[31mCOULD NOT PARSE charges: \x1b[0m*${jsonText}*`)
                         }
                     }
                     reqStream.resume()
@@ -117,5 +117,115 @@ export const StreamCharges = (io, mode: 'test' | 'live') => {
                     io.emit('heartbeat', {})
                 }
             })
+            .on('end', () => console.error("Charges stream ended"))
+    }
+}
+
+
+const chargesEventSample: ChargesEvent.ChargesEvent = {
+    "resource_kind": "company-charges",
+    "resource_uri": "/company/OC431877/charges/VBBwVeFaa6qE7sCNOnCgRDJFusA",
+    "resource_id": "VBBwVeFaa6qE7sCNOnCgRDJFusA",
+    "data": {
+        "charge_code": "OC4318770001",
+        "charge_number": 1,
+        "classification": {
+            "description": "A registered charge",
+            "type": "charge-description"
+        },
+        "created_on": "2020-10-02",
+        "delivered_on": "2020-10-07",
+        "etag": "d25838a6370ba9378a51fe56c12b8044429a67cc",
+        "links": {
+            "self": "/company/OC431877/charges/VBBwVeFaa6qE7sCNOnCgRDJFusA"
+        },
+        "particulars": {
+            "contains_fixed_charge": true,
+            "contains_negative_pledge": true,
+            "description": "Freehold property at erskine street, liverpool formerly known as erskine industrial estate, registered at hm land registry under title under MS456395 together with land forming part of title number MS638597 shown hatched blue on the plan attached to the charge.",
+            "type": "brief-description"
+        },
+        "persons_entitled": [
+            {
+                "name": "Aura Liverpool Limited (In Administration)"
+            }
+        ],
+        "satisfied_on": "2021-01-24",
+        "status": "fully-satisfied",
+        "transactions": [
+            {
+                "delivered_on": "2020-10-07",
+                "filing_type": "create-charge-with-deed-limited-liability-partnership",
+                "links": {
+                    "filing": "/company/OC431877/filing-history/MzI3OTkzOTg4MWFkaXF6a2N4"
+                }
+            },
+            {
+                "delivered_on": "2021-01-24",
+                "filing_type": "charge-satisfaction-limited-liability-partnership",
+                "links": {
+                    "filing": "/company/OC431877/filing-history/MzI4OTUwNzk5OGFkaXF6a2N4"
+                }
+            }
+        ]
+    },
+    "event": {
+        "timepoint": 632251,
+        "published_at": "2021-01-24T21:26:01",
+        "type": "changed"
+    }
+}
+
+const secondSampleChargeEvent: ChargesEvent.ChargesEvent = {
+    "resource_kind": "company-charges",
+    "resource_uri": "/company/OC431877/charges/VBBwVeFaa6qE7sCNOnCgRDJFusA",
+    "resource_id": "VBBwVeFaa6qE7sCNOnCgRDJFusA",
+    "data": {
+        "charge_code": "OC4318770001",
+        "charge_number": 1,
+        "classification": {
+            "description": "A registered charge",
+            "type": "charge-description"
+        },
+        "created_on": "2020-10-02",
+        "delivered_on": "2020-10-07",
+        "etag": "d25838a6370ba9378a51fe56c12b8044429a67cc",
+        "links": {
+            "self": "/company/OC431877/charges/VBBwVeFaa6qE7sCNOnCgRDJFusA"
+        },
+        "particulars": {
+            "contains_fixed_charge": true,
+            "contains_negative_pledge": true,
+            "description": "Freehold property at erskine street, liverpool formerly known as erskine industrial estate, registered at hm land registry under title under MS456395 together with land forming part of title number MS638597 shown hatched blue on the plan attached to the charge.",
+            "type": "brief-description"
+        },
+        "persons_entitled": [
+            {
+                "name": "Aura Liverpool Limited (In Administration)"
+            }
+        ],
+        "satisfied_on": "2021-01-24",
+        "status": "fully-satisfied",
+        "transactions": [
+            {
+                "delivered_on": "2020-10-07",
+                "filing_type": "create-charge-with-deed-limited-liability-partnership",
+                "links": {
+                    "filing": "/company/OC431877/filing-history/MzI3OTkzOTg4MWFkaXF6a2N4"
+                }
+            },
+            {
+                "delivered_on": "2021-01-24",
+                "filing_type": "charge-satisfaction-limited-liability-partnership",
+                "links": {
+                    "filing": "/company/OC431877/filing-history/MzI4OTUwNzk5OGFkaXF6a2N4"
+                }
+            }
+        ]
+    },
+    "event": {
+        "timepoint": 632250,
+        "published_at": "2021-01-24T21:26:01",
+        "type": "changed"
     }
 }
