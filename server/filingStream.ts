@@ -3,13 +3,12 @@ import {FilingEvent} from '../eventTypes'
 import {Pool} from "pg";
 import {FilingEmit} from "../emitTypes";
 
-const requestPromise = require("request-promise");
 const faker = require('faker')
 const {promisify} = require('util')
 const wait = promisify((s, c) => {
     // console.log("Waiting for", s, "ms on filing")
     if (!isFinite(s)) s = 300
-    if (s > 5000) s = 1000
+    if (s > 5000) s = 5000
     setTimeout(() => c(null, 'done waiting'), s)
 })
 let qtyOfNotifications = 0
@@ -103,7 +102,7 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
                             qtyOfNotifications = 0
                             averageProcessingTime = 0
                             startTime = Date.now()
-                        }, 5000000)
+                        }, 5000001)
                         setInterval(() => {
                             console.log(`Filing - Average processing time: ${Math.round(averageProcessingTime)}ms, new notification every ${Math.round((Date.now() - startTime) / qtyOfNotifications)}ms`)
                         }, 1000000)
@@ -150,9 +149,9 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
                             //     .catch(e=>console.log('e'))
                             // This stops the wait from limiting the rate of receival too much
                             // console.log("Processing time as a % of time per new notification: ", Math.round(averageProcessingTime/((Date.now() - startTime) / qtyOfNotifications)*100))
-                            if (averageProcessingTime / ((Date.now() - startTime) / qtyOfNotifications) * 100 < 80)
+                            if (qtyOfNotifications > 100 && averageProcessingTime / ((Date.now() - startTime) / qtyOfNotifications) * 100 < 80)
                                 await wait(((Date.now() - startTime) / qtyOfNotifications) - (Date.now() - singleStartTime))
-                            else if (averageProcessingTime / ((Date.now() - startTime) / qtyOfNotifications) * 100 < 100) // kill switch to never exceed 100%
+                            else if (qtyOfNotifications > 100 && averageProcessingTime / ((Date.now() - startTime) / qtyOfNotifications) * 100 < 100) // kill switch to never exceed 100%
                                 await wait((((Date.now() - startTime) / qtyOfNotifications) - (Date.now() - singleStartTime)) * 0.5)
                             const {
                                 rows: descriptions,
