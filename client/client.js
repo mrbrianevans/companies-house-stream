@@ -34,11 +34,11 @@ const pushEvent = (e) => {
       eventCard.innerHTML = `
         <div class="filing-card">
     <div class="row">
-      <h3>${e.title}</h3>
+      <h3>${e.companyProfile?.name || e.companyNumber}</h3>
       <sub><code><a href="https://companies-house-frontend-api-rmfuc.ondigitalocean.app/company/${companyNumber}" target="_blank">${companyNumber}</a></code></sub>
     </div>
     <p>${e.description}</p>
-    <p>${e.companyProfile?.name || e.companyNumber} at ${new Date(e.published).toLocaleTimeString()}</p>
+    <p>${e.title} published at ${new Date(e.published).toLocaleTimeString()}</p>
     </div>
         `
       break;

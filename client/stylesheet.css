@@ -59,7 +59,7 @@
         max-width: 0;
     }
     90% {
-        opacity: 0;
+        opacity: 0.5;
         max-width: 100%;
         transform: scale(1.2);
     }

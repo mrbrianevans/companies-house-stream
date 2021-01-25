@@ -10,6 +10,16 @@ import {Pool} from "pg";
 // let numberOfNewCompanies = 0
 // let startTime = Date.now()
 // let streamPaused = false
+const {promisify} = require('util')
+const wait = promisify((s, c) => {
+    // console.log("Waiting for", s, "ms on company")
+    if (!isFinite(s)) s = 300
+    if (s > 5000) s = 1000
+    setTimeout(() => c(null, 'done waiting'), s)
+})
+let qtyOfNotifications = 0
+let averageProcessingTime = 0
+let startTime = Date.now()
 export const StreamCompanies = (io, mode: 'test' | 'live', dbPool: Pool) => {
     if (mode == "test") {
         // setTimeout(()=>io.emit("heartbeat", {}), Math.random()*10000)
@@ -137,7 +147,7 @@ export const StreamCompanies = (io, mode: 'test' | 'live', dbPool: Pool) => {
                 "resource_uri": "string"
             })
             StreamCompanies(io, 'test', dbPool)
-        }, Math.random() * 1800)
+        }, Math.random() * 2500)
     } else {
         let dataBuffer = ''
         const reqStream = request.get('https://stream.companieshouse.gov.uk/companies')
@@ -147,6 +157,16 @@ export const StreamCompanies = (io, mode: 'test' | 'live', dbPool: Pool) => {
                 switch (r.statusCode) {
                     case 200:
                         console.log("Listening to updates on companies stream")
+                        setInterval(() => {
+                            console.timeLog("Listening on filing stream", `Reset comp stats after ${qtyOfNotifications} notifications`)
+                            // reset stats every hour
+                            qtyOfNotifications = 0
+                            averageProcessingTime = 0
+                            startTime = Date.now()
+                        }, 5000000)
+                        setInterval(() => {
+                            console.log(`Company - Average processing time: ${Math.round(averageProcessingTime)}ms, new notification every ${Math.round((Date.now() - startTime) / qtyOfNotifications)}ms`)
+                        }, 1000000)
                         break;
                     case 416:
                         console.log("Timepoint out of date")
@@ -167,6 +187,7 @@ export const StreamCompanies = (io, mode: 'test' | 'live', dbPool: Pool) => {
                     dataBuffer += d.toString('utf8')
                     dataBuffer = dataBuffer.replace('}}{', '}}\n{')
                     while (dataBuffer.includes('\n')) {
+                        let singleStartTime = Date.now()
                         let newLinePosition = dataBuffer.search('\n')
                         let jsonText = dataBuffer.slice(0, newLinePosition)
                         dataBuffer = dataBuffer.slice(newLinePosition + 1)
@@ -175,10 +196,21 @@ export const StreamCompanies = (io, mode: 'test' | 'live', dbPool: Pool) => {
                             let jsonObject: CompanyProfileEvent.CompanyProfileEvent = JSON.parse(jsonText)
                             // query database for previous information held on company to detect what has changed
                             // also update the database with this new knowledge
+
+                            // This stops the wait from limiting the rate of receival too much
+                            // console.log("Processing time as a % of time per new notification: ", Math.round(averageProcessingTime/((Date.now() - startTime) / qtyOfNotifications)*100))
+                            if (averageProcessingTime / ((Date.now() - startTime) / qtyOfNotifications) * 100 < 80)
+                                await wait(((Date.now() - startTime) / qtyOfNotifications) - (Date.now() - singleStartTime))
+                            else if (averageProcessingTime / ((Date.now() - startTime) / qtyOfNotifications) * 100 < 100) // kill switch to never exceed 100%
+                                await wait((((Date.now() - startTime) / qtyOfNotifications) - (Date.now() - singleStartTime)) * 0.5)
+
                             io.emit('event', jsonObject)
                         } catch (e) {
                             console.error(`\x1b[31mCOULD NOT PARSE company profile: \x1b[0m*${jsonText}*`)
                         }
+
+                        let totalTimeSoFar = qtyOfNotifications++ * averageProcessingTime + (Date.now() - singleStartTime)
+                        averageProcessingTime = totalTimeSoFar / qtyOfNotifications
                     }
                     reqStream.resume()
                 } else {

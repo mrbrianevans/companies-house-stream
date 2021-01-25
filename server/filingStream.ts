@@ -3,17 +3,19 @@ import {FilingEvent} from '../eventTypes'
 import {Pool} from "pg";
 import {FilingEmit} from "../emitTypes";
 
+const requestPromise = require("request-promise");
 const faker = require('faker')
+const {promisify} = require('util')
+const wait = promisify((s, c) => {
+    // console.log("Waiting for", s, "ms on filing")
+    if (!isFinite(s)) s = 300
+    if (s > 5000) s = 1000
+    setTimeout(() => c(null, 'done waiting'), s)
+})
 let qtyOfNotifications = 0
-let startTime = Date.now()
-console.time("Listening on filing stream")
-setInterval(() => {
-    console.timeLog("Listening on filing stream", `Number of notifications: ${qtyOfNotifications}`)
-}, 5000000)
 let averageProcessingTime = 0
-setInterval(() => {
-    console.log(`Average processing time: ${averageProcessingTime}ms, new notification every ${(Date.now() - startTime) / qtyOfNotifications}ms`)
-}, 1000000)
+let startTime = Date.now()
+
 export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
     if (mode == "test") {
         // setInterval(()=>io.emit("heartbeat", {}), Math.random()*20000)
@@ -84,7 +86,7 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
                 }
             })
             StreamFilings(io, 'test', dbPool)
-        }, Math.random() * 8000)
+        }, Math.random() * 2000)
     } else {
         let dataBuffer = ''
         const reqStream = request.get('https://stream.companieshouse.gov.uk/filings')
@@ -94,6 +96,17 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
                 console.log("Headers received, status", r.statusCode)
                 switch (r.statusCode) {
                     case 200:
+                        console.time("Listening on filing stream")
+                        setInterval(() => {
+                            console.timeLog("Listening on filing stream", `Reset filing stats after ${qtyOfNotifications} notifications`)
+                            // reset stats every hour
+                            qtyOfNotifications = 0
+                            averageProcessingTime = 0
+                            startTime = Date.now()
+                        }, 5000000)
+                        setInterval(() => {
+                            console.log(`Filing - Average processing time: ${Math.round(averageProcessingTime)}ms, new notification every ${Math.round((Date.now() - startTime) / qtyOfNotifications)}ms`)
+                        }, 1000000)
                         console.log("Listening to updates on filing stream")
                         break;
                     case 416:
@@ -127,10 +140,20 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
                             const companyNumber = jsonObject.resource_uri.match(/^\/company\/([A-Z0-9]{6,8})\/filing-history/)[1]
                             // query enumeration map in database to figure out what the company has filed
                             // slow down the stream and send more meaningful information in teh notification
-                            const {
+                            let {
                                 rows: companyProfile,
                                 rowCount: companysFound
                             } = await client.query("SELECT * FROM companies WHERE number=$1 LIMIT 1", [companyNumber])
+
+                            // fetch from API to slow down a bit
+                            // const apiProfile = await requestPromise.get('https://companies-house-frontend-api-rmfuc.ondigitalocean.app/api/company/' + companyNumber)
+                            //     .catch(e=>console.log('e'))
+                            // This stops the wait from limiting the rate of receival too much
+                            // console.log("Processing time as a % of time per new notification: ", Math.round(averageProcessingTime/((Date.now() - startTime) / qtyOfNotifications)*100))
+                            if (averageProcessingTime / ((Date.now() - startTime) / qtyOfNotifications) * 100 < 80)
+                                await wait(((Date.now() - startTime) / qtyOfNotifications) - (Date.now() - singleStartTime))
+                            else if (averageProcessingTime / ((Date.now() - startTime) / qtyOfNotifications) * 100 < 100) // kill switch to never exceed 100%
+                                await wait((((Date.now() - startTime) / qtyOfNotifications) - (Date.now() - singleStartTime)) * 0.5)
                             const {
                                 rows: descriptions,
                                 rowCount
