@@ -5,9 +5,14 @@ import {FilingEmit} from "../emitTypes";
 
 const faker = require('faker')
 let qtyOfNotifications = 0
+let startTime = Date.now()
 console.time("Listening on filing stream")
 setInterval(() => {
     console.timeLog("Listening on filing stream", `Number of notifications: ${qtyOfNotifications}`)
+}, 5000000)
+let averageProcessingTime = 0
+setInterval(() => {
+    console.log(`Average processing time: ${averageProcessingTime}ms, new notification every ${(Date.now() - startTime) / qtyOfNotifications}ms`)
 }, 1000000)
 export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
     if (mode == "test") {
@@ -85,6 +90,7 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
         const reqStream = request.get('https://stream.companieshouse.gov.uk/filings')
             .auth(process.env.APIUSER, '')
             .on('response', (r: any) => {
+                startTime = Date.now()
                 console.log("Headers received, status", r.statusCode)
                 switch (r.statusCode) {
                     case 200:
@@ -101,7 +107,7 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
                         process.exit()
                 }
             })
-            .on('error', (e: any) => console.error('error', e))
+            .on('error', (e: Error) => console.error('Ferror', e))
             .on('data', async (d: any) => {
                 if (d.toString().length > 1) {
                     reqStream.pause()
@@ -109,7 +115,7 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
                     dataBuffer += d.toString('utf8')
                     dataBuffer = dataBuffer.replace('}}{', '}}\n{')
                     while (dataBuffer.includes('\n')) {
-                        qtyOfNotifications++
+                        let singleStartTime = Date.now()
                         // console.time('Process filing history')
                         let newLinePosition = dataBuffer.search('\n')
                         let jsonText = dataBuffer.slice(0, newLinePosition)
@@ -162,6 +168,10 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
                             await client.release() // release the client when finished, regardless of errors
                             // console.timeEnd('Process filing history')
                         }
+
+                        let totalTimeSoFar = qtyOfNotifications++ * averageProcessingTime + (Date.now() - singleStartTime)
+                        averageProcessingTime = totalTimeSoFar / qtyOfNotifications
+
                     }
                     reqStream.resume()
                 } else {
