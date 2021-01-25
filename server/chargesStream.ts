@@ -1,9 +1,10 @@
 import * as request from "request";
 import {ChargesEvent} from "../eventTypes";
+import {Pool} from "pg";
 // import * as faker from 'faker'
 const faker = require('faker')
 
-export const StreamCharges = (io, mode: 'test' | 'live') => {
+export const StreamCharges = (io, mode: 'test' | 'live', dbPool: Pool) => {
     if (mode == "test") {
         // setInterval(()=>io.emit("heartbeat", {}), Math.random()*20000)
         // setInterval(()=>console.log("Charge heartbeat"), Math.random()*20000)
@@ -66,11 +67,11 @@ export const StreamCharges = (io, mode: 'test' | 'live') => {
                         "type": faker.random.arrayElement(['changed', 'deleted'])
                     },
                     "resource_id": faker.random.uuid(),
-                    "resource_kind": "charges",
+                    "resource_kind": "company-charges",
                     "resource_uri": "/company/" + faker.random.number() + "/charges"
                 }
             )
-            StreamCharges(io, 'test')
+            StreamCharges(io, 'test', dbPool)
         }, Math.random() * 20000)
     } else {
         let dataBuffer = ''
@@ -99,10 +100,12 @@ export const StreamCharges = (io, mode: 'test' | 'live') => {
                     reqStream.pause()
 
                     dataBuffer += d.toString('utf8')
+                    dataBuffer = dataBuffer.replace('}}{', '}}\n{')
                     while (dataBuffer.includes('\n')) {
                         let newLinePosition = dataBuffer.search('\n')
                         let jsonText = dataBuffer.slice(0, newLinePosition)
                         dataBuffer = dataBuffer.slice(newLinePosition + 1)
+                        if (jsonText.length === 0) continue;
                         try {
                             let jsonObject: ChargesEvent.ChargesEvent = JSON.parse(jsonText)
                             io.emit('event', jsonObject)

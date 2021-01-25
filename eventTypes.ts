@@ -210,7 +210,7 @@ export declare module FilingEvent {
         category: string;
         date: string;
         description: string;
-        description_values: {};
+        description_values?: {};
         links: Links;
         pages?: number;
         paper_filed?: boolean;
@@ -224,14 +224,14 @@ export declare module FilingEvent {
         fields_changed?: string[];
         published_at: string;
         timepoint: number;
-        type: string;
+        type: 'changed' | 'deleted';
     }
 
     export interface FilingEvent {
         data: Data;
         event: Event;
         resource_id: string;
-        resource_kind: string;
+        resource_kind: 'filing-history';
         resource_uri: string;
     }
 
@@ -250,38 +250,38 @@ export declare module InsolvencyEvent {
 
     export interface Address {
         address_line_1: string;
-        address_line_2: string;
-        country: string;
+        address_line_2?: string;
+        country?: string;
         locality: string;
-        postal_code: string;
-        region: string;
+        postal_code?: string;
+        region?: string;
     }
 
     export interface Practitioner {
-        address: Address[];
-        appointed_on: string;
-        ceased_to_act_on: string;
+        address: Address;
+        appointed_on?: string;
+        ceased_to_act_on?: string;
         name: string;
         role: string;
     }
 
     export interface Case {
-        dates: Date[];
-        links: Links;
-        notes: string[];
-        number: number;
-        practitioners: Practitioner[];
+        dates?: Date[];
+        links?: Links;
+        notes?: string[];
+        number: number | string;
+        practitioners?: Practitioner[];
         type: string;
     }
 
     export interface Data {
         cases: Case[];
         etag: string;
-        status: string;
+        status?: string;
     }
 
     export interface Event {
-        fields_changed: string[];
+        fields_changed?: string[];
         published_at: string;
         timepoint: number;
         type: string;
@@ -291,7 +291,7 @@ export declare module InsolvencyEvent {
         data: Data;
         event: Event;
         resource_id: string;
-        resource_kind: string;
+        resource_kind: 'company-insolvency';
         resource_uri: string;
     }
 

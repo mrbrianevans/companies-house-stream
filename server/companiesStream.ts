@@ -1,6 +1,7 @@
 import * as request from "request";
 import {CompanyProfileEvent} from "../eventTypes";
 import * as faker from 'faker'
+import {Pool} from "pg";
 // //Variables for status update:
 // let latestTimepoint = ''
 // let numberOfPackets = 0
@@ -9,7 +10,7 @@ import * as faker from 'faker'
 // let numberOfNewCompanies = 0
 // let startTime = Date.now()
 // let streamPaused = false
-export const StreamCompanies = (io, mode: 'test' | 'live') => {
+export const StreamCompanies = (io, mode: 'test' | 'live', dbPool: Pool) => {
     if (mode == "test") {
         // setTimeout(()=>io.emit("heartbeat", {}), Math.random()*10000)
         //todo: fakerjs
@@ -135,7 +136,7 @@ export const StreamCompanies = (io, mode: 'test' | 'live') => {
                 "resource_kind": "company-profile",
                 "resource_uri": "string"
             })
-            StreamCompanies(io, 'test')
+            StreamCompanies(io, 'test', dbPool)
         }, Math.random() * 1800)
     } else {
         let dataBuffer = ''
