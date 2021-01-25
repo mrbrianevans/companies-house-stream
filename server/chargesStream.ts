@@ -78,7 +78,7 @@ export const StreamCharges = (io, mode: 'test' | 'live', dbPool: Pool) => {
         const reqStream = request.get('https://stream.companieshouse.gov.uk/charges')
             .auth(process.env.APIUSER, '')
             .on('response', (r: any) => {
-                console.log("Headers received, status", r.statusCode)
+                console.log("charges Headers received, status", r.statusCode)
                 switch (r.statusCode) {
                     case 200:
                         console.log("Listening to updates on charges stream")

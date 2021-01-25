@@ -3,6 +3,7 @@ import {FilingEvent} from '../eventTypes'
 import {Pool} from "pg";
 import {FilingEmit} from "../emitTypes";
 
+
 const faker = require('faker')
 const {promisify} = require('util')
 const wait = promisify((s, c) => {
@@ -14,7 +15,8 @@ const wait = promisify((s, c) => {
 let qtyOfNotifications = 0
 let averageProcessingTime = 0
 let startTime = Date.now()
-
+let reportStatsInterval
+let resetStatsInterval
 export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
     if (mode == "test") {
         // setInterval(()=>io.emit("heartbeat", {}), Math.random()*20000)
@@ -92,18 +94,18 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
             .auth(process.env.APIUSER, '')
             .on('response', (r: any) => {
                 startTime = Date.now()
-                console.log("Headers received, status", r.statusCode)
+                console.log("filing Headers received, status", r.statusCode)
                 switch (r.statusCode) {
                     case 200:
                         console.time("Listening on filing stream")
-                        setInterval(() => {
+                        resetStatsInterval = setInterval(() => {
                             console.timeLog("Listening on filing stream", `Reset filing stats after ${qtyOfNotifications} notifications`)
                             // reset stats every hour
                             qtyOfNotifications = 0
                             averageProcessingTime = 0
                             startTime = Date.now()
-                        }, 5000001)
-                        setInterval(() => {
+                        }, 5001111)// staggered reseting to prevent them all reseting at the same time for an unfortunate user experience
+                        reportStatsInterval = setInterval(() => {
                             console.log(`Filing - Average processing time: ${Math.round(averageProcessingTime)}ms, new notification every ${Math.round((Date.now() - startTime) / qtyOfNotifications)}ms`)
                         }, 1000000)
                         console.log("Listening to updates on filing stream")
@@ -160,14 +162,14 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
                             // console.timeLog('Process filing history',{"Database response": descriptions})
                             if (rowCount === 1) {
                                 const description: string = descriptions[0]['value']
-                                let formattedDescription = description.replace(/{([a-z_]+)}/g, (s) => jsonObject.data.description_values[s.slice(1, s.length - 1)])
+                                let formattedDescription = description.replace(/{([a-z_]+)}/g, (s) => jsonObject.data.description_values ? jsonObject.data.description_values[s.slice(1, s.length - 1)] : '')
                                 formattedDescription = formattedDescription.replace(/^\*\*/, '<b>')
                                 formattedDescription = formattedDescription.replace(/\*\*/, '</b>')
                                 // console.log(formattedDescription)
                                 // if(companysFound === 1)
                                 const eventToEmit: FilingEmit = {
                                     source: 'filing-history',
-                                    title: formattedDescription.match(/<b>(.+)<\/b>/)[1],
+                                    title: formattedDescription.match(/<b>(.+)<\/b>/) ? formattedDescription.match(/<b>(.+)<\/b>/)[1] : jsonObject.data.category,
                                     description: formattedDescription,
                                     published: new Date(jsonObject.event.published_at),
                                     companyNumber: companyNumber,
@@ -176,7 +178,7 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
                                 }
                                 io.emit('event', eventToEmit)
                             } else {
-                                if (jsonObject.data.description) // some are undefined
+                                if (jsonObject.data.description && jsonObject.data.description !== 'legacy') // some are undefined and legacy
                                     console.log("\x1b[31mDatabase could not find description\x1b[0m for", jsonObject.data.description)
                             }
 
@@ -201,6 +203,13 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
                 }
             })
             .on('end', async () => {
+                try {
+                    clearInterval(reportStatsInterval)
+                    clearInterval(resetStatsInterval)
+                } catch (e) {
+
+                }
+
                 console.timeEnd("Listening on filing stream")
                 await dbPool.end()
                 console.error("Filing stream ended")

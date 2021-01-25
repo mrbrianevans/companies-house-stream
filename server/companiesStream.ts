@@ -153,17 +153,17 @@ export const StreamCompanies = (io, mode: 'test' | 'live', dbPool: Pool) => {
         const reqStream = request.get('https://stream.companieshouse.gov.uk/companies')
             .auth(process.env.APIUSER, '')
             .on('response', (r: any) => {
-                console.log("Headers received, status", r.statusCode)
+                console.log("company Headers received, status", r.statusCode)
                 switch (r.statusCode) {
                     case 200:
-                        console.log("Listening to updates on companies stream")
+                        console.time("Listening on company stream")
                         setInterval(() => {
-                            console.timeLog("Listening on filing stream", `Reset comp stats after ${qtyOfNotifications} notifications`)
+                            console.timeLog("Listening on company stream", `Reset comp stats after ${qtyOfNotifications} notifications`)
                             // reset stats every hour
                             qtyOfNotifications = 0
                             averageProcessingTime = 0
                             startTime = Date.now()
-                        }, 5000001)
+                        }, 6001111) // staggered reseting to prevent them all reseting at the same time for an unfortunate user experience
                         setInterval(() => {
                             console.log(`Company - Average processing time: ${Math.round(averageProcessingTime)}ms, new notification every ${Math.round((Date.now() - startTime) / qtyOfNotifications)}ms`)
                         }, 1000000)
@@ -217,6 +217,9 @@ export const StreamCompanies = (io, mode: 'test' | 'live', dbPool: Pool) => {
                     io.emit('heartbeat', {})
                 }
             })
-            .on('end', () => console.error("Company profile stream ended"))
+            .on('end', () => {
+                console.error("Company profile stream ended")
+                console.timeEnd("Listening on company stream")
+            })
     }
 }

@@ -40,7 +40,7 @@ export const StreamInsolvencies = (io, mode: 'test' | 'live', dbPool: Pool) => {
     const reqStream = request.get('https://stream.companieshouse.gov.uk/insolvency-cases')
         .auth(process.env.APIUSER, '')
         .on('response', (r: any) => {
-          console.log("Headers received, status", r.statusCode)
+          console.log("insolvency Headers received, status", r.statusCode)
           switch (r.statusCode) {
             case 200:
               console.log("Listening to updates on insolvency stream")
