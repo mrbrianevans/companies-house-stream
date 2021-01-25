@@ -207,7 +207,17 @@ export declare module FilingEvent {
         annotations?: Annotation[];
         associated_filings?: AssociatedFiling[];
         barcode: string;
-        category: string;
+        category: 'accounts' |
+            'address' |
+            'annual-return' |
+            'capital' |
+            'change-of-name' |
+            'incorporation' |
+            'liquidation' |
+            'miscellaneous' |
+            'mortgage' |
+            'officers' |
+            'resolution';
         date: string;
         description: string;
         description_values?: {};
@@ -320,12 +330,12 @@ export declare module ChargesEvent {
 
     export interface Particular {
         chargor_acting_as_bare_trustee?: boolean;
-        contains_fixed_charge: boolean;
+        contains_fixed_charge?: boolean;
         contains_floating_charge?: boolean;
         contains_negative_pledge: boolean;
-        description: string;
+        description?: string;
         floating_charge_covers_all?: boolean;
-        type: string;
+        type?: string;
     }
 
     export interface PersonsEntitled {
@@ -375,7 +385,7 @@ export declare module ChargesEvent {
         particulars: Particular;
         persons_entitled: PersonsEntitled[];
         resolved_on?: string;
-        satisfied_on: string;
+        satisfied_on?: string;
         scottish_alterations?: ScottishAlteration[];
         secured_details?: SecuredDetail[];
         status: string;
