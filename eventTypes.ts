@@ -181,6 +181,9 @@ export declare module FilingEvent {
         annotation: string;
         date: string;
         description: string;
+        category: 'annotation';
+        description_values: { description: string };
+        type: 'ANNOTATION';
     }
 
     export interface AssociatedFiling {
@@ -217,9 +220,10 @@ export declare module FilingEvent {
             'miscellaneous' |
             'mortgage' |
             'officers' |
-            'resolution';
+            'resolution' |
+            "confirmation-statement";
         date: string;
-        description: string;
+        description?: string;
         description_values?: {};
         links: Links;
         pages?: number;

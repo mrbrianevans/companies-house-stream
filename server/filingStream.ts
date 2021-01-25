@@ -4,7 +4,11 @@ import {Pool} from "pg";
 import {FilingEmit} from "../emitTypes";
 
 const faker = require('faker')
-
+let qtyOfNotifications = 0
+console.time("Listening on filing stream")
+setInterval(() => {
+    console.timeLog("Listening on filing stream", `Number of notifications: ${qtyOfNotifications}`)
+}, 1000000)
 export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
     if (mode == "test") {
         // setInterval(()=>io.emit("heartbeat", {}), Math.random()*20000)
@@ -105,17 +109,18 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
                     dataBuffer += d.toString('utf8')
                     dataBuffer = dataBuffer.replace('}}{', '}}\n{')
                     while (dataBuffer.includes('\n')) {
+                        qtyOfNotifications++
                         // console.time('Process filing history')
                         let newLinePosition = dataBuffer.search('\n')
                         let jsonText = dataBuffer.slice(0, newLinePosition)
                         dataBuffer = dataBuffer.slice(newLinePosition + 1)
                         if (jsonText.length === 0) continue;
+                        const client = await dbPool.connect()
                         try {
                             let jsonObject: FilingEvent.FilingEvent = JSON.parse(jsonText)
                             const companyNumber = jsonObject.resource_uri.match(/^\/company\/([A-Z0-9]{6,8})\/filing-history/)[1]
                             // query enumeration map in database to figure out what the company has filed
                             // slow down the stream and send more meaningful information in teh notification
-                            const client = await dbPool.connect()
                             const {
                                 rows: companyProfile,
                                 rowCount: companysFound
@@ -143,14 +148,18 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
                                 }
                                 io.emit('event', eventToEmit)
                             } else {
-                                console.log("\x1b[32mDatabase could not find description\x1b[0m for", jsonObject.data.description)
+                                if (jsonObject.data.description) // some are undefined
+                                    console.log("\x1b[31mDatabase could not find description\x1b[0m for", jsonObject.data.description)
                             }
 
-                            await client.release()
                         } catch (e) {
-                            // console.error(e)
-                            console.error(`\x1b[31mCOULD NOT PARSE filing: \x1b[0m*${jsonText}*`)
+                            // error handling
+                            if (e instanceof SyntaxError)
+                                console.error(`\x1b[31mCOULD NOT PARSE filing: \x1b[0m*${jsonText}*`)
+                            else
+                                console.error('\x1b[31m', e, '\x1b[0m')
                         } finally {
+                            await client.release() // release the client when finished, regardless of errors
                             // console.timeEnd('Process filing history')
                         }
                     }
@@ -159,14 +168,16 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
                     io.emit('heartbeat', {})
                 }
             })
-            .on('end', () => {
+            .on('end', async () => {
+                console.timeEnd("Listening on filing stream")
+                await dbPool.end()
                 console.error("Filing stream ended")
             })
     }
 }
 
 //test types with a real record:
-const e: FilingEvent.FilingEvent = {
+const e: FilingEvent.FilingEvent[] = [{
     "resource_kind": "filing-history",
     "resource_uri": "/company/10676322/filing-history/MzI4OTQzODc5MGFkaXF6a2N4",
     "resource_id": "MzI4OTQzODc5MGFkaXF6a2N4",
@@ -189,4 +200,112 @@ const e: FilingEvent.FilingEvent = {
         "published_at": "2021-01-22T18:28:02",
         "type": "changed"
     }
-}
+},
+    {
+        "resource_kind": "filing-history",
+        "resource_uri": "/company/07260025/filing-history/MzI2NTIzNzU0N2FkaXF6a2N4",
+        "resource_id": "MzI2NTIzNzU0N2FkaXF6a2N4",
+        "data": {
+            "annotations": [{
+                "annotation": "Clarification A SECOND FILED CS01 STATEMENT OF CAPITAL \u0026 SHAREHOLDER INFORMATION WAS REGISTERED ON 25/01/21",
+                "category": "annotation",
+                "date": "2021-01-25",
+                "description": "annotation",
+                "description_values": {"description": "Clarification a second filed CS01 statement of capital \u0026 shareholder information was registered on 25/01/21"},
+                "type": "ANNOTATION"
+            }],
+            "barcode": "X95HGATK",
+            "category": "confirmation-statement",
+            "date": "2020-05-20",
+            "description": "confirmation-statement",
+            "description_values": {"original_description": "20/05/20 Statement of Capital gbp 126"},
+            "links": {
+                "document_metadata": "https://frontend-doc-api.companieshouse.gov.uk/document/TsRu1rGfoPfqgDJB2RvUReq1XPkdrjvr302RHkUW_ww",
+                "self": "/company/07260025/filing-history/MzI2NTIzNzU0N2FkaXF6a2N4"
+            },
+            "pages": 5,
+            "paper_filed": true,
+            "transaction_id": "MzI2NTIzNzU0N2FkaXF6a2N4",
+            "type": "CS01"
+        },
+        "event": {"timepoint": 49098961, "published_at": "2021-01-25T13:32:01", "type": "changed"}
+    },
+    {
+        "resource_kind": "filing-history",
+        "resource_uri": "/company/12114535/filing-history/MzI4MDM0NDI4NGFkaXF6a2N4",
+        "resource_id": "MzI4MDM0NDI4NGFkaXF6a2N4",
+        "data": {
+            "annotations": [{
+                "annotation": "Clarification A SECOND FILED CS01 STATEMENT OF CAPITAL \u0026 SHAREHOLDER INFORMATION WAS REGISTERED ON 25/01/21",
+                "category": "annotation",
+                "date": "2021-01-25",
+                "description": "annotation",
+                "description_values": {"description": "Clarification a second filed CS01 statement of capital \u0026 shareholder information was registered on 25/01/21"},
+                "type": "ANNOTATION"
+            }],
+            "barcode": "X9FIEB6B",
+            "category": "confirmation-statement",
+            "date": "2020-10-12",
+            "description": "confirmation-statement",
+            "description_values": {"original_description": "21/07/20 Statement of Capital eur 38000001"},
+            "links": {
+                "document_metadata": "https://frontend-doc-api.companieshouse.gov.uk/document/2IPexI9Xo_VfyzWXITSO4cQ7LvDWwN4U24rNeUlCBHE",
+                "self": "/company/12114535/filing-history/MzI4MDM0NDI4NGFkaXF6a2N4"
+            },
+            "pages": 4,
+            "paper_filed": true,
+            "transaction_id": "MzI4MDM0NDI4NGFkaXF6a2N4",
+            "type": "CS01"
+        },
+        "event": {"timepoint": 49096881, "published_at": "2021-01-25T13:16:02", "type": "changed"}
+    },
+    {
+        "resource_kind": "filing-history",
+        "resource_uri": "/company/12317301/filing-history/MzI4MzUzMjgyMGFkaXF6a2N4",
+        "resource_id": "MzI4MzUzMjgyMGFkaXF6a2N4",
+        "data": {
+            "annotations": [{
+                "annotation": "Clarification A second filed CS01  (Statement of capital change and Shareholder information change) was registered on 25/01/2021.",
+                "category": "annotation",
+                "date": "2021-01-25",
+                "description": "annotation",
+                "description_values": {"description": "Clarification a second filed CS01 (Statement of capital change and Shareholder information change) was registered on 25/01/2021."},
+                "type": "ANNOTATION"
+            }],
+            "barcode": "X9HYDHPL",
+            "category": "confirmation-statement",
+            "date": "2020-11-16",
+            "description": "confirmation-statement",
+            "description_values": {"original_description": "14/11/20 Statement of Capital gbp 300.00"},
+            "links": {
+                "document_metadata": "https://frontend-doc-api.companieshouse.gov.uk/document/Hl5VNNqB7HnAUZN1K9ugcwewb9ydUjF9nRJLaZlY1mA",
+                "self": "/company/12317301/filing-history/MzI4MzUzMjgyMGFkaXF6a2N4"
+            },
+            "pages": 5,
+            "paper_filed": true,
+            "transaction_id": "MzI4MzUzMjgyMGFkaXF6a2N4",
+            "type": "CS01"
+        },
+        "event": {"timepoint": 49095333, "published_at": "2021-01-25T13:04:04", "type": "changed"}
+    },
+    {
+        "resource_kind": "filing-history",
+        "resource_uri": "/company/12317301/filing-history/MzI4MzUzMjgyMGFkaXF6a2N4",
+        "resource_id": "MzI4MzUzMjgyMGFkaXF6a2N4",
+        "data": {
+            "barcode": "X9HYDHPL",
+            "category": "confirmation-statement",
+            "date": "2020-11-16",
+            "description": "confirmation-statement",
+            "description_values": {"original_description": "14/11/20 Statement of Capital gbp 300.00"},
+            "links": {
+                "document_metadata": "https://frontend-doc-api.companieshouse.gov.uk/document/Hl5VNNqB7HnAUZN1K9ugcwewb9ydUjF9nRJLaZlY1mA",
+                "self": "/company/12317301/filing-history/MzI4MzUzMjgyMGFkaXF6a2N4"
+            },
+            "pages": 5,
+            "transaction_id": "MzI4MzUzMjgyMGFkaXF6a2N4",
+            "type": "CS01"
+        },
+        "event": {"timepoint": 49094846, "published_at": "2021-01-25T13:01:04", "type": "changed"}
+    }
+]
