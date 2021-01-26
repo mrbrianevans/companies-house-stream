@@ -10,6 +10,7 @@ const server = express()
 const httpServer = require('http').Server(server)
 const io = require('socket.io')(httpServer)
 const path = require('path')
+const fs = require('fs')
 const pool = new Pool({
     ssl: {
         rejectUnauthorized: false
@@ -19,18 +20,20 @@ server.get('/', (req: Request, res: Response) => {
     res.sendFile(path.resolve(__dirname, 'client', 'index.html'))
 })
 
-server.get('/js', (req: Request, res: Response)=>{
+server.get('/js', (req: Request, res: Response) => {
     res.sendFile(path.resolve(__dirname, 'client', 'client.js'))
 })
-server.get('/css', (req: Request, res: Response) => {
-    res.sendFile(path.resolve(__dirname, 'client', 'stylesheet.css'))
+
+server.get('*.css', (req: Request, res: Response) => {
+    if (!req.path.match(/\/([^\/]*).css/))
+        res.status(400).end("Badly formatted request")
+    const filename = req.path.match(/\/([^\/]*).css/)[1]
+    const filepath = path.resolve(__dirname, 'client', filename + '.css')
+    if (!fs.existsSync(filepath))
+        res.status(404).end("Not found")
+    res.sendFile(filepath)
 })
-server.get('/mobile-css', (req: Request, res: Response) => {
-    res.sendFile(path.resolve(__dirname, 'client', 'vertical_stylesheet.css'))
-})
-io.on('connection', () => {
-    // console.log("\n\x1b[36mNew connection started\x1b[0m")
-})
+
 httpServer.listen(3000, () => console.log(`\x1b[32mListening on http://localhost:3000\x1b[0m`))
 
 StreamCompanies(io, 'live', pool)
