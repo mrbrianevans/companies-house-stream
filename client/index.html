@@ -2,20 +2,28 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <link rel="stylesheet" href="css" type="text/css"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <link href="css" media="screen and (min-width: 768px)" rel="stylesheet" type="text/css"/>
+    <link href="mobile-css" media="screen and (max-width: 768px)" rel="stylesheet" type="text/css"/>
+
     <title>Companies House Stream</title>
     <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-<h1>Stream data from companies house in realtime</h1>
-<div class="view-source"><code><a href="https://github.com/mrbrianevans/companies-house-stream">View source code</a></code></div>
-<div class="row">
-    <button id="connection-status">Disconnected</button>
-<div id="clock-container">
-<div id="clock" class="bubble"></div></div>
-<div id="counter-container"><div class="bubble">Notifications: <span id="notification-counter">0</span></div></div>
-</div>
-
+<header>
+    <h1>Stream data from companies house in realtime</h1>
+    <div class="view-source"><code><a href="https://github.com/mrbrianevans/companies-house-stream"
+                                      target="_blank">View source code</a></code></div>
+    <div class="row">
+        <button id="connection-status">Disconnected</button>
+        <div id="clock-container">
+            <div id="clock" class="bubble"></div>
+        </div>
+        <div id="counter-container">
+            <div class="bubble">Notifications: <span id="notification-counter">0</span></div>
+        </div>
+    </div>
+</header>
 
 <div id="events"></div>
     <script src="js"></script>
