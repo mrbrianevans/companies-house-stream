@@ -104,7 +104,7 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
                             qtyOfNotifications = 0
                             averageProcessingTime = 0
                             startTime = Date.now()
-                        }, 5001111)// staggered reseting to prevent them all reseting at the same time for an unfortunate user experience
+                        }, 2001111)// staggered reseting to prevent them all reseting at the same time for an unfortunate user experience
                         reportStatsInterval = setInterval(() => {
                             console.log(`Filing - Average processing time: ${Math.round(averageProcessingTime)}ms, new notification every ${Math.round((Date.now() - startTime) / qtyOfNotifications)}ms`)
                         }, 1000000)
@@ -151,9 +151,9 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
                             //     .catch(e=>console.log('e'))
                             // This stops the wait from limiting the rate of receival too much
                             // console.log("Processing time as a % of time per new notification: ", Math.round(averageProcessingTime/((Date.now() - startTime) / qtyOfNotifications)*100))
-                            if (qtyOfNotifications > 100 && averageProcessingTime / ((Date.now() - startTime) / qtyOfNotifications) * 100 < 80)
+                            if (qtyOfNotifications > 50 && averageProcessingTime / ((Date.now() - startTime) / qtyOfNotifications) * 100 < 70)
                                 await wait(((Date.now() - startTime) / qtyOfNotifications) - (Date.now() - singleStartTime))
-                            else if (qtyOfNotifications > 100 && averageProcessingTime / ((Date.now() - startTime) / qtyOfNotifications) * 100 < 100) // kill switch to never exceed 100%
+                            else if (qtyOfNotifications > 50 && averageProcessingTime / ((Date.now() - startTime) / qtyOfNotifications) * 100 < 100) // kill switch to never exceed 100%
                                 await wait((((Date.now() - startTime) / qtyOfNotifications) - (Date.now() - singleStartTime)) * 0.5)
                             const {
                                 rows: descriptions,
@@ -162,7 +162,7 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
                             // console.timeLog('Process filing history',{"Database response": descriptions})
                             if (rowCount === 1) {
                                 const description: string = descriptions[0]['value']
-                                let formattedDescription = description.replace(/{([a-z_]+)}/g, (s) => jsonObject.data.description_values ? jsonObject.data.description_values[s.slice(1, s.length - 1)] : '')
+                                let formattedDescription = description.replace(/{([a-z_]+)}/g, (s) => jsonObject.data.description_values ? jsonObject.data.description_values[s.slice(1, s.length - 1)] || '' : '')
                                 formattedDescription = formattedDescription.replace(/^\*\*/, '<b>')
                                 formattedDescription = formattedDescription.replace(/\*\*/, '</b>')
                                 // console.log(formattedDescription)

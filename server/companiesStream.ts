@@ -163,7 +163,7 @@ export const StreamCompanies = (io, mode: 'test' | 'live', dbPool: Pool) => {
                             qtyOfNotifications = 0
                             averageProcessingTime = 0
                             startTime = Date.now()
-                        }, 6001111) // staggered reseting to prevent them all reseting at the same time for an unfortunate user experience
+                        }, 2501111) // staggered reseting to prevent them all reseting at the same time for an unfortunate user experience
                         setInterval(() => {
                             console.log(`Company - Average processing time: ${Math.round(averageProcessingTime)}ms, new notification every ${Math.round((Date.now() - startTime) / qtyOfNotifications)}ms`)
                         }, 1000000)
@@ -199,9 +199,9 @@ export const StreamCompanies = (io, mode: 'test' | 'live', dbPool: Pool) => {
 
                             // This stops the wait from limiting the rate of receival too much
                             // console.log("Processing time as a % of time per new notification: ", Math.round(averageProcessingTime/((Date.now() - startTime) / qtyOfNotifications)*100))
-                            if (qtyOfNotifications > 100 && averageProcessingTime / ((Date.now() - startTime) / qtyOfNotifications) * 100 < 80)
+                            if (qtyOfNotifications > 75 && averageProcessingTime / ((Date.now() - startTime) / qtyOfNotifications) * 100 < 60)
                                 await wait(((Date.now() - startTime) / qtyOfNotifications) - (Date.now() - singleStartTime))
-                            else if (qtyOfNotifications > 100 && averageProcessingTime / ((Date.now() - startTime) / qtyOfNotifications) * 100 < 100) // kill switch to never exceed 100%
+                            else if (qtyOfNotifications > 70 && averageProcessingTime / ((Date.now() - startTime) / qtyOfNotifications) * 100 < 100) // kill switch to never exceed 100%
                                 await wait((((Date.now() - startTime) / qtyOfNotifications) - (Date.now() - singleStartTime)) * 0.5)
 
                             io.emit('event', jsonObject)

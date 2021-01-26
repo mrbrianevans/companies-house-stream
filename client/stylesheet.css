@@ -16,6 +16,7 @@
     display: inline;
     transition: all 1s ease-in-out;
     animation: pop 0.5s ease-in;
+    max-width: 100%;
 }
 
 #events > div > div {
