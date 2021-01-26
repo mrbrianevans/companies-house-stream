@@ -25,6 +25,9 @@ server.get('/js', (req: Request, res: Response)=>{
 server.get('/css', (req: Request, res: Response) => {
     res.sendFile(path.resolve(__dirname, 'client', 'stylesheet.css'))
 })
+server.get('/mobile-css', (req: Request, res: Response) => {
+    res.sendFile(path.resolve(__dirname, 'client', 'vertical_stylesheet.css'))
+})
 io.on('connection', () => {
     // console.log("\n\x1b[36mNew connection started\x1b[0m")
 })

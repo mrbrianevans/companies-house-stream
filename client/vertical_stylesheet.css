@@ -1,24 +1,29 @@
-@import "heartbeat.css";
+@import 'heartbeat.css';
 @import "common.css";
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Roboto+Mono:wght@500&display=swap');
-#events{
+
+#events {
     background-color: aliceblue;
     padding: 1em;
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
+    flex-wrap: nowrap;
     font-family: 'Poppins', sans-serif;
     font-weight: 400;
     justify-content: space-between;
     bottom: 0;
+    height: 70vh;
+    overflow-y: scroll;
+    scroll-behavior: smooth;
 }
 
-#events>div{
+#events > div {
     margin: 0;
     padding: 0;
     display: inline;
     transition: all 1s ease-in-out;
     animation: pop 0.5s ease-in;
-    max-width: 100%;
+    width: 100%;
 }
 
 #events > div > div {
@@ -28,7 +33,12 @@
     margin: 1em;
     padding: 1em;
     overflow: hidden;
-    white-space: nowrap;
+    white-space: normal;
+}
+
+header {
+    /*height: 30vh;*/
+    /*position: fixed;*/
 }
 
 .filing-card {
@@ -59,42 +69,47 @@
 @keyframes pop {
     0% {
         opacity: 0;
-        max-width: 0;
+        max-height: 0;
     }
     90% {
-        opacity: 0.5;
-        max-width: 100%;
-        transform: scale(1.2);
+        opacity: 0.9;
+        max-height: 100%;
+        transform: scale(1.1);
     }
-    100%{
+    100% {
         opacity: 1;
         transform: scale(1);
     }
 }
 
 
-h1{
+h1 {
     font-family: 'Roboto Mono', monospace;
     text-align: center;
     margin: 1.5em 0 0 0;
 }
-.view-source{
+
+.view-source {
     margin-bottom: 1.5em;
     display: grid;
     place-items: center;
 }
-a{
+
+a {
     color: royalblue;
 }
-#connection-status.connected{
+
+#connection-status.connected {
     background-color: dodgerblue;
     color: aliceblue;
 }
-#connection-status.disconnected{
+
+#connection-status.disconnected {
     background-color: tomato;
     color: honeydew;
 }
-#connection-status{
+
+#connection-status {
     border-radius: 0.25em;
     padding: 0.25em;
     margin: 0.25em;
@@ -102,10 +117,12 @@ a{
     border: none;
     font-size: inherit;
 }
-body{
+
+body {
     margin: 0;
 }
-div.bubble{
+
+div.bubble {
     display: inline-block;
     margin: 0.25em;
     padding: 0.25em;
@@ -113,97 +130,49 @@ div.bubble{
     background-color: darksalmon;
     color: #801c00;
     transition: all 0.5s ease-in;
+    white-space: nowrap;
 }
-code{
+
+code {
     font-family: 'Roboto Mono', monospace;
-    background-color: rgba(0,0,0,0.2);
+    background-color: rgba(0, 0, 0, 0.2);
     border-radius: 0.1em;
     padding: 0.1em;
     margin: 0.3em;
 }
-p.new-company{
+
+p.new-company {
     color: green;
     font-weight: 600;
     margin: 0;
 }
-.row h3{
+
+.row h3 {
     margin-bottom: 0;
 }
+
 #clock {
-    transform: scale(2);
-}
-#clock-container:hover #clock {
-    transform: scale(3);
+    transform: scale(1);
 }
 
-#counter-container:hover .bubble{
+#clock-container:hover #clock {
+    transform: scale(1.5);
+}
+
+#counter-container:hover .bubble {
     transform: scale(2) translateX(-25%);
 }
-#clock-container{
+
+#clock-container {
     display: grid;
     place-items: center;
     width: 500px;
 }
-sup.event-timestamp{
+
+sup.event-timestamp {
     align-self: flex-end;
 }
 
-#events>div.heartbeat{
-    background-color: transparent;
-    border: none;
-    width: 150px;
-    height: 150px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.heart1 {
-    width: 50%;
-    height: 50%;
-    border-radius: 50%;
-    position: relative;
-    top: 10%;
-    background: crimson;
-    left: 10%;
-}
-.heart2 {
-    position: relative;
-    top: -40%;
-    left: 40%;
-    background: crimson;
-
-    width: 50%;
-    height: 50%;
-    border-radius: 50%;
-}
-.heart3 {
-    width: 0;
-    height: 0;
-    border-left: 35px solid transparent;
-    border-right: 35px solid transparent;
-    border-top: 40px solid crimson;
-    position: relative;
-    top: -50%;
-    left: 15%;
-    background: transparent;
-}
-
-#events > div.heartbeat > .heart-outer {
-    margin: 0;
-    width: 100px;
-    height: 100px;
-    animation: scale 1s ease-out 1s Infinite alternate;
-    border: none;
-}
-
-@keyframes scale {
-    0% {
-        transform: scale(0.9);
-    }
-    100% {
-        transform: scale(1.1);
-    }
-}
 
 .row {
     display: flex;
