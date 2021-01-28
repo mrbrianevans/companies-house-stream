@@ -28,6 +28,10 @@ server.get('/graphjs', (req: Request, res: Response) => {
     res.sendFile(path.resolve(__dirname, 'client', 'graph.js'))
 })
 
+server.get('/js', (req: Request, res: Response) => {
+    res.sendFile(path.resolve(__dirname, 'client', 'client.js'))
+})
+
 server.get('/graphdata', async (req: Request, res: Response) => {
     await generateGraphData(req, res, pool)
 })

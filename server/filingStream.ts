@@ -193,6 +193,14 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
                                 last60Backlog.unshift(Date.now() - eventToEmit.published.valueOf())
                                 const averageBacklog = last60Backlog.reduce((previousValue, currentValue) => previousValue + currentValue, 0) / last60Backlog.length
                                 // console.log("Average backlog is", Math.round(averageBacklog/1000), 'seconds')
+
+                                // This accesses the event data stored by the droplet which is continually updating the database as events come in. This could be used to reduce processing on the app platform
+                                // const {rows: filingEventFromDb, rowCount: filingEventsFromDb} = await client.query('SELECT * FROM filing_events WHERE id=$1', [jsonObject.resource_id])
+                                // if(filingEventsFromDb)
+                                //     console.log("Found event in DATABASE!!! Wooooo", jsonObject.resource_id, Date.now()-new Date(filingEventFromDb[0]['captured']).valueOf(), 'ms delay')
+                                // else
+                                //     console.log("Did not find event in database :(", jsonObject.resource_id)
+                                //
                                 //work out rolling average of receival time using notifications and processing timing arrays
                                 if (qtyOfNotifications > 5) {
                                     const last60TotalTime = last60NotificationTimes[0] - last60NotificationTimes[last60NotificationTimes.length - 1]
@@ -211,7 +219,6 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
                                     //     console.log('\nPercentage: ', Math.round(recentProcessingTimePerNotification / averageTimePerNewNotification * 100), '% | Backlog:', Math.round(averageBacklog), 'seconds')
 
                                 }
-
                                 io.emit('event', eventToEmit)
                             } else {
                                 if (jsonObject.data.description && jsonObject.data.description !== 'legacy') // some are undefined and legacy
