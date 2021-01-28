@@ -6,17 +6,23 @@ import {FilingEmit} from "../emitTypes";
 
 const faker = require('faker')
 const {promisify} = require('util')
+let mostRecentWaitTime = 0
 const wait = promisify((s, c) => {
-    // console.log("Waiting for", s, "ms on filing")
+    mostRecentWaitTime = s
+    // if(Math.random() > 0.9) // only print out sometimes at random
+    //     console.log("Waiting for", s, "ms on filing")
     if (!isFinite(s)) s = 300
     if (s > 5000) s = 5000
-    setTimeout(() => c(null, 'done waiting'), s / 5) //divide by 5 to stop getting kicked off server
+    setTimeout(() => c(null, 'done waiting'), s) //divide by 5 to stop getting kicked off server
 })
 let qtyOfNotifications = 0
 let averageProcessingTime = 0
 let startTime = Date.now()
 let reportStatsInterval
 let resetStatsInterval
+let last60NotificationTimes = []
+let last60ProcessingTimes = []
+let last60Backlog = []
 export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
     if (mode == "test") {
         // setInterval(()=>io.emit("heartbeat", {}), Math.random()*20000)
@@ -101,12 +107,26 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
                         resetStatsInterval = setInterval(() => {
                             console.timeLog("Listening on filing stream", `Reset filing stats after ${qtyOfNotifications} notifications`)
                             // reset stats every hour
+                            last60NotificationTimes = []
+                            last60ProcessingTimes = []
+                            last60Backlog = []
                             qtyOfNotifications = 0
                             averageProcessingTime = 0
                             startTime = Date.now()
                         }, 2001111)// staggered reseting to prevent them all reseting at the same time for an unfortunate user experience
                         reportStatsInterval = setInterval(() => {
-                            console.log(`Filing - Average processing time: ${Math.round(averageProcessingTime)}ms, new notification every ${Math.round((Date.now() - startTime) / qtyOfNotifications)}ms`)
+                            // console.log(`Filing - Average processing time: ${Math.round(averageProcessingTime)}ms, new notification every ${Math.round((Date.now() - startTime) / qtyOfNotifications)}ms`)
+                            const last60TotalTime = last60NotificationTimes[0] - last60NotificationTimes[last60NotificationTimes.length - 1]
+                            const last60ProcessingTime = last60ProcessingTimes.slice(0, 5).reduce((previousValue, currentValue) => previousValue + currentValue, 0)
+                            const recentProcessingTimePerNotification = last60ProcessingTime / last60ProcessingTimes.slice(0, 5).length
+                            const averageTimePerNewNotification = (last60TotalTime / (last60NotificationTimes.length + 1))
+                            const averageBacklog = last60Backlog.reduce((previousValue, currentValue) => previousValue + currentValue, 0) / last60Backlog.length / 1000
+                            // console.log("Last 60 average proc time", Math.round(last60ProcessingTimes.reduce((previousValue, currentValue) => previousValue+currentValue)/last60ProcessingTimes.length) / 1000, 'seconds')
+                            // console.log("Last 60 average notification time", Math.round(averageTimePerNewNotification) / 1000, 'seconds')
+                            // process.stdout.clearLine(null)
+                            // process.stdout.cursorTo(0)
+                            // process.stdout.write(`Backlog: ${Math.round(averageBacklog)}s | proc/note ${Math.round(recentProcessingTimePerNotification / averageTimePerNewNotification * 100)}% | Processing time: ${Math.round(recentProcessingTimePerNotification)}ms | Notification freq: ${Math.round(averageTimePerNewNotification)}ms/new notif. Array sizes: ${last60ProcessingTimes.length}, ${last60NotificationTimes.length}, ${last60Backlog.length} | most recent wait time: ${Math.round(mostRecentWaitTime)}ms`)
+                            console.log("Average backlog on filing: ", Math.round(averageBacklog), 'seconds')
                         }, 1000000)
                         console.log("Listening to updates on filing stream")
                         break;
@@ -130,6 +150,9 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
                     dataBuffer = dataBuffer.replace('}}{', '}}\n{')
                     while (dataBuffer.includes('\n')) {
                         let singleStartTime = Date.now()
+                        last60NotificationTimes.unshift(Date.now())
+                        if (qtyOfNotifications > 100)
+                            last60NotificationTimes.pop()
                         // console.time('Process filing history')
                         let newLinePosition = dataBuffer.search('\n')
                         let jsonText = dataBuffer.slice(0, newLinePosition)
@@ -146,15 +169,6 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
                                 rowCount: companysFound
                             } = await client.query("SELECT * FROM companies WHERE number=$1 LIMIT 1", [companyNumber])
 
-                            // fetch from API to slow down a bit
-                            // const apiProfile = await requestPromise.get('https://companies-house-frontend-api-rmfuc.ondigitalocean.app/api/company/' + companyNumber)
-                            //     .catch(e=>console.log('e'))
-                            // This stops the wait from limiting the rate of receival too much
-                            // console.log("Processing time as a % of time per new notification: ", Math.round(averageProcessingTime/((Date.now() - startTime) / qtyOfNotifications)*100))
-                            if (qtyOfNotifications > 50 && averageProcessingTime / ((Date.now() - startTime) / qtyOfNotifications) * 100 < 70)
-                                await wait(((Date.now() - startTime) / qtyOfNotifications) - (Date.now() - singleStartTime) - 100)
-                            else if (qtyOfNotifications > 50 && averageProcessingTime / ((Date.now() - startTime) / qtyOfNotifications) * 100 < 100) // kill switch to never exceed 100%
-                                await wait((((Date.now() - startTime) / qtyOfNotifications) - (Date.now() - singleStartTime)) * 0.5 - 100)
                             const {
                                 rows: descriptions,
                                 rowCount
@@ -176,6 +190,28 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
                                     resource_kind: 'filing-history',
                                     companyProfile: companysFound === 1 ? companyProfile[0] : undefined
                                 }
+                                last60Backlog.unshift(Date.now() - eventToEmit.published.valueOf())
+                                const averageBacklog = last60Backlog.reduce((previousValue, currentValue) => previousValue + currentValue, 0) / last60Backlog.length
+                                // console.log("Average backlog is", Math.round(averageBacklog/1000), 'seconds')
+                                //work out rolling average of receival time using notifications and processing timing arrays
+                                if (qtyOfNotifications > 5) {
+                                    const last60TotalTime = last60NotificationTimes[0] - last60NotificationTimes[last60NotificationTimes.length - 1]
+                                    const last60ProcessingTime = last60ProcessingTimes.slice(0, 5).reduce((previousValue, currentValue) => previousValue + currentValue, 0)
+                                    const recentProcessingTimePerNotification = last60ProcessingTime / last60ProcessingTimes.slice(0, 5).length
+                                    const averageTimePerNewNotification = (last60TotalTime / (last60NotificationTimes.length + 1))
+                                    const averageBacklog = last60Backlog.reduce((previousValue, currentValue) => previousValue + currentValue, 0) / last60Backlog.length / 1000
+                                    // console.log(last60TotalTime,last60ProcessingTime,recentProcessingTimePerNotification,averageTimePerNewNotification,averageBacklog)
+                                    last60Backlog.pop()
+                                    // if average processing time is less than 70% of the frequency of new notifications
+                                    if ((recentProcessingTimePerNotification / averageTimePerNewNotification * 100) < 70 && averageBacklog < 60 * 10)
+                                        await wait(averageTimePerNewNotification - (Date.now() - singleStartTime))
+                                    else if ((recentProcessingTimePerNotification / averageTimePerNewNotification * 100) < 100 && averageBacklog < 60 * 10) // kill switch to never exceed 100%
+                                        await wait((averageTimePerNewNotification - (Date.now() - singleStartTime)) * 0.5)
+                                    else
+                                        console.log('\nPercentage: ', Math.round(recentProcessingTimePerNotification / averageTimePerNewNotification * 100), '% | Backlog:', Math.round(averageBacklog), 'seconds')
+
+                                }
+
                                 io.emit('event', eventToEmit)
                             } else {
                                 if (jsonObject.data.description && jsonObject.data.description !== 'legacy') // some are undefined and legacy
@@ -195,7 +231,9 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
 
                         let totalTimeSoFar = qtyOfNotifications++ * averageProcessingTime + (Date.now() - singleStartTime)
                         averageProcessingTime = totalTimeSoFar / qtyOfNotifications
-
+                        last60ProcessingTimes.unshift(Date.now() - singleStartTime)
+                        if (qtyOfNotifications > 50)
+                            last60ProcessingTimes.pop()
                     }
                     reqStream.resume()
                 } else {

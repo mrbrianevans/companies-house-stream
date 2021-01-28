@@ -15,7 +15,7 @@ const wait = promisify((s, c) => {
     // console.log("Waiting for", s, "ms on company")
     if (!isFinite(s)) s = 300
     if (s > 5000) s = 5000
-    setTimeout(() => c(null, 'done waiting'), s / 10) // divide by 10 to stop getting kicked off companies house server
+    setTimeout(() => c(null, 'done waiting'), s / 3) // divide by 3 to stop getting kicked off companies house server
 })
 let qtyOfNotifications = 0
 let averageProcessingTime = 0
