@@ -207,8 +207,8 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
                                         await wait(averageTimePerNewNotification - (Date.now() - singleStartTime))
                                     else if ((recentProcessingTimePerNotification / averageTimePerNewNotification * 100) < 100 && averageBacklog < 60 * 10) // kill switch to never exceed 100%
                                         await wait((averageTimePerNewNotification - (Date.now() - singleStartTime)) * 0.5)
-                                    else
-                                        console.log('\nPercentage: ', Math.round(recentProcessingTimePerNotification / averageTimePerNewNotification * 100), '% | Backlog:', Math.round(averageBacklog), 'seconds')
+                                    // else
+                                    //     console.log('\nPercentage: ', Math.round(recentProcessingTimePerNotification / averageTimePerNewNotification * 100), '% | Backlog:', Math.round(averageBacklog), 'seconds')
 
                                 }
 
