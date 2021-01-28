@@ -15,7 +15,7 @@ const wait = promisify((s, c) => {
     // console.log("Waiting for", s, "ms on company")
     if (!isFinite(s)) s = 300
     if (s > 5000) s = 5000
-    setTimeout(() => c(null, 'done waiting'), s)
+    setTimeout(() => c(null, 'done waiting'), s / 10) // divide by 10 to stop getting kicked off companies house server
 })
 let qtyOfNotifications = 0
 let averageProcessingTime = 0
@@ -200,9 +200,9 @@ export const StreamCompanies = (io, mode: 'test' | 'live', dbPool: Pool) => {
                             // This stops the wait from limiting the rate of receival too much
                             // console.log("Processing time as a % of time per new notification: ", Math.round(averageProcessingTime/((Date.now() - startTime) / qtyOfNotifications)*100))
                             if (qtyOfNotifications > 75 && averageProcessingTime / ((Date.now() - startTime) / qtyOfNotifications) * 100 < 60)
-                                await wait(((Date.now() - startTime) / qtyOfNotifications) - (Date.now() - singleStartTime))
+                                await wait(((Date.now() - startTime) / qtyOfNotifications) - (Date.now() - singleStartTime) - 100) // always minus 100 milliseconds
                             else if (qtyOfNotifications > 70 && averageProcessingTime / ((Date.now() - startTime) / qtyOfNotifications) * 100 < 100) // kill switch to never exceed 100%
-                                await wait((((Date.now() - startTime) / qtyOfNotifications) - (Date.now() - singleStartTime)) * 0.5)
+                                await wait((((Date.now() - startTime) / qtyOfNotifications) - (Date.now() - singleStartTime)) * 0.5 - 100)
 
                             io.emit('event', jsonObject)
                         } catch (e) {

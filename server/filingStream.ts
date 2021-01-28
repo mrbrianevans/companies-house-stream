@@ -10,7 +10,7 @@ const wait = promisify((s, c) => {
     // console.log("Waiting for", s, "ms on filing")
     if (!isFinite(s)) s = 300
     if (s > 5000) s = 5000
-    setTimeout(() => c(null, 'done waiting'), s)
+    setTimeout(() => c(null, 'done waiting'), s / 5) //divide by 5 to stop getting kicked off server
 })
 let qtyOfNotifications = 0
 let averageProcessingTime = 0
@@ -152,9 +152,9 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
                             // This stops the wait from limiting the rate of receival too much
                             // console.log("Processing time as a % of time per new notification: ", Math.round(averageProcessingTime/((Date.now() - startTime) / qtyOfNotifications)*100))
                             if (qtyOfNotifications > 50 && averageProcessingTime / ((Date.now() - startTime) / qtyOfNotifications) * 100 < 70)
-                                await wait(((Date.now() - startTime) / qtyOfNotifications) - (Date.now() - singleStartTime))
+                                await wait(((Date.now() - startTime) / qtyOfNotifications) - (Date.now() - singleStartTime) - 100)
                             else if (qtyOfNotifications > 50 && averageProcessingTime / ((Date.now() - startTime) / qtyOfNotifications) * 100 < 100) // kill switch to never exceed 100%
-                                await wait((((Date.now() - startTime) / qtyOfNotifications) - (Date.now() - singleStartTime)) * 0.5)
+                                await wait((((Date.now() - startTime) / qtyOfNotifications) - (Date.now() - singleStartTime)) * 0.5 - 100)
                             const {
                                 rows: descriptions,
                                 rowCount
