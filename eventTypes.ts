@@ -32,9 +32,9 @@ export declare module CompanyProfileEvent {
     }
 
     export interface Accounts {
-        accounting_reference_date: AccountingReferenceDate;
-        last_accounts: LastAccounts;
-        "next_accounts": NextAccounts;
+        accounting_reference_date: AccountingReferenceDate | {}; // the |{}|{} is to satisfy samples, but should be removed in production
+        last_accounts: LastAccounts | {};
+        "next_accounts": NextAccounts | {};
         next_due: string;
         next_made_up_to: string;
         overdue?: boolean;
@@ -102,11 +102,11 @@ export declare module CompanyProfileEvent {
     }
 
     export interface Links {
-        persons_with_significant_control: string;
+        persons_with_significant_control?: string;
         persons_with_significant_control_statements?: string;
         registers?: string;
         self: string;
-        charges: string;
+        charges?: string;
         filing_history: string;
         officers: string;
     }
@@ -119,14 +119,14 @@ export declare module CompanyProfileEvent {
 
     export interface RegisteredOfficeAddress {
         address_line_1: string;
-        address_line_2: string;
+        address_line_2?: string;
         care_of?: string;
-        country: string;
+        country?: string;
         locality: string;
         po_box?: string;
         postal_code: string;
         premises?: string;
-        region: string;
+        region?: string;
     }
 
     export interface Data {
@@ -144,13 +144,13 @@ export declare module CompanyProfileEvent {
         etag: string;
         foreign_company_details?: ForeignCompanyDetails;
         has_been_liquidated?: boolean;
-        has_charges: boolean;
+        has_charges?: boolean;
         has_insolvency_history?: boolean;
         is_community_interest_company?: boolean;
         jurisdiction: string;
         last_full_members_list_date?: string;
         links: Links;
-        previous_company_names?: PreviousCompanyName[];
+        previous_company_names?: PreviousCompanyName[] | [[Object]];
         registered_office_address: RegisteredOfficeAddress;
         registered_office_is_in_dispute?: boolean;
         sic_codes: string[];
