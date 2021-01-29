@@ -6,7 +6,7 @@ const main = () => {
   google.charts.load('current', {'packages': ['corechart']});
   
   
-  const drawGraph = (timeInterval = 'minute') => {
+  const drawGraph = (timeInterval = 'hour') => {
     const options = {
       height: document.getElementById('graph').clientHeight * 0.98,
       legend: {position: 'top'},
@@ -25,6 +25,7 @@ const main = () => {
         easing: 'in-out'
       },
       crosshair: {trigger: "both", orientation: "both"},
+      // curveType: 'function',
       // trendlines:{
       //   0:{
       //     type: "polynomial",
@@ -39,7 +40,7 @@ const main = () => {
     datatable.addColumn('number', 'Filing events')
     datatable.addColumn('number', 'Company events')
     const chartWrapper = new google.visualization.ChartWrapper({
-      chartType: 'ScatterChart',
+      chartType: timeInterval === 'minute' ? 'ScatterChart' : 'ColumnChart',
       dataTable: datatable,
       options: options,
       containerId: 'graph'
