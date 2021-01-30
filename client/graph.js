@@ -7,6 +7,7 @@ const main = () => {
   
   
   const drawGraph = (timeInterval = 'hour') => {
+    const animationLength = 6000
     const options = {
       height: document.getElementById('graph').clientHeight * 0.98,
       legend: {position: 'top'},
@@ -21,18 +22,10 @@ const main = () => {
         trigger: 'none'
       },
       animation: {
-        duration: 900,
-        easing: 'in-out'
+        duration: 0.1 * animationLength - 80,
+        easing: 'linear'
       },
-      crosshair: {trigger: "both", orientation: "both"},
-      // curveType: 'function',
-      // trendlines:{
-      //   0:{
-      //     type: "polynomial",
-      //     degree: 3,
-      //     color: "darkslategrey"
-      //   }
-      // }
+      crosshair: {trigger: "both", orientation: "both"}
     }
     
     const datatable = new google.visualization.DataTable()
@@ -45,19 +38,18 @@ const main = () => {
       options: options,
       containerId: 'graph'
     })
-    
     fetch('/graphdata?interval=' + timeInterval)
       .then(r => r.json())
       .then(j => {
         const drawInterval = setInterval(() => {
           chartWrapper.draw()
-        }, 1000)
+        }, animationLength / 10)
         setTimeout(() => {
           clearInterval(drawInterval)
           chartWrapper.draw()
-        }, 10000)
+        }, animationLength)
         j.forEach((row, index) => {
-          const timeout = index / j.length * 10000
+          const timeout = index / j.length * animationLength
           setTimeout(() => {
             datatable.addRow([new Date(row[timeInterval]), Number(row.filing), Number(row.company)])
           }, timeout)
@@ -65,10 +57,18 @@ const main = () => {
       })
       .then(() => chartWrapper.draw())
       .catch(e => console.log(e))
-    
+  
   }
   
   google.charts.setOnLoadCallback(drawGraph);
+  google.charts.setOnLoadCallback(() => {
+    let button = document.createElement('button')
+    button.onclick = () => {
+      drawGraph('day')
+    }
+    button.innerText = 'By Day'
+    document.querySelector('body').insertAdjacentElement('afterbegin', button)
+  });
   google.charts.setOnLoadCallback(() => {
     let button = document.createElement('button')
     button.onclick = () => {

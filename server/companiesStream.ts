@@ -247,7 +247,8 @@ export const StreamCompanies = (io, mode: 'test' | 'live', dbPool: Pool) => {
                                 }
                                 if (differences.length > 0) {
                                     if (differences.findIndex(difference => difference.label === 'streetaddress') > -1 &&
-                                        differences.findIndex(difference => difference.label === 'postcode') > -1) console.log("Address changed from ", companyFromDatabase[0].streetaddress, 'to', companyFromStream.streetaddress)
+                                        differences.findIndex(difference => difference.label === 'postcode') > -1)
+                                        jsonObject.event.fields_changed = [["Address changed from ", companyFromDatabase[0].streetaddress, 'to', companyFromStream.streetaddress].join(' ')]
                                     // else console.log("Differences found in company", companyFromStream.number, differences)
                                 }
                                 // else console.log("No differences found between stream and database for company", companyFromStream.number)

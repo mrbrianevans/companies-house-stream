@@ -25,7 +25,7 @@ const pushEvent = (e) => {
       <h3>${e.data.company_name}</h3>
       <sub><code><a href="https://companies-house-frontend-api-rmfuc.ondigitalocean.app/company/${e.data.company_number}" target="_blank">${e.data.company_number}</a></code></sub>
     </div>
-    <p class="new-company">${newCompany ? 'New company' : ''}</p>
+    <p class="new-company">${newCompany ? 'New company' : ''} ${e.event.fields_changed ? e.event.fields_changed.join(', ') : ''}</p>
     <p>${e.event.type} ${e.resource_kind} at ${new Date(e.event.published_at).toLocaleTimeString()}</p>
     </div>`
         break;
