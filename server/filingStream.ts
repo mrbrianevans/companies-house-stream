@@ -100,6 +100,9 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
             .auth(process.env.APIUSER, '')
             .on('response', (r: any) => {
                 startTime = Date.now()
+                setTimeout(() => {
+                    reqStream.end()
+                }, 1000 * 60 * 60 * 24) // end after 24 hours
                 console.log("filing Headers received, status", r.statusCode)
                 switch (r.statusCode) {
                     case 200:
