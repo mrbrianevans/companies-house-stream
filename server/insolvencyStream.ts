@@ -40,16 +40,20 @@ export const StreamInsolvencies = (io, mode: 'test' | 'live', dbPool: Pool) => {
     const reqStream = request.get('https://stream.companieshouse.gov.uk/insolvency-cases')
         .auth(process.env.APIUSER, '')
         .on('response', (r: any) => {
-          console.log("insolvency Headers received, status", r.statusCode)
-          switch (r.statusCode) {
-            case 200:
-              console.log("Listening to updates on insolvency stream")
-              break;
-            case 416:
-              console.log("Timepoint out of date")
-              break;
-            case 429:
-              console.log("RATE LIMITED, exiting now")
+            setTimeout(() => {
+                console.log("Killing the filing stream after 24 hours")
+                reqStream.end()
+            }, 1000 * 60 * 60 * 24) // end after 24 hours
+            console.log("insolvency Headers received, status", r.statusCode)
+            switch (r.statusCode) {
+                case 200:
+                    console.log("Listening to updates on insolvency stream")
+                    break;
+                case 416:
+                    console.log("Timepoint out of date")
+                    break;
+                case 429:
+                    console.log("RATE LIMITED, exiting now")
               process.exit()
               break;
             default:

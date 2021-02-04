@@ -154,6 +154,10 @@ export const StreamCompanies = (io, mode: 'test' | 'live', dbPool: Pool) => {
             .auth(process.env.APIUSER, '')
             .on('response', (r: any) => {
                 console.log("company Headers received, status", r.statusCode)
+                setTimeout(() => {
+                    console.log("Killing the company stream after 24 hours")
+                    reqStream.end()
+                }, 1000 * 60 * 60 * 24) // end after 24 hours
                 switch (r.statusCode) {
                     case 200:
                         console.time("Listening on company stream")

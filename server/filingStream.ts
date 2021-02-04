@@ -101,6 +101,7 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
             .on('response', (r: any) => {
                 startTime = Date.now()
                 setTimeout(() => {
+                    console.log("Killing the filing stream after 24 hours")
                     reqStream.end()
                 }, 1000 * 60 * 60 * 24) // end after 24 hours
                 console.log("filing Headers received, status", r.statusCode)

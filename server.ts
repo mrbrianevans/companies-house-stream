@@ -50,8 +50,15 @@ httpServer.listen(3000, () => console.log(`\x1b[32mListening on http://localhost
 
 StreamCompanies(io, 'live', pool)
 StreamCharges(io, 'live', pool)
-setInterval(() => {
-    StreamFilings(io, 'live', pool) // reset the stream every 24 hours
-}, 1000 * 60 * 60 * 24)
-
+StreamFilings(io, 'live', pool)
 StreamInsolvencies(io, 'live', pool)
+
+setInterval(() => {
+    console.log("Starting all streams (24th hour interval)")
+    StreamCompanies(io, 'live', pool)
+    StreamCharges(io, 'live', pool)
+    StreamFilings(io, 'live', pool)
+    StreamInsolvencies(io, 'live', pool)
+    // reset the stream every 24 hours 150 milliseconds
+}, 1000 * 60 * 60 * 24 + 150)
+

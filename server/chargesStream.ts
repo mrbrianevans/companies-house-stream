@@ -79,6 +79,10 @@ export const StreamCharges = (io, mode: 'test' | 'live', dbPool: Pool) => {
             .auth(process.env.APIUSER, '')
             .on('response', (r: any) => {
                 console.log("charges Headers received, status", r.statusCode)
+                setTimeout(() => {
+                    console.log("Killing the filing stream after 24 hours")
+                    reqStream.end()
+                }, 1000 * 60 * 60 * 24) // end after 24 hours
                 switch (r.statusCode) {
                     case 200:
                         console.log("Listening to updates on charges stream")
