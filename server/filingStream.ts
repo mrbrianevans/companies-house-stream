@@ -260,7 +260,6 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
                 }
 
                 console.timeEnd("Listening on filing stream")
-                await dbPool.end()
                 console.error("Filing stream ended")
             })
     }
