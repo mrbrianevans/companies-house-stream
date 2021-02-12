@@ -32,9 +32,9 @@
 .heart3 {
     width: 0;
     height: 0;
-    border-left: 35px solid transparent;
-    border-right: 35px solid transparent;
-    border-top: 40px solid crimson;
+    border-left: 1.75em solid transparent;
+    border-right: 1.75em solid transparent;
+    border-top: 2em solid crimson;
     position: relative;
     top: -50%;
     left: 15%;
@@ -47,6 +47,7 @@
     height: 100px;
     animation: scale 1s ease-out 1s Infinite alternate;
     border: none;
+    padding: 0;
 }
 
 @keyframes scale {
