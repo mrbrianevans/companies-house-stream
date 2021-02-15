@@ -52,8 +52,10 @@ const pushEvent = (e) => {
       break;
     case 'company-insolvency':
       eventCard.innerHTML = `
-        <div class="alert"><h3>INSOLVENCY CASE!</h3>
-        <p>${e.resource_kind}</p></div>
+        <div class="alert"><h3>INSOLVENCY</h3>
+        <sub><code><a href="https://companies-house-frontend-api-rmfuc.ondigitalocean.app/company/${e.resource_id}" target="_blank">${e.resource_id}</a></code></sub>
+        <p>${e.data.cases[0].type}</p>
+        </div>
         `
       break;
     default:

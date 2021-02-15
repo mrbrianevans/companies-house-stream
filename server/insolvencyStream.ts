@@ -1,49 +1,45 @@
 import * as request from "request";
 import {InsolvencyEvent} from "../eventTypes";
-import * as faker from 'faker'
 import {Pool} from "pg";
 
+const {promisify} = require('util')
+let mostRecentWaitTime = 0
+const wait = promisify((s, c) => {
+    mostRecentWaitTime = s
+    // if(Math.random() > 0.9) // only print out sometimes at random
+    //     console.log("Waiting for", s, "ms on filing")
+    if (!isFinite(s)) s = 300
+    if (s > 5000) s = 5000
+    setTimeout(() => c(null, 'done waiting'), s) //divide by 5 to stop getting kicked off server
+})
+let qtyOfNotifications = 0
+let averageProcessingTime = 0
+let startTime = Date.now()
+let reportStatsInterval
+let resetStatsInterval
+let last60NotificationTimes = []
+let last60ProcessingTimes = []
+let last60Backlog = []
 export const StreamInsolvencies = (io, mode: 'test' | 'live', dbPool: Pool) => {
     if (mode == "test") {
-        // setInterval(()=>io.emit("heartbeat", {}), Math.random()*20000)
-        // setInterval(()=>console.log("insolvency heartbeat"), Math.random()*20000)
-        //faker:
         setTimeout(() => {
-            io.emit('event', {
-                "resource_kind": "company-insolvency",
-                "resource_uri": "/company/10676322/filing-history/MzI4OTQzODc5MGFkaXF6a2N4",
-                "resource_id": "MzI4OTQzODc5MGFkaXF6a2N4",
-                "data": {
-                    "barcode": "X9WQX0NE",
-                    "category": "accounts",
-                    "date": "2021-01-22",
-                    "description": "accounts-with-accounts-type-micro-entity",
-                    "description_values": {
-                        "made_up_date": "2020-03-31"
-                    },
-          "links": {
-            "self": "/company/10676322/filing-history/MzI4OTQzODc5MGFkaXF6a2N4"
-          },
-                    "transaction_id": "MzI4OTQzODc5MGFkaXF6a2N4",
-                    "type": "AA"
-                },
-                "event": {
-                    "timepoint": 48990574,
-                    "published_at": "2021-01-22T18:28:02",
-                    "type": faker.random.arrayElement(['changed', 'deleted'])
-                }
-            })
+            io.emit('event', sampleInsolvencyEvents[Math.floor(Math.random() * sampleInsolvencyEvents.length)])
             StreamInsolvencies(io, 'test', dbPool)
-    }, Math.random() * 30000)
-  } else {
-    let dataBuffer = ''
-    const reqStream = request.get('https://stream.companieshouse.gov.uk/insolvency-cases')
-        .auth(process.env.APIUSER, '')
+        }, Math.random() * 30000)
+    } else {
+        let dataBuffer = ''
+        const reqStream = request.get('https://stream.companieshouse.gov.uk/insolvency-cases')
+            .auth(process.env.APIUSER, '')
         .on('response', (r: any) => {
+            startTime = Date.now()
             setTimeout(() => {
-                console.log("Killing the filing stream after 24 hours")
+                console.log("Killing the insolvency stream after 24 hours")
                 reqStream.end()
             }, 1000 * 60 * 60 * 24) // end after 24 hours
+            reportStatsInterval = setInterval(() => {
+                const averageBacklog = last60Backlog.reduce((previousValue, currentValue) => previousValue + currentValue, 0) / last60Backlog.length / 1000
+                console.log("Average backlog on insolvencies: ", Math.round(averageBacklog), 'seconds')
+            }, 1001000)
             console.log("insolvency Headers received, status", r.statusCode)
             switch (r.statusCode) {
                 case 200:
@@ -68,25 +64,51 @@ export const StreamInsolvencies = (io, mode: 'test' | 'live', dbPool: Pool) => {
               dataBuffer += d.toString('utf8')
               dataBuffer = dataBuffer.replace('}}{', '}}\n{')
             while (dataBuffer.includes('\n')) {
-              let newLinePosition = dataBuffer.search('\n')
-              let jsonText = dataBuffer.slice(0, newLinePosition)
-              dataBuffer = dataBuffer.slice(newLinePosition + 1)
+                let singleStartTime = Date.now()
+                last60NotificationTimes.unshift(Date.now())
+                if (qtyOfNotifications > 100)
+                    last60NotificationTimes.pop()
+                let newLinePosition = dataBuffer.search('\n')
+                let jsonText = dataBuffer.slice(0, newLinePosition)
+                dataBuffer = dataBuffer.slice(newLinePosition + 1)
                 if (jsonText.length === 0) continue;
-              try {
-                  let jsonObject: InsolvencyEvent.InsolvencyEvent = JSON.parse(jsonText)
-                  io.emit('event', jsonObject)
-                  // console.log("INSOLVENCY EVENT!!")
-                  // console.log(JSON.stringify(jsonObject))
-              } catch (e) {
-                console.error(`\x1b[31mCOULD NOT PARSE insolvency: \x1b[0m*${jsonText}*`)
-              }
+                try {
+                    let jsonObject: InsolvencyEvent.InsolvencyEvent = JSON.parse(jsonText)
+                    last60Backlog.unshift(Date.now() - new Date(jsonObject.event.published_at).valueOf())
+                    //work out rolling average of receival time using notifications and processing timing arrays
+                    if (qtyOfNotifications > 5) {
+                        const last60TotalTime = last60NotificationTimes[0] - last60NotificationTimes[last60NotificationTimes.length - 1]
+                        const last60ProcessingTime = last60ProcessingTimes.slice(0, 5).reduce((previousValue, currentValue) => previousValue + currentValue, 0)
+                        const recentProcessingTimePerNotification = last60ProcessingTime / last60ProcessingTimes.slice(0, 5).length
+                        const averageTimePerNewNotification = (last60TotalTime / (last60NotificationTimes.length + 1))
+                        const averageBacklog = last60Backlog.reduce((previousValue, currentValue) => previousValue + currentValue, 0) / last60Backlog.length / 1000
+                        last60Backlog.pop()
+                        // if average processing time is less than 70% of the frequency of new notifications
+                        if ((recentProcessingTimePerNotification / averageTimePerNewNotification * 100) < 70 && averageBacklog < 60 * 10)
+                            await wait(averageTimePerNewNotification - (Date.now() - singleStartTime))
+                        else if ((recentProcessingTimePerNotification / averageTimePerNewNotification * 100) < 100 && averageBacklog < 60 * 10) // kill switch to never exceed 100%
+                            await wait((averageTimePerNewNotification - (Date.now() - singleStartTime)) * 0.5)
+                    }
+                    io.emit('event', jsonObject)
+                } catch (e) {
+                    console.error(`\x1b[31mCOULD NOT PARSE insolvency: \x1b[0m*${jsonText}*`)
+                }
+
+                let totalTimeSoFar = qtyOfNotifications++ * averageProcessingTime + (Date.now() - singleStartTime)
+                averageProcessingTime = totalTimeSoFar / qtyOfNotifications
+                last60ProcessingTimes.unshift(Date.now() - singleStartTime)
+                if (qtyOfNotifications > 50)
+                    last60ProcessingTimes.pop()
             }
               reqStream.resume()
           } else {
               io.emit('heartbeat', {})
           }
         })
-        .on('end', () => console.error("Insolvency stream ended"))
+            .on('end', () => {
+                clearInterval(reportStatsInterval)
+                console.error("Insolvency stream ended")
+            })
     }
 }
 

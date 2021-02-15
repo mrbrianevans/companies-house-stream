@@ -3,17 +3,13 @@ import {FilingEvent} from '../eventTypes'
 import {Pool} from "pg";
 import {FilingEmit} from "../emitTypes";
 
-
-const faker = require('faker')
 const {promisify} = require('util')
 let mostRecentWaitTime = 0
 const wait = promisify((s, c) => {
     mostRecentWaitTime = s
-    // if(Math.random() > 0.9) // only print out sometimes at random
-    //     console.log("Waiting for", s, "ms on filing")
     if (!isFinite(s)) s = 300
     if (s > 5000) s = 5000
-    setTimeout(() => c(null, 'done waiting'), s) //divide by 5 to stop getting kicked off server
+    setTimeout(() => c(null, 'done waiting'), s)
 })
 let qtyOfNotifications = 0
 let averageProcessingTime = 0
@@ -25,14 +21,7 @@ let last60ProcessingTimes = []
 let last60Backlog = []
 export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
     if (mode == "test") {
-        // setInterval(()=>io.emit("heartbeat", {}), Math.random()*20000)
-        // setInterval(()=>console.log("Filing heartbeat"), Math.random()*20000)
-        //faker:
         setTimeout(async () => {
-            const companyNumber = faker.random.number({
-                min: 999999,
-                max: 13999999
-            }).toString().padStart(8, '0')
             const client = await dbPool.connect()
             // test the database connection
             const {
@@ -42,56 +31,7 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
             if (rowCount === 1)
                 console.log("Database test: ", dbtest[0]['value'])
             await client.release()
-            io.emit('event', {
-                "resource_kind": "filing-history",
-                "resource_uri": `/company/${companyNumber}/filing-history/${faker.random.uuid()}`,
-                "resource_id": faker.random.uuid(),
-                "data": {
-                    "barcode": "X9WQX0NE",
-                    "category": faker.random.arrayElement([
-                        'accounts',
-                        'address',
-                        'annual-return',
-                        'capital',
-                        'change-of-name',
-                        'incorporation',
-                        'liquidation',
-                        'miscellaneous',
-                        'mortgage',
-                        'officers',
-                        'resolution'
-                    ]),
-                    "date": faker.date.recent(),
-                    "description": faker.random.arrayElement([
-                        'full',
-                        'small',
-                        'medium',
-                        'group',
-                        'dormant',
-                        'interim',
-                        'initial',
-                        'total-exemption-full',
-                        'total-exemption-small',
-                        'partial-exemption',
-                        'audit-exemption-subsidiary',
-                        'filing-exemption-subsidiary',
-                        'micro-entity', 'null'
-                    ]),
-                    "description_values": {
-                        "made_up_date": faker.date.past()
-                    },
-                    "links": {
-                        "self": `/company/${companyNumber}/filing-history/${faker.random.uuid()}`
-                    },
-                    "transaction_id": faker.vehicle.vin(),
-                    "type": "AA"
-                },
-                "event": {
-                    "timepoint": faker.random.number(),
-                    "published_at": faker.date.recent(),
-                    "type": "changed"
-                }
-            })
+            io.emit('event', sampleFilingEvents[Math.floor(Math.random() * sampleFilingEvents.length)])
             StreamFilings(io, 'test', dbPool)
         }, Math.random() * 2000)
     } else {
@@ -108,16 +48,17 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
                 switch (r.statusCode) {
                     case 200:
                         console.time("Listening on filing stream")
-                        resetStatsInterval = setInterval(() => {
-                            console.timeLog("Listening on filing stream", `Reset filing stats after ${qtyOfNotifications} notifications`)
-                            // reset stats every hour
-                            last60NotificationTimes = []
-                            last60ProcessingTimes = []
-                            last60Backlog = []
-                            qtyOfNotifications = 0
-                            averageProcessingTime = 0
-                            startTime = Date.now()
-                        }, 2001111)// staggered reseting to prevent them all reseting at the same time for an unfortunate user experience
+                        //TRYING TO NOT RESET STATS ANYMORE
+                        // resetStatsInterval = setInterval(() => {
+                        //     console.timeLog("Listening on filing stream", `Reset filing stats after ${qtyOfNotifications} notifications`)
+                        //     // reset stats every hour
+                        //     last60NotificationTimes = []
+                        //     last60ProcessingTimes = []
+                        //     last60Backlog = []
+                        //     qtyOfNotifications = 0
+                        //     averageProcessingTime = 0
+                        //     startTime = Date.now()
+                        // }, 2001111)// staggered reseting to prevent them all reseting at the same time for an unfortunate user experience
                         reportStatsInterval = setInterval(() => {
                             // console.log(`Filing - Average processing time: ${Math.round(averageProcessingTime)}ms, new notification every ${Math.round((Date.now() - startTime) / qtyOfNotifications)}ms`)
                             const last60TotalTime = last60NotificationTimes[0] - last60NotificationTimes[last60NotificationTimes.length - 1]
@@ -195,16 +136,7 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
                                     companyProfile: companysFound === 1 ? companyProfile[0] : undefined
                                 }
                                 last60Backlog.unshift(Date.now() - eventToEmit.published.valueOf())
-                                const averageBacklog = last60Backlog.reduce((previousValue, currentValue) => previousValue + currentValue, 0) / last60Backlog.length
-                                // console.log("Average backlog is", Math.round(averageBacklog/1000), 'seconds')
 
-                                // This accesses the event data stored by the droplet which is continually updating the database as events come in. This could be used to reduce processing on the app platform
-                                // const {rows: filingEventFromDb, rowCount: filingEventsFromDb} = await client.query('SELECT * FROM filing_events WHERE id=$1', [jsonObject.resource_id])
-                                // if(filingEventsFromDb)
-                                //     console.log("Found event in DATABASE!!! Wooooo", jsonObject.resource_id, Date.now()-new Date(filingEventFromDb[0]['captured']).valueOf(), 'ms delay')
-                                // else
-                                //     console.log("Did not find event in database :(", jsonObject.resource_id)
-                                //
                                 //work out rolling average of receival time using notifications and processing timing arrays
                                 if (qtyOfNotifications > 5) {
                                     const last60TotalTime = last60NotificationTimes[0] - last60NotificationTimes[last60NotificationTimes.length - 1]
@@ -266,17 +198,18 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
 }
 
 //test types with a real record:
-const e: FilingEvent.FilingEvent[] = [{
-    "resource_kind": "filing-history",
-    "resource_uri": "/company/10676322/filing-history/MzI4OTQzODc5MGFkaXF6a2N4",
-    "resource_id": "MzI4OTQzODc5MGFkaXF6a2N4",
-    "data": {
-        "barcode": "X9WQX0NE",
-        "category": "accounts",
-        "date": "2021-01-22",
-        "description": "accounts-with-accounts-type-micro-entity",
-        "description_values": {
-            "made_up_date": "2020-03-31"
+const sampleFilingEvents: FilingEvent.FilingEvent[] = [
+    {
+        "resource_kind": "filing-history",
+        "resource_uri": "/company/10676322/filing-history/MzI4OTQzODc5MGFkaXF6a2N4",
+        "resource_id": "MzI4OTQzODc5MGFkaXF6a2N4",
+        "data": {
+            "barcode": "X9WQX0NE",
+            "category": "accounts",
+            "date": "2021-01-22",
+            "description": "accounts-with-accounts-type-micro-entity",
+            "description_values": {
+                "made_up_date": "2020-03-31"
         },
         "links": {
             "self": "/company/10676322/filing-history/MzI4OTQzODc5MGFkaXF6a2N4"
