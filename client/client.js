@@ -59,6 +59,7 @@ const pushEvent = (e) => {
         <div class="alert"><h3>INSOLVENCY
         <sub><code><a href="https://companies-house-frontend-api-rmfuc.ondigitalocean.app/company/${e.resource_id}" target="_blank">${e.resource_id}</a></code></sub>
         </h3><p>${e.data.cases[0].type}</p>
+        <p>Published at ${new Date(e.event.published_at).toLocaleTimeString()}</p>
         </div>
         `
       break;
