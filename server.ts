@@ -12,11 +12,7 @@ const httpServer = require('http').Server(server)
 const io = require('socket.io')(httpServer)
 const path = require('path')
 const fs = require('fs')
-const pool = new Pool({
-    ssl: {
-        rejectUnauthorized: false
-    }
-});
+const pool = new Pool();
 server.get('/', (req: Request, res: Response) => {
     res.sendFile(path.resolve(__dirname, 'client', 'index.html'))
 })

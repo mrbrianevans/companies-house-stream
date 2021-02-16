@@ -71,7 +71,7 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
                             // process.stdout.clearLine(null)
                             // process.stdout.cursorTo(0)
                             // process.stdout.write(`Backlog: ${Math.round(averageBacklog)}s | proc/note ${Math.round(recentProcessingTimePerNotification / averageTimePerNewNotification * 100)}% | Processing time: ${Math.round(recentProcessingTimePerNotification)}ms | Notification freq: ${Math.round(averageTimePerNewNotification)}ms/new notif. Array sizes: ${last60ProcessingTimes.length}, ${last60NotificationTimes.length}, ${last60Backlog.length} | most recent wait time: ${Math.round(mostRecentWaitTime)}ms`)
-                            console.log("Average backlog on filing: ", Math.round(averageBacklog), 'seconds')
+                            console.log("FILING: Average backlog on filing: ", Math.round(averageBacklog), 'seconds')
                         }, 1000000)
                         console.log("Listening to updates on filing stream")
                         break;

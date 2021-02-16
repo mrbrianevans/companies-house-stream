@@ -43,18 +43,22 @@ const pushEvent = (e) => {
         `
       break;
     case 'company-charges':
+      const [, chargeCompanyNumber] = e.resource_uri.match(/^\/company\/([A-Z0-9]{6,8})\/charges/)
       console.log(e)
       eventCard.innerHTML = `
-        <div class="alert"><h3>Charges Card!</h3>
-        <p>${e.resource_kind}</p></div>
-        
+        <div class="alert"><h3>Company Charge
+        <sub><code><a href="https://companies-house-frontend-api-rmfuc.ondigitalocean.app/company/${chargeCompanyNumber}" target="_blank">${chargeCompanyNumber}</a></code></sub>
+        </h3>
+        <p>${e.data.classification.description}</p>
+        <p>Published at ${new Date(e.event.published_at).toLocaleTimeString()}</p>
+        </div>
         `
       break;
     case 'company-insolvency':
       eventCard.innerHTML = `
-        <div class="alert"><h3>INSOLVENCY</h3>
+        <div class="alert"><h3>INSOLVENCY
         <sub><code><a href="https://companies-house-frontend-api-rmfuc.ondigitalocean.app/company/${e.resource_id}" target="_blank">${e.resource_id}</a></code></sub>
-        <p>${e.data.cases[0].type}</p>
+        </h3><p>${e.data.cases[0].type}</p>
         </div>
         `
       break;

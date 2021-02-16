@@ -4,6 +4,23 @@ import {Pool} from "pg";
 // import * as faker from 'faker'
 const faker = require('faker')
 
+const {promisify} = require('util')
+let mostRecentWaitTime = 0
+const wait = promisify((s, c) => {
+    mostRecentWaitTime = s
+    if (!isFinite(s)) s = 300
+    if (s > 5000) s = 5000
+    setTimeout(() => c(null, 'done waiting'), s)
+})
+let qtyOfNotifications = 0
+let averageProcessingTime = 0
+let startTime = Date.now()
+let reportStatsInterval
+let resetStatsInterval
+let last60NotificationTimes = []
+let last60ProcessingTimes = []
+let last60Backlog = []
+
 export const StreamCharges = (io, mode: 'test' | 'live', dbPool: Pool) => {
     if (mode == "test") {
         // setInterval(()=>io.emit("heartbeat", {}), Math.random()*20000)
@@ -11,8 +28,8 @@ export const StreamCharges = (io, mode: 'test' | 'live', dbPool: Pool) => {
         //faker:
         setTimeout(() => {
             io.emit('event', {
-                    "data": {
-                        "address": {
+                "data": {
+                    "address": {
                             "address_line_1": faker.address.streetAddress(),
                             "address_line_2": faker.address.secondaryAddress(),
                             "care_of": "string",
@@ -79,6 +96,7 @@ export const StreamCharges = (io, mode: 'test' | 'live', dbPool: Pool) => {
             .auth(process.env.APIUSER, '')
             .on('response', (r: any) => {
                 console.log("charges Headers received, status", r.statusCode)
+                startTime = Date.now()
                 setTimeout(() => {
                     console.log("Killing the filing stream after 24 hours")
                     reqStream.end()
@@ -86,6 +104,10 @@ export const StreamCharges = (io, mode: 'test' | 'live', dbPool: Pool) => {
                 switch (r.statusCode) {
                     case 200:
                         console.log("Listening to updates on charges stream")
+                        reportStatsInterval = setInterval(() => {
+                            const averageBacklog = last60Backlog.reduce((previousValue, currentValue) => previousValue + currentValue, 0) / last60Backlog.length / 1000
+                            console.log("CHARGES: Average backlog on charges: ", Math.round(averageBacklog), 'seconds')
+                        }, 1050000)
                         break;
                     case 416:
                         console.log("Timepoint out of date")
@@ -106,25 +128,54 @@ export const StreamCharges = (io, mode: 'test' | 'live', dbPool: Pool) => {
                     dataBuffer += d.toString('utf8')
                     dataBuffer = dataBuffer.replace('}}{', '}}\n{')
                     while (dataBuffer.includes('\n')) {
+                        let singleStartTime = Date.now()
+                        last60NotificationTimes.unshift(Date.now())
+                        if (qtyOfNotifications > 100)
+                            last60NotificationTimes.pop()
                         let newLinePosition = dataBuffer.search('\n')
                         let jsonText = dataBuffer.slice(0, newLinePosition)
                         dataBuffer = dataBuffer.slice(newLinePosition + 1)
                         if (jsonText.length === 0) continue;
                         try {
                             let jsonObject: ChargesEvent.ChargesEvent = JSON.parse(jsonText)
+                            last60Backlog.unshift(Date.now() - new Date(jsonObject.event.published_at).valueOf())
+
+                            //work out rolling average of receival time using notifications and processing timing arrays
+                            if (qtyOfNotifications > 5) {
+                                const last60TotalTime = last60NotificationTimes[0] - last60NotificationTimes[last60NotificationTimes.length - 1]
+                                const last60ProcessingTime = last60ProcessingTimes.slice(0, 5).reduce((previousValue, currentValue) => previousValue + currentValue, 0)
+                                const recentProcessingTimePerNotification = last60ProcessingTime / last60ProcessingTimes.slice(0, 5).length
+                                const averageTimePerNewNotification = (last60TotalTime / (last60NotificationTimes.length + 1))
+                                const averageBacklog = last60Backlog.reduce((previousValue, currentValue) => previousValue + currentValue, 0) / last60Backlog.length / 1000
+                                // console.log(last60TotalTime,last60ProcessingTime,recentProcessingTimePerNotification,averageTimePerNewNotification,averageBacklog)
+                                last60Backlog.pop()
+                                // if average processing time is less than 70% of the frequency of new notifications
+                                if ((recentProcessingTimePerNotification / averageTimePerNewNotification * 100) < 70 && averageBacklog < 60 * 10)
+                                    await wait(averageTimePerNewNotification - (Date.now() - singleStartTime))
+                                else if ((recentProcessingTimePerNotification / averageTimePerNewNotification * 100) < 100 && averageBacklog < 60 * 10) // kill switch to never exceed 100%
+                                    await wait((averageTimePerNewNotification - (Date.now() - singleStartTime)) * 0.5)
+                            }
                             io.emit('event', jsonObject)
                             // console.log("CHARGES EVENT!!")
                             // console.log(JSON.stringify(jsonObject))
                         } catch (e) {
                             console.error(`\x1b[31mCOULD NOT PARSE charges: \x1b[0m*${jsonText}*`)
                         }
+                        let totalTimeSoFar = qtyOfNotifications++ * averageProcessingTime + (Date.now() - singleStartTime)
+                        averageProcessingTime = totalTimeSoFar / qtyOfNotifications
+                        last60ProcessingTimes.unshift(Date.now() - singleStartTime)
+                        if (qtyOfNotifications > 50)
+                            last60ProcessingTimes.pop()
                     }
                     reqStream.resume()
                 } else {
                     io.emit('heartbeat', {})
                 }
             })
-            .on('end', () => console.error("Charges stream ended"))
+            .on('end', () => {
+                clearInterval(reportStatsInterval)
+                console.error("Charges stream ended")
+            })
     }
 }
 
