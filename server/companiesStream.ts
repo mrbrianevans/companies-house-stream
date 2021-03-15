@@ -1,7 +1,6 @@
 import * as request from "request";
 import {CompanyProfileEvent} from "../eventTypes";
 import * as faker from 'faker'
-import {Pool} from "pg";
 // //Variables for status update:
 // let latestTimepoint = ''
 // let numberOfPackets = 0
@@ -20,7 +19,7 @@ const wait = promisify((s, c) => {
 let qtyOfNotifications = 0
 let averageProcessingTime = 0
 let startTime = Date.now()
-export const StreamCompanies = (io, mode: 'test' | 'live', dbPool: Pool) => {
+export const StreamCompanies = (io, mode: 'test' | 'live') => {
     if (mode == "test") {
         // setTimeout(()=>io.emit("heartbeat", {}), Math.random()*10000)
         //todo: fakerjs
@@ -146,7 +145,7 @@ export const StreamCompanies = (io, mode: 'test' | 'live', dbPool: Pool) => {
                 "resource_kind": "company-profile",
                 "resource_uri": "string"
             })
-            StreamCompanies(io, 'test', dbPool)
+            // StreamCompanies(io, 'test', dbPool)
         }, Math.random() * 2500)
     } else {
         let dataBuffer = ''
@@ -206,59 +205,59 @@ export const StreamCompanies = (io, mode: 'test' | 'live', dbPool: Pool) => {
                             else if (qtyOfNotifications > 70 && averageProcessingTime / ((Date.now() - startTime) / qtyOfNotifications) * 100 < 100) // kill switch to never exceed 100%
                                 await wait((((Date.now() - startTime) / qtyOfNotifications) - (Date.now() - singleStartTime)) * 0.5 - 100)
 
-                            const companyFromStream = {
-                                name: jsonObject.data.company_name,
-                                number: jsonObject.data.company_number,
-                                streetaddress: jsonObject.data.registered_office_address?.address_line_1 || '',
-                                county: jsonObject.data.registered_office_address?.region || '',
-                                country: jsonObject.data.registered_office_address?.country || '',
-                                postcode: jsonObject.data.registered_office_address?.postal_code || '',
-                                category: companyTypeConversion[jsonObject.data.type],
-                                origin: jsonObject.data.foreign_company_details?.originating_registry.country || 'United Kingdom',
-                                status: jsonObject.data.company_status,
-                                date: new Date(jsonObject.data.date_of_creation)
-                                // sicCodes: jsonObject.data.sic_codes,
-                            }
-                            const {
-                                rows: companyFromDatabase,
-                                rowCount: companiesFoundInDatabase
-                            } = await dbPool.query('SELECT * FROM companies WHERE number=$1', [jsonObject.data.company_number])
-
-                            if (companiesFoundInDatabase) {
-                                // compare details to see what changed
-                                const differences = []
-                                for (const companyFromStreamKey in companyFromStream) {
-                                    switch (companyFromStreamKey) {
-                                        case 'date':
-                                            break; // date of creation can't change once its happened
-                                        case 'streetaddress': // special comparison for street addresses
-                                            if (!String(companyFromStream[companyFromStreamKey]).toUpperCase().startsWith(String(companyFromDatabase[0][companyFromStreamKey]).toUpperCase()))
-                                                differences.push({
-                                                    label: companyFromStreamKey,
-                                                    new: companyFromStream[companyFromStreamKey],
-                                                    old: companyFromDatabase[0][companyFromStreamKey]
-                                                })
-                                            break;
-                                        default:
-                                            if (String(companyFromStream[companyFromStreamKey]).toUpperCase() !== String(companyFromDatabase[0][companyFromStreamKey]).toUpperCase())
-                                                differences.push({
-                                                    label: companyFromStreamKey,
-                                                    new: companyFromStream[companyFromStreamKey],
-                                                    old: companyFromDatabase[0][companyFromStreamKey]
-                                                })
-                                            break;
-                                    }
-                                }
-                                if (differences.length > 0) {
-                                    if (differences.findIndex(difference => difference.label === 'streetaddress') > -1 &&
-                                        differences.findIndex(difference => difference.label === 'postcode') > -1)
-                                        jsonObject.event.fields_changed = [["Address changed from ", companyFromDatabase[0].streetaddress, 'to', companyFromStream.streetaddress].join(' ')]
-                                    // else console.log("Differences found in company", companyFromStream.number, differences)
-                                }
-                                // else console.log("No differences found between stream and database for company", companyFromStream.number)
-                            } else {
-                                // console.log("Potential new company? ", companyFromStream.number, companyFromStream.date)
-                            }
+                            // const companyFromStream = {
+                            //     name: jsonObject.data.company_name,
+                            //     number: jsonObject.data.company_number,
+                            //     streetaddress: jsonObject.data.registered_office_address?.address_line_1 || '',
+                            //     county: jsonObject.data.registered_office_address?.region || '',
+                            //     country: jsonObject.data.registered_office_address?.country || '',
+                            //     postcode: jsonObject.data.registered_office_address?.postal_code || '',
+                            //     category: companyTypeConversion[jsonObject.data.type],
+                            //     origin: jsonObject.data.foreign_company_details?.originating_registry.country || 'United Kingdom',
+                            //     status: jsonObject.data.company_status,
+                            //     date: new Date(jsonObject.data.date_of_creation)
+                            //     // sicCodes: jsonObject.data.sic_codes,
+                            // }
+                            // const {
+                            //     rows: companyFromDatabase,
+                            //     rowCount: companiesFoundInDatabase
+                            // } = await dbPool.query('SELECT * FROM companies WHERE number=$1', [jsonObject.data.company_number])
+                            //
+                            // if (companiesFoundInDatabase) {
+                            //     // compare details to see what changed
+                            //     const differences = []
+                            //     for (const companyFromStreamKey in companyFromStream) {
+                            //         switch (companyFromStreamKey) {
+                            //             case 'date':
+                            //                 break; // date of creation can't change once its happened
+                            //             case 'streetaddress': // special comparison for street addresses
+                            //                 if (!String(companyFromStream[companyFromStreamKey]).toUpperCase().startsWith(String(companyFromDatabase[0][companyFromStreamKey]).toUpperCase()))
+                            //                     differences.push({
+                            //                         label: companyFromStreamKey,
+                            //                         new: companyFromStream[companyFromStreamKey],
+                            //                         old: companyFromDatabase[0][companyFromStreamKey]
+                            //                     })
+                            //                 break;
+                            //             default:
+                            //                 if (String(companyFromStream[companyFromStreamKey]).toUpperCase() !== String(companyFromDatabase[0][companyFromStreamKey]).toUpperCase())
+                            //                     differences.push({
+                            //                         label: companyFromStreamKey,
+                            //                         new: companyFromStream[companyFromStreamKey],
+                            //                         old: companyFromDatabase[0][companyFromStreamKey]
+                            //                     })
+                            //                 break;
+                            //         }
+                            //     }
+                            //     if (differences.length > 0) {
+                            //         if (differences.findIndex(difference => difference.label === 'streetaddress') > -1 &&
+                            //             differences.findIndex(difference => difference.label === 'postcode') > -1)
+                            //             jsonObject.event.fields_changed = [["Address changed from ", companyFromDatabase[0].streetaddress, 'to', companyFromStream.streetaddress].join(' ')]
+                            //         // else console.log("Differences found in company", companyFromStream.number, differences)
+                            //     }
+                            //     // else console.log("No differences found between stream and database for company", companyFromStream.number)
+                            // } else {
+                            //     // console.log("Potential new company? ", companyFromStream.number, companyFromStream.date)
+                            // }
                             io.emit('event', jsonObject)
                         } catch (e) {
                             if (e instanceof SyntaxError)

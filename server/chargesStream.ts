@@ -1,6 +1,5 @@
 import * as request from "request";
 import {ChargesEvent} from "../eventTypes";
-import {Pool} from "pg";
 // import * as faker from 'faker'
 const faker = require('faker')
 
@@ -21,15 +20,15 @@ let last60NotificationTimes = []
 let last60ProcessingTimes = []
 let last60Backlog = []
 
-export const StreamCharges = (io, mode: 'test' | 'live', dbPool: Pool) => {
+export const StreamCharges = (io, mode: 'test' | 'live') => {
     if (mode == "test") {
         // setInterval(()=>io.emit("heartbeat", {}), Math.random()*20000)
         // setInterval(()=>console.log("Charge heartbeat"), Math.random()*20000)
         //faker:
         setTimeout(() => {
             io.emit('event', {
-                "data": {
-                    "address": {
+                    "data": {
+                        "address": {
                             "address_line_1": faker.address.streetAddress(),
                             "address_line_2": faker.address.secondaryAddress(),
                             "care_of": "string",
@@ -88,7 +87,7 @@ export const StreamCharges = (io, mode: 'test' | 'live', dbPool: Pool) => {
                     "resource_uri": "/company/" + faker.random.number() + "/charges"
                 }
             )
-            StreamCharges(io, 'test', dbPool)
+            StreamCharges(io, 'test')
         }, Math.random() * 20000)
     } else {
         let dataBuffer = ''

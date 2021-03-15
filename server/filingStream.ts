@@ -1,7 +1,5 @@
 import * as request from "request";
 import {FilingEvent} from '../eventTypes'
-import {Pool} from "pg";
-import {FilingEmit} from "../emitTypes";
 
 const {promisify} = require('util')
 let mostRecentWaitTime = 0
@@ -19,20 +17,11 @@ let resetStatsInterval
 let last60NotificationTimes = []
 let last60ProcessingTimes = []
 let last60Backlog = []
-export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
+export const StreamFilings = (io, mode: 'test' | 'live') => {
     if (mode == "test") {
         setTimeout(async () => {
-            const client = await dbPool.connect()
-            // test the database connection
-            const {
-                rows: dbtest,
-                rowCount
-            } = await client.query("SELECT value FROM filing_history_descriptions WHERE key=$1", ['liquidation-voluntary-appeal'])
-            if (rowCount === 1)
-                console.log("Database test: ", dbtest[0]['value'])
-            await client.release()
             io.emit('event', sampleFilingEvents[Math.floor(Math.random() * sampleFilingEvents.length)])
-            StreamFilings(io, 'test', dbPool)
+            StreamFilings(io, 'test')
         }, Math.random() * 2000)
     } else {
         let dataBuffer = ''
@@ -103,63 +92,65 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
                         let jsonText = dataBuffer.slice(0, newLinePosition)
                         dataBuffer = dataBuffer.slice(newLinePosition + 1)
                         if (jsonText.length === 0) continue;
-                        const client = await dbPool.connect()
+                        // const client = await dbPool.connect()
                         try {
                             let jsonObject: FilingEvent.FilingEvent = JSON.parse(jsonText)
-                            const companyNumber = jsonObject.resource_uri.match(/^\/company\/([A-Z0-9]{6,8})\/filing-history/)[1]
+                            // const companyNumber = jsonObject.resource_uri.match(/^\/company\/([A-Z0-9]{6,8})\/filing-history/)[1]
+                            //todo: emit event here, and move further processing to client side
+                            io.emit('event', jsonObject)
                             // query enumeration map in database to figure out what the company has filed
                             // slow down the stream and send more meaningful information in teh notification
-                            let {
-                                rows: companyProfile,
-                                rowCount: companysFound
-                            } = await client.query("SELECT * FROM companies WHERE number=$1 LIMIT 1", [companyNumber])
+                            // let {
+                            //     rows: companyProfile,
+                            //     rowCount: companysFound
+                            // } = await client.query("SELECT * FROM companies WHERE number=$1 LIMIT 1", [companyNumber])
+                            //
+                            // const {
+                            //     rows: descriptions,
+                            //     rowCount
+                            // } = await client.query("SELECT value FROM filing_history_descriptions WHERE key=$1 LIMIT 1", [jsonObject.data.description])
+                            // // console.timeLog('Process filing history',{"Database response": descriptions})
+                            // if (rowCount === 1) {
+                            //     const description: string = descriptions[0]['value']
+                            //     let formattedDescription = description.replace(/{([a-z_]+)}/g, (s) => jsonObject.data.description_values ? jsonObject.data.description_values[s.slice(1, s.length - 1)] || '' : '')
+                            //     formattedDescription = formattedDescription.replace(/^\*\*/, '<b>')
+                            //     formattedDescription = formattedDescription.replace(/\*\*/, '</b>')
+                            //     // console.log(formattedDescription)
+                            //     // if(companysFound === 1)
+                            //     const eventToEmit: FilingEmit = {
+                            //         source: 'filing-history',
+                            //         title: formattedDescription.match(/<b>(.+)<\/b>/) ? formattedDescription.match(/<b>(.+)<\/b>/)[1] : jsonObject.data.category,
+                            //         description: formattedDescription,
+                            //         published: new Date(jsonObject.event.published_at),
+                            //         companyNumber: companyNumber,
+                            //         resource_kind: 'filing-history',
+                            //         companyProfile: companysFound === 1 ? companyProfile[0] : undefined
+                            //     }
+                            last60Backlog.unshift(Date.now() - new Date(jsonObject.event.published_at).valueOf())
 
-                            const {
-                                rows: descriptions,
-                                rowCount
-                            } = await client.query("SELECT value FROM filing_history_descriptions WHERE key=$1 LIMIT 1", [jsonObject.data.description])
-                            // console.timeLog('Process filing history',{"Database response": descriptions})
-                            if (rowCount === 1) {
-                                const description: string = descriptions[0]['value']
-                                let formattedDescription = description.replace(/{([a-z_]+)}/g, (s) => jsonObject.data.description_values ? jsonObject.data.description_values[s.slice(1, s.length - 1)] || '' : '')
-                                formattedDescription = formattedDescription.replace(/^\*\*/, '<b>')
-                                formattedDescription = formattedDescription.replace(/\*\*/, '</b>')
-                                // console.log(formattedDescription)
-                                // if(companysFound === 1)
-                                const eventToEmit: FilingEmit = {
-                                    source: 'filing-history',
-                                    title: formattedDescription.match(/<b>(.+)<\/b>/) ? formattedDescription.match(/<b>(.+)<\/b>/)[1] : jsonObject.data.category,
-                                    description: formattedDescription,
-                                    published: new Date(jsonObject.event.published_at),
-                                    companyNumber: companyNumber,
-                                    resource_kind: 'filing-history',
-                                    companyProfile: companysFound === 1 ? companyProfile[0] : undefined
-                                }
-                                last60Backlog.unshift(Date.now() - eventToEmit.published.valueOf())
+                            //work out rolling average of receival time using notifications and processing timing arrays
+                            if (qtyOfNotifications > 5) {
+                                const last60TotalTime = last60NotificationTimes[0] - last60NotificationTimes[last60NotificationTimes.length - 1]
+                                const last60ProcessingTime = last60ProcessingTimes.slice(0, 5).reduce((previousValue, currentValue) => previousValue + currentValue, 0)
+                                const recentProcessingTimePerNotification = last60ProcessingTime / last60ProcessingTimes.slice(0, 5).length
+                                const averageTimePerNewNotification = (last60TotalTime / (last60NotificationTimes.length + 1))
+                                const averageBacklog = last60Backlog.reduce((previousValue, currentValue) => previousValue + currentValue, 0) / last60Backlog.length / 1000
+                                // console.log(last60TotalTime,last60ProcessingTime,recentProcessingTimePerNotification,averageTimePerNewNotification,averageBacklog)
+                                last60Backlog.pop()
+                                // if average processing time is less than 70% of the frequency of new notifications
+                                if ((recentProcessingTimePerNotification / averageTimePerNewNotification * 100) < 70 && averageBacklog < 60 * 10)
+                                    await wait(averageTimePerNewNotification - (Date.now() - singleStartTime))
+                                else if ((recentProcessingTimePerNotification / averageTimePerNewNotification * 100) < 100 && averageBacklog < 60 * 10) // kill switch to never exceed 100%
+                                    await wait((averageTimePerNewNotification - (Date.now() - singleStartTime)) * 0.5)
+                                // else
+                                //     console.log('\nPercentage: ', Math.round(recentProcessingTimePerNotification / averageTimePerNewNotification * 100), '% | Backlog:', Math.round(averageBacklog), 'seconds')
 
-                                //work out rolling average of receival time using notifications and processing timing arrays
-                                if (qtyOfNotifications > 5) {
-                                    const last60TotalTime = last60NotificationTimes[0] - last60NotificationTimes[last60NotificationTimes.length - 1]
-                                    const last60ProcessingTime = last60ProcessingTimes.slice(0, 5).reduce((previousValue, currentValue) => previousValue + currentValue, 0)
-                                    const recentProcessingTimePerNotification = last60ProcessingTime / last60ProcessingTimes.slice(0, 5).length
-                                    const averageTimePerNewNotification = (last60TotalTime / (last60NotificationTimes.length + 1))
-                                    const averageBacklog = last60Backlog.reduce((previousValue, currentValue) => previousValue + currentValue, 0) / last60Backlog.length / 1000
-                                    // console.log(last60TotalTime,last60ProcessingTime,recentProcessingTimePerNotification,averageTimePerNewNotification,averageBacklog)
-                                    last60Backlog.pop()
-                                    // if average processing time is less than 70% of the frequency of new notifications
-                                    if ((recentProcessingTimePerNotification / averageTimePerNewNotification * 100) < 70 && averageBacklog < 60 * 10)
-                                        await wait(averageTimePerNewNotification - (Date.now() - singleStartTime))
-                                    else if ((recentProcessingTimePerNotification / averageTimePerNewNotification * 100) < 100 && averageBacklog < 60 * 10) // kill switch to never exceed 100%
-                                        await wait((averageTimePerNewNotification - (Date.now() - singleStartTime)) * 0.5)
-                                    // else
-                                    //     console.log('\nPercentage: ', Math.round(recentProcessingTimePerNotification / averageTimePerNewNotification * 100), '% | Backlog:', Math.round(averageBacklog), 'seconds')
-
-                                }
-                                io.emit('event', eventToEmit)
-                            } else {
-                                if (jsonObject.data.description && jsonObject.data.description !== 'legacy') // some are undefined and legacy
-                                    console.log("\x1b[31mDatabase could not find description\x1b[0m for", jsonObject.data.description)
                             }
+                            // io.emit('event', eventToEmit)
+                            // } else {
+                            //     if (jsonObject.data.description && jsonObject.data.description !== 'legacy') // some are undefined and legacy
+                            //         console.log("\x1b[31mDatabase could not find description\x1b[0m for", jsonObject.data.description)
+                            // }
 
                         } catch (e) {
                             // error handling
@@ -168,7 +159,7 @@ export const StreamFilings = (io, mode: 'test' | 'live', dbPool: Pool) => {
                             else
                                 console.error('\x1b[31m', e, '\x1b[0m')
                         } finally {
-                            await client.release() // release the client when finished, regardless of errors
+                            // await client.release() // release the client when finished, regardless of errors
                             // console.timeEnd('Process filing history')
                         }
 

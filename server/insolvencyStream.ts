@@ -1,6 +1,5 @@
 import * as request from "request";
 import {InsolvencyEvent} from "../eventTypes";
-import {Pool} from "pg";
 
 const {promisify} = require('util')
 let mostRecentWaitTime = 0
@@ -20,17 +19,17 @@ let resetStatsInterval
 let last60NotificationTimes = []
 let last60ProcessingTimes = []
 let last60Backlog = []
-export const StreamInsolvencies = (io, mode: 'test' | 'live', dbPool: Pool) => {
+export const StreamInsolvencies = (io, mode: 'test' | 'live') => {
     if (mode == "test") {
         setTimeout(() => {
             io.emit('event', sampleInsolvencyEvents[Math.floor(Math.random() * sampleInsolvencyEvents.length)])
-            StreamInsolvencies(io, 'test', dbPool)
+            StreamInsolvencies(io, 'test')
         }, Math.random() * 30000)
     } else {
         let dataBuffer = ''
         const reqStream = request.get('https://stream.companieshouse.gov.uk/insolvency-cases')
             .auth(process.env.APIUSER, '')
-        .on('response', (r: any) => {
+            .on('response', (r: any) => {
             startTime = Date.now()
             setTimeout(() => {
                 console.log("Killing the insolvency stream after 24 hours")

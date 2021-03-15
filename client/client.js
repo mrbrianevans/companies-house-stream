@@ -14,33 +14,15 @@ const setConnected = (bool) => {
     }
 }
 
-const pushEvent = (e) => {
+const pushEvent = async (e) => {
   document.querySelector("#notification-counter").innerHTML = (Number(document.querySelector("#notification-counter").innerHTML) + 1).toString()
   const eventCard = document.createElement('div')
   switch (e.resource_kind || e.source) {
     case 'company-profile': // layout for company profile change card
-      const newCompany = (new Date(e.data.date_of_creation).valueOf() > Date.now() - 86400000)
-      eventCard.innerHTML = `<div class="companies-card">
-    <div class="row">
-      <h3>${e.data.company_name}</h3>
-      <sub><code><a href="https://companies-house-frontend-api-rmfuc.ondigitalocean.app/company/${e.data.company_number}" target="_blank">${e.data.company_number}</a></code></sub>
-    </div>
-    <p class="new-company">${newCompany ? 'New company' : ''} ${e.event.fields_changed ? e.event.fields_changed.join(', ') : ''}</p>
-    <p>${e.event.type} ${e.resource_kind} at ${new Date(e.event.published_at).toLocaleTimeString()}</p>
-    </div>`
-        break;
+      eventCard.innerHTML = await companyProfileCard(e)
+      break;
     case 'filing-history':
-      const companyNumber = e.companyNumber
-      eventCard.innerHTML = `
-        <div class="filing-card">
-    <div class="row">
-      <h3>${e.companyProfile?.name || e.companyNumber}</h3>
-      <sub><code><a href="https://companies-house-frontend-api-rmfuc.ondigitalocean.app/company/${companyNumber}" target="_blank">${companyNumber}</a></code></sub>
-    </div>
-    <p>${e.description}</p>
-    <p>${e.title} published at ${new Date(e.published).toLocaleTimeString()}</p>
-    </div>
-        `
+      eventCard.innerHTML = await filingHistoryCard(e)
       break;
     case 'company-charges':
       const [, chargeCompanyNumber] = e.resource_uri.match(/^\/company\/([A-Z0-9]{6,8})\/charges/)
@@ -97,3 +79,52 @@ socket.on('connect', ()=>{
 
 socket.on('event', pushEvent)
 socket.on('heartbeat', heartbeat)
+
+const functionUrl = 'https://europe-west1-companies-house-data.cloudfunctions.net/getCompanyInfo?company_number='
+const filingHistoryCard = async (event) => {
+  const companyNumber = event.resource_uri.match(/^\/company\/([A-Z0-9]{6,8})\/filing-history/)[1];
+  const companyProfile = await fetch(functionUrl + companyNumber).then(r => r.json()).catch(console.error)
+  // const description = await fetch('https://europe-west1-companies-house-data.cloudfunctions.net/getFilingEventDescription', {
+  //   method: "POST",
+  //   headers: {
+  //     "content-type": "application/json"
+  //   },
+  //   body: JSON.stringify({
+  //     descriptionTemplate: event.data.description,
+  //     values: event.data.description_values
+  //   })
+  // })
+  const e = {
+    companyNumber,
+    companyProfile,
+    description: event.data.description,
+    published: new Date(event.event.published_at),
+    resource_kind: event.resource_kind,
+    source: event.resource_kind,
+    title: event.data.category
+  };
+  return `
+      <div class="filing-card">
+    <div class="row">
+      <h3>${e.companyProfile?.name || e.companyNumber}</h3>
+      <sub><code><a href="https://companies-house-frontend-api-rmfuc.ondigitalocean.app/company/${companyNumber}" target="_blank">${companyNumber}</a></code></sub>
+    </div>
+    <p>${e.description}</p>
+    <p>${e.title} published at ${e.published.toLocaleTimeString()}</p>
+    </div>
+        `;
+};
+
+
+const companyProfileCard = async (event) => {
+  const companyNumber = event.data.company_number
+  // const companyProfile = await fetch(functionUrl+companyNumber).then(r=>r.json())
+  const newCompany = (new Date(event.data.date_of_creation).valueOf() > Date.now() - 86400000)
+  return `<div class="companies-card"><div class="row">
+      <h3>${event.data.company_name}</h3>
+      <sub><code><a href="https://companies-house-frontend-api-rmfuc.ondigitalocean.app/company/${event.data.company_number}" target="_blank">${event.data.company_number}</a></code></sub>
+    </div>
+    <p class="new-company">${newCompany ? 'New company' : ''} ${event.event.fields_changed ? event.event.fields_changed.join(', ') : ''}</p>
+    <p>${event.event.type} ${event.resource_kind} at ${new Date(event.event.published_at).toLocaleTimeString()}</p>
+    </div>`
+}
