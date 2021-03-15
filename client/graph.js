@@ -38,7 +38,7 @@ const main = () => {
       options: options,
       containerId: 'graph'
     })
-    fetch('/graphdata?interval=' + timeInterval)
+    fetch('https://europe-west1-companies-house-data.cloudfunctions.net/eventsFrequency?interval=' + timeInterval)
       .then(r => r.json())
       .then(j => {
         const drawInterval = setInterval(() => {
@@ -61,6 +61,14 @@ const main = () => {
   }
   
   google.charts.setOnLoadCallback(drawGraph);
+  google.charts.setOnLoadCallback(() => {
+    let button = document.createElement('button')
+    button.onclick = () => {
+      drawGraph('month')
+    }
+    button.innerText = 'By Month'
+    document.querySelector('body').insertAdjacentElement('afterbegin', button)
+  });
   google.charts.setOnLoadCallback(() => {
     let button = document.createElement('button')
     button.onclick = () => {

@@ -3,8 +3,8 @@ import {Pool} from "pg";
 
 export const generateGraphData = async (req: Request, res: Response, pool: Pool) => {
     const timeInterval = req.query?.interval?.toString() || 'minute'
-    if (!['minute', 'hour', 'day'].includes(timeInterval)) res.status(400).end("Invalid time interval")
-    const cOrP: 'captured' | 'published' = 'captured'
+    if (!['minute', 'hour', 'day', 'month'].includes(timeInterval)) res.status(400).end("Invalid time interval")
+    const cOrP: 'captured' | 'published' = 'published'
     let sqlStatement = `
     SELECT company.minute as minute, company.count as company, filing.count as filing FROM
 (select date_trunc('minute' , f.published) as minute, count(f.published) as count from filing_events f group by date_trunc('minute' , f.published) order by date_trunc('minute' , f.published) desc limit 10) as filing

@@ -12,7 +12,7 @@ const httpServer = require('http').Server(server)
 const io = require('socket.io')(httpServer)
 const path = require('path')
 const fs = require('fs')
-const pool = new Pool();
+const pool = new Pool({connectionString: ""});
 server.get('/', (req: Request, res: Response) => {
     res.sendFile(path.resolve(__dirname, 'client', 'index.html'))
 })
@@ -41,20 +41,20 @@ server.get('*.css', (req: Request, res: Response) => {
         res.status(404).end("Not found")
     res.sendFile(filepath)
 })
+const port = 3000
+httpServer.listen(port, () => console.log(`\x1b[32mListening on http://localhost:${port}\x1b[0m\nGraph on http://localhost:${port}/graph\n`))
 
-httpServer.listen(3000, () => console.log(`\x1b[32mListening on http://localhost:3000\x1b[0m\nGraph on http://localhost:3000/graph\n`))
-
-StreamCompanies(io, 'live', pool)
-StreamCharges(io, 'live', pool)
+StreamCompanies(io, 'test', pool)
+StreamCharges(io, 'test', pool)
 StreamFilings(io, 'live', pool)
 StreamInsolvencies(io, 'live', pool)
 
-setInterval(() => {
-    console.log("Starting all streams (24th hour interval)")
-    StreamCompanies(io, 'live', pool)
-    StreamCharges(io, 'live', pool)
-    StreamFilings(io, 'live', pool)
-    StreamInsolvencies(io, 'live', pool)
-    // reset the stream every 24 hours 150 milliseconds
-}, 1000 * 60 * 60 * 24 + 150)
+// setInterval(() => {
+//     console.log("Starting all streams (24th hour interval)")
+//     StreamCompanies(io, 'live', pool)
+//     StreamCharges(io, 'live', pool)
+//     StreamFilings(io, 'live', pool)
+//     StreamInsolvencies(io, 'live', pool)
+//     // reset the stream every 24 hours 150 milliseconds
+// }, 1000 * 60 * 60 * 24 + 150)
 
