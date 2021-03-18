@@ -25,25 +25,10 @@ const pushEvent = async (e) => {
       eventCard.innerHTML = await filingHistoryCard(e)
       break;
     case 'company-charges':
-      const [, chargeCompanyNumber] = e.resource_uri.match(/^\/company\/([A-Z0-9]{6,8})\/charges/)
-      console.log(e)
-      eventCard.innerHTML = `
-        <div class="alert"><h3>Company Charge
-        <sub><code><a href="https://companies-house-frontend-api-rmfuc.ondigitalocean.app/company/${chargeCompanyNumber}" target="_blank">${chargeCompanyNumber}</a></code></sub>
-        </h3>
-        <p>${e.data.classification.description}</p>
-        <p>Published at ${new Date(e.event.published_at).toLocaleTimeString()}</p>
-        </div>
-        `
+      eventCard.innerHTML = await chargesCard(e)
       break;
     case 'company-insolvency':
-      eventCard.innerHTML = `
-        <div class="alert"><h3>INSOLVENCY
-        <sub><code><a href="https://companies-house-frontend-api-rmfuc.ondigitalocean.app/company/${e.resource_id}" target="_blank">${e.resource_id}</a></code></sub>
-        </h3><p>${e.data.cases[0].type}</p>
-        <p>Published at ${new Date(e.event.published_at).toLocaleTimeString()}</p>
-        </div>
-        `
+      eventCard.innerHTML = await insolvencyCard(e)
       break;
     default:
       eventCard.innerHTML = `
@@ -127,4 +112,30 @@ const companyProfileCard = async (event) => {
     <p class="new-company">${newCompany ? 'New company' : ''} ${event.event.fields_changed ? event.event.fields_changed.join(', ') : ''}</p>
     <p>${event.event.type} ${event.resource_kind} at ${new Date(event.event.published_at).toLocaleTimeString()}</p>
     </div>`
+}
+
+const chargesCard = async (event) => {
+  const [, companyNumber] = event.resource_uri.match(/^\/company\/([A-Z0-9]{6,8})\/charges/)
+  const companyProfile = await fetch(functionUrl + companyNumber).then(r => r.json()).catch(() => {
+  })
+  return `
+        <div class="charges-card"><h3>${companyProfile?.name ?? companyNumber}
+        <sub><code><a href="https://companies-house-frontend-api-rmfuc.ondigitalocean.app/company/${companyNumber}" target="_blank">${companyNumber}</a></code></sub>
+        </h3>
+        <p>${event.data.classification.description}</p>
+        <p>Charge published at ${new Date(event.event.published_at).toLocaleTimeString()}</p>
+        </div>
+      `
+}
+const insolvencyCard = async (event) => {
+  const companyNumber = event.resource_id
+  const companyProfile = await fetch(functionUrl + companyNumber).then(r => r.json()).catch(() => {
+  })
+  return `
+        <div class="insolvency-card"><h3>Insolvency: ${companyProfile?.name ?? companyNumber}
+        <sub><code><a href="https://filterfacility.com/company/${event.resource_id}" target="_blank">${event.resource_id}</a></code></sub>
+        </h3><p>${event.data.cases[0].type}</p>
+        <p>Published at ${new Date(event.event.published_at).toLocaleTimeString()}</p>
+        </div>
+        `
 }

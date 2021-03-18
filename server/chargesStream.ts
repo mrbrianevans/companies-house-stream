@@ -22,73 +22,10 @@ let last60Backlog = []
 
 export const StreamCharges = (io, mode: 'test' | 'live') => {
     if (mode == "test") {
-        // setInterval(()=>io.emit("heartbeat", {}), Math.random()*20000)
-        // setInterval(()=>console.log("Charge heartbeat"), Math.random()*20000)
-        //faker:
-        setTimeout(() => {
-            io.emit('event', {
-                    "data": {
-                        "address": {
-                            "address_line_1": faker.address.streetAddress(),
-                            "address_line_2": faker.address.secondaryAddress(),
-                            "care_of": "string",
-                            "country": faker.address.country(),
-                            "locality": faker.address.county(),
-                            "po_box": faker.address.zipCode(),
-                            "postal_code": faker.address.zipCodeByState(),
-                            "premises": faker.address.secondaryAddress(),
-                            "region": faker.address.county()
-                        },
-                        "ceased": faker.random.boolean(),
-                        "ceased_on": faker.date.past(),
-                        "country_of_residence": faker.address.country(),
-                        "date_of_birth": {
-                            "day": 5,
-                            "month": 5,
-                            "year": 5
-                        },
-                        "description": faker.commerce.productDescription(),
-                        "etag": "string",
-                        "identification": {
-                            "country_registered": faker.address.country(),
-                            "legal_authority": "string",
-                            "legal_form": "string",
-                            "place_registered": "string",
-                            "registration_number": faker.random.uuid()
-                        },
-                        "kind": "string",
-                        "links": {
-                            "self": "string",
-                            "statement": "string"
-                        },
-                        "name": faker.name.findName(),
-                        "name_elements": {
-                            "forename": faker.name.firstName(),
-                            "other_forenames": faker.name.firstName(),
-                            "surname": faker.name.lastName(),
-                            "title": faker.name.prefix()
-                        },
-                        "nationality": "string",
-                        "natures_of_control": [
-                            faker.random.arrayElements(["ownership-of-shares-50-to-75-percent", "voting-rights-50-to-75-percent", "right-to-appoint-and-remove-directors"])
-                        ],
-                        "notified_on": faker.date.past()
-                    },
-                    "event": {
-                        "fields_changed": [
-                            "string"
-                        ],
-                        "published_at": faker.date.recent(),
-                        "timepoint": faker.random.number(),
-                        "type": faker.random.arrayElement(['changed', 'deleted'])
-                    },
-                    "resource_id": faker.random.uuid(),
-                    "resource_kind": "company-charges",
-                    "resource_uri": "/company/" + faker.random.number() + "/charges"
-                }
-            )
+        setTimeout(async () => {
+            io.emit('event', sampleChargeEvents[Math.floor(Math.random() * sampleChargeEvents.length)])
             StreamCharges(io, 'test')
-        }, Math.random() * 20000)
+        }, Math.random() * 10000)
     } else {
         let dataBuffer = ''
         const reqStream = request.get('https://stream.companieshouse.gov.uk/charges')
