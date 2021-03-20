@@ -10,6 +10,16 @@ const httpServer = require('http').Server(server)
 const io = require('socket.io')(httpServer)
 const path = require('path')
 const fs = require('fs')
+
+//log each request:
+// server.use((req, res, next) => {
+//     console.log("Request to", req.path)
+//     console.log('params:', req.params)
+//     console.log('body:', req.body)
+//     console.log('query:', req.query)
+//     next()
+// })
+
 server.get('/', (req: Request, res: Response) => {
     res.sendFile(path.resolve(__dirname, 'client', 'index.html'))
 })
@@ -31,6 +41,13 @@ server.get('*.css', (req: Request, res: Response) => {
         res.status(400).end("Badly formatted request")
     const filename = req.path.match(/\/([^\/]*).css/)[1]
     const filepath = path.resolve(__dirname, 'client', filename + '.css')
+    if (!fs.existsSync(filepath))
+        res.status(404).end("Not found")
+    res.sendFile(filepath)
+})
+server.get('/public/:filename', (req: Request, res: Response) => {
+    const {filename} = req.params
+    const filepath = path.resolve(__dirname, 'client', 'public', filename)
     if (!fs.existsSync(filepath))
         res.status(404).end("Not found")
     res.sendFile(filepath)
