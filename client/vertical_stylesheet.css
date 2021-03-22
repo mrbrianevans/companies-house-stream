@@ -15,6 +15,7 @@
     height: 70vh;
     overflow-y: scroll;
     scroll-behavior: smooth;
+    align-items: center;
 }
 
 #events > div {
