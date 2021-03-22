@@ -51,7 +51,8 @@ const main = () => {
         j.forEach((row, index) => {
           const timeout = index / j.length * animationLength
           setTimeout(() => {
-            datatable.addRow([new Date(row[timeInterval]), Number(row.filing), Number(row.company)])
+            if (row[timeInterval])
+              datatable.addRow([new Date(row[timeInterval]), row.filing ? Number(row.filing) : undefined, row.company ? Number(row.company) : undefined])
           }, timeout)
         })
       })
