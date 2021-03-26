@@ -66,6 +66,7 @@ socket.on('event', pushEvent)
 socket.on('heartbeat', heartbeat)
 
 const functionUrl = 'https://europe-west1-companies-house-data.cloudfunctions.net/getCompanyInfo?company_number='
+  // const functionUrl = "https://brianevans.tech/projects/companies-house/database/controller.php?action=company-api&number=";
 const filingHistoryCard = async (event) => {
   const companyNumber = event.resource_uri.match(/^\/company\/([A-Z0-9]{6,8})\/filing-history/)[1];
   const companyProfile = await fetch(functionUrl + companyNumber).then(r => r.json()).catch(console.error)
@@ -92,7 +93,7 @@ const filingHistoryCard = async (event) => {
       <div class="filing-card">
     <div class="row">
       <h3>${e.companyProfile?.name || e.companyNumber}</h3>
-      <sub><code><a href="https://companies-house-frontend-api-rmfuc.ondigitalocean.app/company/${companyNumber}" target="_blank">${companyNumber}</a></code></sub>
+      <sub><code><a href="https://filterfacility.co.uk/company/${companyNumber}" target="_blank">${companyNumber}</a></code></sub>
     </div>
     <p>${e.description}</p>
     <p>${e.title} published at ${e.published.toLocaleTimeString()}</p>
@@ -107,7 +108,7 @@ const companyProfileCard = async (event) => {
   const newCompany = (new Date(event.data.date_of_creation).valueOf() > Date.now() - 86400000)
   return `<div class="companies-card"><div class="row">
       <h3>${event.data.company_name}</h3>
-      <sub><code><a href="https://companies-house-frontend-api-rmfuc.ondigitalocean.app/company/${event.data.company_number}" target="_blank">${event.data.company_number}</a></code></sub>
+      <sub><code><a href="https://filterfacility.co.uk/company/${event.data.company_number}" target="_blank">${event.data.company_number}</a></code></sub>
     </div>
     <p class="new-company">${newCompany ? 'New company' : ''} ${event.event.fields_changed ? event.event.fields_changed.join(', ') : ''}</p>
     <p>${event.event.type} ${event.resource_kind} at ${new Date(event.event.published_at).toLocaleTimeString()}</p>
@@ -120,7 +121,7 @@ const chargesCard = async (event) => {
   })
   return `
         <div class="charges-card"><h3>${companyProfile?.name ?? companyNumber}
-        <sub><code><a href="https://companies-house-frontend-api-rmfuc.ondigitalocean.app/company/${companyNumber}" target="_blank">${companyNumber}</a></code></sub>
+        <sub><code><a href="https://filterfacility.co.uk/company/${companyNumber}" target="_blank">${companyNumber}</a></code></sub>
         </h3>
         <p>${event.data.classification.description}</p>
         <p>Charge published at ${new Date(event.event.published_at).toLocaleTimeString()}</p>
@@ -133,7 +134,7 @@ const insolvencyCard = async (event) => {
   })
   return `
         <div class="insolvency-card"><h3>Insolvency: ${companyProfile?.name ?? companyNumber}
-        <sub><code><a href="https://filterfacility.com/company/${event.resource_id}" target="_blank">${event.resource_id}</a></code></sub>
+        <sub><code><a href="https://filterfacility.co.uk/company/${event.resource_id}" target="_blank">${event.resource_id}</a></code></sub>
         </h3><p>${event.data.cases[0].type}</p>
         <p>Published at ${new Date(event.event.published_at).toLocaleTimeString()}</p>
         </div>
