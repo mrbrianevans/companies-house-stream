@@ -201,19 +201,19 @@ const sampleFilingEvents: FilingEvent.FilingEvent[] = [
             "description": "accounts-with-accounts-type-micro-entity",
             "description_values": {
                 "made_up_date": "2020-03-31"
+            },
+            "links": {
+                "self": "/company/10676322/filing-history/MzI4OTQzODc5MGFkaXF6a2N4"
+            },
+            "transaction_id": "MzI4OTQzODc5MGFkaXF6a2N4",
+            "type": "AA"
         },
-        "links": {
-            "self": "/company/10676322/filing-history/MzI4OTQzODc5MGFkaXF6a2N4"
-        },
-        "transaction_id": "MzI4OTQzODc5MGFkaXF6a2N4",
-        "type": "AA"
+        "event": {
+            "timepoint": 48990574,
+            "published_at": "2021-01-22T18:28:02",
+            "type": "changed"
+        }
     },
-    "event": {
-        "timepoint": 48990574,
-        "published_at": "2021-01-22T18:28:02",
-        "type": "changed"
-    }
-},
     {
         "resource_kind": "filing-history",
         "resource_uri": "/company/07260025/filing-history/MzI2NTIzNzU0N2FkaXF6a2N4",

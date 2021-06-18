@@ -1,4 +1,5 @@
 # Project exclude paths
 /node_modules/
-/eventTypes.js
-/server.js
+**/*.js
+**/*.env*
+.idea

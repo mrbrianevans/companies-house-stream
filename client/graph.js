@@ -38,7 +38,7 @@ const main = () => {
       options: options,
       containerId: 'graph'
     })
-    fetch('https://europe-west1-companies-house-data.cloudfunctions.net/eventsFrequency?interval=' + timeInterval)
+    fetch('/generateGraphData?interval=' + timeInterval)
       .then(r => r.json())
       .then(j => {
         const drawInterval = setInterval(() => {

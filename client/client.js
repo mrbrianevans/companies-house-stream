@@ -65,25 +65,24 @@ socket.on('connect', ()=>{
 socket.on('event', pushEvent)
 socket.on('heartbeat', heartbeat)
 
-const functionUrl = 'https://europe-west1-companies-house-data.cloudfunctions.net/getCompanyInfo?company_number='
-  // const functionUrl = "https://brianevans.tech/projects/companies-house/database/controller.php?action=company-api&number=";
+const functionUrl = '/getCompanyInfo?company_number='
 const filingHistoryCard = async (event) => {
   const companyNumber = event.resource_uri.match(/^\/company\/([A-Z0-9]{6,8})\/filing-history/)[1];
   const companyProfile = await fetch(functionUrl + companyNumber).then(r => r.json()).catch(console.error)
-  // const description = await fetch('https://europe-west1-companies-house-data.cloudfunctions.net/getFilingEventDescription', {
-  //   method: "POST",
-  //   headers: {
-  //     "content-type": "application/json"
-  //   },
-  //   body: JSON.stringify({
-  //     descriptionTemplate: event.data.description,
-  //     values: event.data.description_values
-  //   })
-  // })
+  const description = await fetch('/getFilingDescription', {
+    method: "POST",
+    headers: {
+      "content-type": "application/json"
+    },
+    body: JSON.stringify({
+      description: event.data.description,
+      description_values: event.data.description_values
+    })
+  }).then(j => j.json()).then(j => j.formattedDescription).catch(console.error)
   const e = {
     companyNumber,
     companyProfile,
-    description: event.data.description,
+    description: description ?? event.data.description,
     published: new Date(event.event.published_at),
     resource_kind: event.resource_kind,
     source: event.resource_kind,
@@ -117,8 +116,7 @@ const companyProfileCard = async (event) => {
 
 const chargesCard = async (event) => {
   const [, companyNumber] = event.resource_uri.match(/^\/company\/([A-Z0-9]{6,8})\/charges/)
-  const companyProfile = await fetch(functionUrl + companyNumber).then(r => r.json()).catch(() => {
-  })
+  const companyProfile = await fetch(functionUrl + companyNumber).then(r => r.json()).catch(console.error)
   return `
         <div class="charges-card"><h3>${companyProfile?.name ?? companyNumber}
         <sub><code><a href="https://filterfacility.co.uk/company/${companyNumber}" target="_blank">${companyNumber}</a></code></sub>
@@ -130,8 +128,7 @@ const chargesCard = async (event) => {
 }
 const insolvencyCard = async (event) => {
   const companyNumber = event.resource_id
-  const companyProfile = await fetch(functionUrl + companyNumber).then(r => r.json()).catch(() => {
-  })
+  const companyProfile = await fetch(functionUrl + companyNumber).then(r => r.json()).catch(console.error)
   return `
         <div class="insolvency-card"><h3>Insolvency: ${companyProfile?.name ?? companyNumber}
         <sub><code><a href="https://filterfacility.co.uk/company/${event.resource_id}" target="_blank">${event.resource_id}</a></code></sub>

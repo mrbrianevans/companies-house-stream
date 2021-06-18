@@ -1,9 +1,7 @@
 import * as request from "request";
 import {ChargesEvent} from "../eventTypes";
-// import * as faker from 'faker'
-const faker = require('faker')
+import {promisify} from 'util'
 
-const {promisify} = require('util')
 let mostRecentWaitTime = 0
 const wait = promisify((s, c) => {
     mostRecentWaitTime = s
