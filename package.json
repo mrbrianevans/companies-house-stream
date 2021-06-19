@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "ts-node server.ts"
+    "start": "cd server && npm run start",
+    "format": "prettier --write **/*.ts",
+    "build": "cd server && npm run build"
   },
   "engines": {
     "node": "^16.0.0"
@@ -22,6 +24,7 @@
     "@types/request": "^2.48.5",
     "@types/request-promise": "^4.1.47",
     "@types/socket.io": "^2.1.12",
+    "prettier": "^2.3.1",
     "promisify": "0.0.3",
     "request-promise": "^4.2.6",
     "ts-node": "^9.1.1",

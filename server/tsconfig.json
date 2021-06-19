@@ -1,0 +1,16 @@
+{
+  "compileOnSave": true,
+  "compilerOptions": {
+    "outDir": "dist",
+    "target": "ES2019",
+    "moduleResolution": "node",
+    "removeComments": true,
+    "module": "CommonJS"
+  },
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "types"
+  ]
+}

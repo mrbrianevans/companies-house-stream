@@ -1,0 +1,13 @@
+{
+  "name": "companies-house-stream-server",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc -w",
+    "start": "node dist",
+    "start:watch": "nodemon dist"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.7"
+  }
+}
