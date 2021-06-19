@@ -1,0 +1,20 @@
+/*layout*/
+
+div.grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    height: 80vh;
+}
+
+@keyframes scaleMapMarker {
+    0% {
+        transform: scale(0.5);
+    }
+    100% {
+        transform: scale(1.5);
+    }
+}
+
+img.mapMarker {
+
+}
