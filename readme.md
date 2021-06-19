@@ -9,13 +9,26 @@ insolvent.
 - NodeJS server
 - WebSockets with Socket.io
 - HTML frontend with pure JavaScript and CSS
+- Redis, MongoDB and PostgreSQL databases
 
 ## How it works
 
-The Node server makes a request to the companies house server, which sends a response each time
-there is an update. The server does some processing on this event, such as finding more details
-about the company from an internal database. The server opens a socket with each client, and emits
-the event through this socket. The client receives the event and displays it.
+The Node server makes a request to the companies house server, which sends a response each time there is an update. The
+server does some processing on this event, such as finding more details about the company from an internal database. The
+server opens a socket with each client, and emits the event through this socket. The client receives the event and
+displays it.
+
+## Databases
+
+Companies house offers a [bulk download of company data](https://download.companieshouse.gov.uk/en_output.html) of all
+UK companies, which I have loaded into a Postgres database. When an event comes in, the database is queried to get the
+companies name and some other information about it. To reduce the load on my Postgres database, which is mainly used
+for [Filter Facility](https://filterfacility.co.uk), I cache company information in a Mongo document database. Filing
+events are sent by companies house with a filing description code rather than the actual description. They offer
+a [list of all the formatted descriptions](https://github.com/companieshouse/api-enumerations/blob/master/filing_history_descriptions.yml)
+, which I have also loaded into Postgres. These are cached in a Redis key-value database. The overall data caching
+architecture works like this:
+![data caching architecture diagram](docs/caching-diagram.svg)
 
 ## Make your own
 

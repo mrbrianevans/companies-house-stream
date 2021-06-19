@@ -49,9 +49,14 @@ FROM (
                from filing_events f
                group by date_trunc('minute', f.published)
                order by date_trunc('minute', f.published) desc
-               limit 100000) as filing FULL OUTER JOIN
-(select date_trunc('minute' , c.published) as minute, count(c.published) as count from company_events c group by date_trunc('minute' , c.published) order by date_trunc('minute' , c.published) desc limit 100000) AS company
-         ON filing.minute=company.minute
+               limit 100000) as filing
+                  FULL OUTER JOIN
+              (select date_trunc('minute', c.published) as minute, count(c.published) as count
+               from company_events c
+               group by date_trunc('minute', c.published)
+               order by date_trunc('minute', c.published) desc
+               limit 100000) AS company
+              ON filing.minute = company.minute
          ORDER BY filing.minute
 
 -- end of query

@@ -83,10 +83,15 @@ server.get('/generateGraphData', generateGraphData)
 const port = 3000
 httpServer.listen(port, () => console.log(`\x1b[32mListening on http://localhost:${port}\x1b[0m\nGraph on http://localhost:${port}/graph\n`))
 
-StreamCompanies(io, 'test')
-StreamCharges(io, 'test')
-StreamFilings(io, 'test')
-StreamInsolvencies(io, 'test')
+// StreamCompanies(io, 'test')
+// StreamCharges(io, 'test')
+// StreamFilings(io, 'test')
+// StreamInsolvencies(io, 'test')
+
+StreamCompanies(io, 'live')
+StreamCharges(io, 'live')
+StreamFilings(io, 'live')
+StreamInsolvencies(io, 'live')
 
 setInterval(() => {
     console.log("Starting all streams (24th hour interval)")

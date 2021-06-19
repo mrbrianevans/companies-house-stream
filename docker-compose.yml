@@ -1,0 +1,21 @@
+version: '3'
+services:
+  redis-cache:
+    image: redis
+  stream-server:
+    build: .
+    ports:
+      - "80:3000"
+      # not sure is this is allowed:
+      - "443:3000"
+    env_file:
+      # postgres connection details
+      - .env
+      # mongo connection details
+      - .mongo.env
+  mongo-cache:
+    image: mongo
+    env_file:
+      # for connection details
+      - .mongo.env
+    command: --quiet
