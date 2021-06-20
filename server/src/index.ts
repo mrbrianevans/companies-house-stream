@@ -32,7 +32,12 @@ index.get("/generateGraphData", generateGraphData);
 const port = 3000;
 httpServer.listen(port, () =>
   console.log(
-    `\x1b[32mListening on http://localhost:${port}\x1b[0m\nGraph on http://localhost:${port}/graph\n`
+`\x1b[32mListening on http://localhost:${port}\x1b[0m
+Graph on http://localhost:${port}/graph
+
+MONGO_CACHING: ${Number(process.env.MONGO_CACHING) === 1 ? "ENABLED" : "DISABLED"}
+REDIS_CACHING: ${Number(process.env.REDIS_CACHING) === 1 ? "ENABLED" : "DISABLED"}
+`
   )
 );
 
