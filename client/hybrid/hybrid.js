@@ -16,7 +16,13 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   subdomains: ["a", "b", "c"]
 }).addTo(map);
 const mapMarker = () => {
-  return L.icon({ iconUrl: "mapMarker.svg", iconAnchor: [60, 120], iconSize: [40, 40], className: "mapMarker" });
+  const size = 40; // pixels x pixels width and height of the marker pin
+  return L.icon({
+    iconUrl: "mapMarker.svg",
+    iconAnchor: [size / 2, size],
+    iconSize: [size, size],
+    className: "mapMarker"
+  });
 };
 const getCompanyProfile = async (companyNumber) => {
   const companyProfile = await fetch(functionUrl + companyNumber).then(async r => {
