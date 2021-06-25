@@ -1,5 +1,6 @@
 import * as request from "request";
 import { FilingEvent } from "./types/eventTypes";
+import { Client as ElasticClient } from "@elastic/elasticsearch";
 
 const { promisify } = require("util");
 let mostRecentWaitTime = 0;
@@ -122,6 +123,21 @@ export const StreamFilings = (io, mode: "test" | "live") => {
               // const companyNumber = jsonObject.resource_uri.match(/^\/company\/([A-Z0-9]{6,8})\/filing-history/)[1]
               //todo: emit event here, and move further processing to client side
               io.emit("event", jsonObject);
+              // save event in elasticnode
+              const client = new ElasticClient({ node: "http://elastic:9200" });
+              try {
+                await client.index({
+                  index: "filing-events",
+                  id: jsonObject.resource_id,
+                  body: jsonObject
+                });
+                await client.close();
+              } catch (e) {
+                console.log("failed to index to elastic search:", e.message);
+              } finally {
+                await client.close();
+              }
+
               // query enumeration map in database to figure out what the company has filed
               // slow down the stream and send more meaningful information in teh notification
               // let {

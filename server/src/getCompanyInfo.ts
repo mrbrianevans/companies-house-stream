@@ -2,6 +2,7 @@ import { Pool } from "pg";
 import { Request, Response } from "express";
 import { MongoClient } from "mongodb";
 import * as logger from "node-color-log";
+import { getMongoClient } from "./getMongoClient";
 
 export const getCompanyInfo = async (req: Request, res: Response) => {
   // tries to get companyNumber from request JSON body and URL query parameters
@@ -86,13 +87,3 @@ const saveCompanyInMongo = async (company) => {
   await mongo.close();
 };
 
-const getMongoClient = async () => {
-  const mongo = new MongoClient("mongodb://mongo-cache:27017", {
-    auth: {
-      user: process.env.MONGO_INITDB_ROOT_USERNAME,
-      password: process.env.MONGO_INITDB_ROOT_PASSWORD
-    }
-  });
-  await mongo.connect();
-  return mongo;
-};

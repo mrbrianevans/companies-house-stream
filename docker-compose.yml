@@ -15,7 +15,26 @@ services:
       - .mongo.env
   mongo-cache:
     image: mongo
-    env_file:
-      # for connection details
-      - .mongo.env
     command: --quiet
+
+  elastic:
+    image: elasticsearch:7.13.2
+    container_name: elastic
+    environment:
+      - node.name=elastic
+      - cluster.name=es-docker-cluster
+      - cluster.initial_master_nodes=elasticnode
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - elasticdata:/usr/share/elasticsearch/data
+volumes:
+  elasticdata:
+    driver: local
+
+
+
