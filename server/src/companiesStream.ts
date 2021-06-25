@@ -1,5 +1,8 @@
 import * as request from "request";
 import { CompanyProfileEvent } from "./types/eventTypes";
+import { getMongoClient } from "./getMongoClient";
+import * as logger from "node-color-log";
+import { MongoError } from "mongodb";
 // //Variables for status update:
 // let latestTimepoint = ''
 // let numberOfPackets = 0
@@ -176,6 +179,29 @@ export const StreamCompanies = (io, mode: "test" | "live") => {
               //     // console.log("Potential new company? ", companyFromStream.number, companyFromStream.date)
               // }
               io.emit("event", jsonObject);
+              // save event in mongo db
+              const client = await getMongoClient();
+              try {
+                await client
+                  .db("events")
+                  .collection<CompanyProfileEvent.CompanyProfileEvent>("company_events")
+                  // upsert logic. unique combo of company number and data. company number to try and help efficiency. not sure it works tho
+                  .updateOne({
+                    resource_id: jsonObject.resource_id,
+                    data: jsonObject.data
+                  }, { ...jsonObject }, { upsert: true });
+              } catch (e) {
+
+                if (e instanceof MongoError)
+                  logger
+                    .color("red")
+                    .log("failed to save company-event in mongodb")
+                    .log("Message: ", e.message)
+                    .log("Name: ", e.name)
+                    .log("Code: ", e.code);
+              } finally {
+                await client.close();
+              }
             } catch (e) {
               if (e instanceof SyntaxError)
                 console.error(

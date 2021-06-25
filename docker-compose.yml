@@ -6,35 +6,13 @@ services:
     build: .
     ports:
       - "80:3000"
-      # not sure is this is allowed:
       - "443:3000"
     env_file:
       # postgres connection details
       - .env
-      # mongo connection details
-      - .mongo.env
   mongo-cache:
     image: mongo
     command: --quiet
-
-  elastic:
-    image: elasticsearch:7.13.2
-    container_name: elastic
-    environment:
-      - node.name=elastic
-      - cluster.name=es-docker-cluster
-      - cluster.initial_master_nodes=elasticnode
-      - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-    volumes:
-      - elasticdata:/usr/share/elasticsearch/data
-volumes:
-  elasticdata:
-    driver: local
 
 
 

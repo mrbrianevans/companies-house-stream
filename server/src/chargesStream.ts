@@ -1,6 +1,9 @@
 import * as request from "request";
 import { ChargesEvent } from "./types/eventTypes";
 import { promisify } from "util";
+import { getMongoClient } from "./getMongoClient";
+import { MongoError } from "mongodb";
+import * as logger from "node-color-log";
 
 let mostRecentWaitTime = 0;
 const wait = promisify((s, c) => {
@@ -145,6 +148,27 @@ export const StreamCharges = (io, mode: "test" | "live") => {
                   );
               }
               io.emit("event", jsonObject);
+              // save event in mongo db
+              const client = await getMongoClient();
+              try {
+                await client
+                  .db("events")
+                  .collection("charges_events")
+                  .insertOne({
+                    _id: jsonObject.resource_id,
+                    ...jsonObject
+                  });
+              } catch (e) {
+                if (e instanceof MongoError && e.code != 11000)
+                  logger
+                    .color("red")
+                    .log("failed to save company-event in mongodb")
+                    .log("Message: ", e.message)
+                    .log("Name: ", e.name)
+                    .log("Code: ", e.code);
+              } finally {
+                await client.close();
+              }
               // console.log("CHARGES EVENT!!")
               // console.log(JSON.stringify(jsonObject))
             } catch (e) {

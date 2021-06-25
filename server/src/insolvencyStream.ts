@@ -1,5 +1,8 @@
 import * as request from "request";
-import { InsolvencyEvent } from "./types/eventTypes";
+import { CompanyProfileEvent, InsolvencyEvent } from "./types/eventTypes";
+import { getMongoClient } from "./getMongoClient";
+import { MongoError } from "mongodb";
+import * as logger from "node-color-log";
 
 const { promisify } = require("util");
 let mostRecentWaitTime = 0;
@@ -145,6 +148,28 @@ export const StreamInsolvencies = (io, mode: "test" | "live") => {
                   );
               }
               io.emit("event", jsonObject);
+              // save event in mongo db
+              const client = await getMongoClient();
+              try {
+                await client
+                  .db("events")
+                  .collection<InsolvencyEvent.InsolvencyEvent>("insolvency_events")
+                  // upsert logic. unique combo of company number and data. company number to try and help efficiency. not sure it works tho
+                  .updateOne({
+                    resource_id: jsonObject.resource_id,
+                    data: jsonObject.data
+                  }, { ...jsonObject }, { upsert: true });
+              } catch (e) {
+                if (e instanceof MongoError && e.code != 11000)
+                  logger
+                    .color("red")
+                    .log("failed to save company-event in mongodb")
+                    .log("Message: ", e.message)
+                    .log("Name: ", e.name)
+                    .log("Code: ", e.code);
+              } finally {
+                await client.close();
+              }
             } catch (e) {
               console.error(
                 `\x1b[31mCOULD NOT PARSE insolvency: \x1b[0m*${jsonText}*`

@@ -1,6 +1,8 @@
 import * as request from "request";
 import { FilingEvent } from "./types/eventTypes";
-import { Client as ElasticClient } from "@elastic/elasticsearch";
+import { getMongoClient } from "./getMongoClient";
+import { MongoError } from "mongodb";
+import * as logger from "node-color-log";
 
 const { promisify } = require("util");
 let mostRecentWaitTime = 0;
@@ -123,17 +125,24 @@ export const StreamFilings = (io, mode: "test" | "live") => {
               // const companyNumber = jsonObject.resource_uri.match(/^\/company\/([A-Z0-9]{6,8})\/filing-history/)[1]
               //todo: emit event here, and move further processing to client side
               io.emit("event", jsonObject);
-              // save event in elasticnode
-              const client = new ElasticClient({ node: "http://elastic:9200" });
+              // save event in mongo db
+              const client = await getMongoClient();
               try {
-                await client.index({
-                  index: "filing-events",
-                  id: jsonObject.resource_id,
-                  body: jsonObject
-                });
-                await client.close();
+                await client
+                  .db("events")
+                  .collection("filing_events")
+                  .insertOne({
+                    _id: jsonObject.resource_id,
+                    ...jsonObject
+                  });
               } catch (e) {
-                console.log("failed to index to elastic search:", e.message);
+                if (e instanceof MongoError && e.code != 11000)
+                  logger
+                    .color("red")
+                    .log("failed to save company-event in mongodb")
+                    .log("Message: ", e.message)
+                    .log("Name: ", e.name)
+                    .log("Code: ", e.code);
               } finally {
                 await client.close();
               }
