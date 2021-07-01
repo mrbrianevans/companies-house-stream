@@ -189,7 +189,7 @@ export const StreamCompanies = (io, mode: "test" | "live") => {
                   .updateOne({
                     resource_id: jsonObject.resource_id,
                     data: jsonObject.data
-                  }, { ...jsonObject }, { upsert: true });
+                  }, { $set:jsonObject }, { upsert: true });
               } catch (e) {
 
                 if (e instanceof MongoError)
@@ -199,6 +199,7 @@ export const StreamCompanies = (io, mode: "test" | "live") => {
                     .log("Message: ", e.message)
                     .log("Name: ", e.name)
                     .log("Code: ", e.code);
+                else console.error('Company event error (not mongo):', e)
               } finally {
                 await client.close();
               }

@@ -158,12 +158,12 @@ export const StreamInsolvencies = (io, mode: "test" | "live") => {
                   .updateOne({
                     resource_id: jsonObject.resource_id,
                     data: jsonObject.data
-                  }, { ...jsonObject }, { upsert: true });
+                  }, { $set:jsonObject }, { upsert: true });
               } catch (e) {
                 if (e instanceof MongoError && e.code != 11000)
                   logger
                     .color("red")
-                    .log("failed to save company-event in mongodb")
+                    .log("failed to save insolvency-event in mongodb")
                     .log("Message: ", e.message)
                     .log("Name: ", e.name)
                     .log("Code: ", e.code);

@@ -2,6 +2,8 @@ version: '3'
 services:
   redis-cache:
     image: redis
+  mongo-cache:
+    image: mongo
   stream-server:
     build: .
     ports:
@@ -10,9 +12,6 @@ services:
     env_file:
       # postgres connection details
       - .env
-  mongo-cache:
-    image: mongo
-    command: --quiet
 
 
 

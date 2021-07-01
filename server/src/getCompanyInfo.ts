@@ -1,6 +1,5 @@
 import { Pool } from "pg";
 import { Request, Response } from "express";
-import { MongoClient } from "mongodb";
 import * as logger from "node-color-log";
 import { getMongoClient } from "./getMongoClient";
 
@@ -23,6 +22,7 @@ export const getCompanyInfo = async (req: Request, res: Response) => {
         res.status(200).json({ _id: company.number, ...company });
       } else {
         console.log("Company not found. Number:", companyNumber);
+        await saveCompanyInTodoList(companyNumber) // keep track of not found companies
         res.status(404).json({ message: "Company not found" });
       }
     }
@@ -87,3 +87,11 @@ const saveCompanyInMongo = async (company) => {
   await mongo.close();
 };
 
+const saveCompanyInTodoList = async (companyNumber) => {
+  const mongo = await getMongoClient()
+  await mongo.db('not_found').collection('companies')
+    .insertOne({_id: companyNumber, timestampAdded: Date.now(), companyNumber}).catch(e=>{
+    if(e.code != 11000) console.error('Failed to save not_found company in todo list:', e)
+  })
+  await mongo.close()
+}
