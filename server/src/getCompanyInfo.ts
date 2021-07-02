@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import * as logger from "node-color-log";
 import { getMongoClient } from "./getMongoClient";
 
-export const getCompanyInfo = async (req: Request, res: Response) => {
+export const getCompanyInfoApi = async (req: Request, res: Response) => {
   // tries to get companyNumber from request JSON body and URL query parameters
   const companyNumber =
     req.query?.company_number?.toString() ||
@@ -12,21 +12,31 @@ export const getCompanyInfo = async (req: Request, res: Response) => {
     res.status(400).json({ message: "Company number not specified" });
   else {
     console.time(`getCompanyInfo('${companyNumber}')`);
-    const mongoCompany = await getCompanyFromMongo(companyNumber);
-    if (mongoCompany) {
-      res.status(200).json(mongoCompany);
+    const company = await getCompanyInfo(companyNumber);
+    if (company) {
+      res.status(200).json({ _id: company.number, ...company });
     } else {
-      const company = await getCompanyFromPostgres(companyNumber);
-      if (company) {
-        await saveCompanyInMongo(company);
-        res.status(200).json({ _id: company.number, ...company });
-      } else {
-        console.log("Company not found. Number:", companyNumber);
-        await saveCompanyInTodoList(companyNumber) // keep track of not found companies
-        res.status(404).json({ message: "Company not found" });
-      }
+      console.timeLog(`getCompanyInfo('${companyNumber}')`, " Company not found");
+      res.status(404).json({ message: "Company not found" });
     }
     console.timeEnd(`getCompanyInfo('${companyNumber}')`);
+  }
+};
+
+// get company: first try mongo cache, and on miss try postgres. saves not_found
+const getCompanyInfo = async (companyNumber: string) => {
+  const mongoCompany = await getCompanyFromMongo(companyNumber);
+  if (mongoCompany) {
+    return mongoCompany;
+  } else {
+    const postgresCompany = await getCompanyFromPostgres(companyNumber);
+    if (postgresCompany) {
+      await saveCompanyInMongo(postgresCompany);
+      return postgresCompany;
+    } else {
+      await saveCompanyInTodoList(companyNumber); // keep track of not found companies
+      return null;
+    }
   }
 };
 
@@ -89,9 +99,11 @@ const saveCompanyInMongo = async (company) => {
 
 const saveCompanyInTodoList = async (companyNumber) => {
   const mongo = await getMongoClient()
-  await mongo.db('not_found').collection('companies')
-    .insertOne({_id: companyNumber, timestampAdded: Date.now(), companyNumber}).catch(e=>{
-    if(e.code != 11000) console.error('Failed to save not_found company in todo list:', e)
-  })
+  await mongo.db("not_found").collection("companies")
+    .insertOne({ _id: companyNumber, timestampAdded: Date.now(), companyNumber })
+    .then(() => console.log(`Saved company ${companyNumber} in not_found.companies todo-list`))
+    .catch(e => {
+      if (e.code != 11000) console.error("Failed to save not_found company in todo list:", e);
+    })
   await mongo.close()
 }

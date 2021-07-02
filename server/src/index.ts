@@ -2,7 +2,7 @@ import { StreamCompanies } from "./companiesStream";
 import { StreamCharges } from "./chargesStream";
 import { StreamFilings } from "./filingStream";
 import { StreamInsolvencies } from "./insolvencyStream";
-import { getCompanyInfo } from "./getCompanyInfo";
+import { getCompanyInfoApi } from "./getCompanyInfo";
 import { getFilingDescription } from "./getFilingDescription";
 import { generateGraphData } from "./getEventsGraph";
 
@@ -25,14 +25,14 @@ index.use(express.static(path.join(__dirname, "../..", "client")));
 if (!process.env.PGPASSWORD) process.env.PGPASSWORD = "postgres";
 // these are API endpoints
 index.use(express.json());
-index.post("/getCompanyInfo", getCompanyInfo);
-index.get("/getCompanyInfo", getCompanyInfo);
+index.post("/getCompanyInfo", getCompanyInfoApi);
+index.get("/getCompanyInfo", getCompanyInfoApi);
 index.post("/getFilingDescription", getFilingDescription);
 index.get("/generateGraphData", generateGraphData);
 const port = 3000;
 httpServer.listen(port, () =>
   console.log(
-`\x1b[32mListening on http://localhost:${port}\x1b[0m
+    `\x1b[32mListening on http://localhost:${port}\x1b[0m
 Graph on http://localhost:${port}/graph
 
 MONGO_CACHING: ${Number(process.env.MONGO_CACHING) === 1 ? "ENABLED" : "DISABLED"}
