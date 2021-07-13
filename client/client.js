@@ -67,9 +67,9 @@ socket.on('heartbeat', heartbeat)
 
 const functionUrl = '/getCompanyInfo?company_number='
 const filingHistoryCard = async (event) => {
-  const companyNumber = event.resource_uri.match(/^\/company\/([A-Z0-9]{6,8})\/filing-history/)[1];
-  const companyProfile = await fetch(functionUrl + companyNumber).then(r => r.json()).catch(console.error)
-  const description = await fetch('/getFilingDescription', {
+  const { companyProfile } = event;
+  const companyNumber = companyProfile.number;
+  const description = await fetch("/getFilingDescription", {
     method: "POST",
     headers: {
       "content-type": "application/json"
@@ -78,7 +78,7 @@ const filingHistoryCard = async (event) => {
       description: event.data.description,
       description_values: event.data.description_values
     })
-  }).then(j => j.json()).then(j => j.formattedDescription).catch(console.error)
+  }).then(j => j.json()).then(j => j.formattedDescription).catch(console.error);
   const e = {
     companyNumber,
     companyProfile,
