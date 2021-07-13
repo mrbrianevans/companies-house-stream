@@ -3,6 +3,7 @@ import { FilingEvent } from "./types/eventTypes";
 import { getMongoClient } from "./getMongoClient";
 import { MongoError } from "mongodb";
 import * as logger from "node-color-log";
+import { getCompanyInfo } from "./getCompanyInfo";
 
 const { promisify } = require("util");
 let mostRecentWaitTime = 0;
@@ -122,9 +123,7 @@ export const StreamFilings = (io, mode: "test" | "live") => {
             // const client = await dbPool.connect()
             try {
               let jsonObject: FilingEvent.FilingEvent = JSON.parse(jsonText);
-              // const companyNumber = jsonObject.resource_uri.match(/^\/company\/([A-Z0-9]{6,8})\/filing-history/)[1]
-              //todo: emit event here, and move further processing to client side
-              io.emit("event", jsonObject);
+              const companyNumber = jsonObject.resource_uri.match(/^\/company\/([A-Z0-9]{6,8})\/filing-history/)[1];
               // save event in mongo db
               const client = await getMongoClient();
               try {
@@ -134,6 +133,11 @@ export const StreamFilings = (io, mode: "test" | "live") => {
                   .insertOne({
                     _id: jsonObject.resource_id,
                     ...jsonObject
+                  }).then(async () => {
+                    // make sure company is in postgres otherwise put in not_found
+                    const companyProfile = await getCompanyInfo(companyNumber);
+                    // emit event because its not a duplicate
+                    io.emit("event", { ...jsonObject, companyProfile });
                   });
               } catch (e) {
                 if (e instanceof MongoError && e.code != 11000)

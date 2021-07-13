@@ -24,7 +24,7 @@ export const getCompanyInfoApi = async (req: Request, res: Response) => {
 };
 
 // get company: first try mongo cache, and on miss try postgres. saves not_found
-const getCompanyInfo = async (companyNumber: string) => {
+export const getCompanyInfo = async (companyNumber: string) => {
   const mongoCompany = await getCompanyFromMongo(companyNumber);
   if (mongoCompany) {
     return mongoCompany;

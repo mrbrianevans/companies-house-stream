@@ -12,6 +12,9 @@ services:
     env_file:
       # postgres connection details
       - .env
+    depends_on:
+      - mongo-cache
+      - redis-cache
 
 
 

@@ -3,6 +3,7 @@ import { CompanyProfileEvent, InsolvencyEvent } from "./types/eventTypes";
 import { getMongoClient } from "./getMongoClient";
 import { MongoError } from "mongodb";
 import * as logger from "node-color-log";
+import { getCompanyInfo } from "./getCompanyInfo";
 
 const { promisify } = require("util");
 let mostRecentWaitTime = 0;
@@ -170,6 +171,8 @@ export const StreamInsolvencies = (io, mode: "test" | "live") => {
               } finally {
                 await client.close();
               }
+              // make sure company is in postgres otherwise put in not_found
+              await getCompanyInfo(jsonObject.resource_id);
             } catch (e) {
               console.error(
                 `\x1b[31mCOULD NOT PARSE insolvency: \x1b[0m*${jsonText}*`

@@ -3,6 +3,7 @@ import { CompanyProfileEvent } from "./types/eventTypes";
 import { getMongoClient } from "./getMongoClient";
 import * as logger from "node-color-log";
 import { MongoError } from "mongodb";
+import { getCompanyInfo } from "./getCompanyInfo";
 // //Variables for status update:
 // let latestTimepoint = ''
 // let numberOfPackets = 0
@@ -199,10 +200,13 @@ export const StreamCompanies = (io, mode: "test" | "live") => {
                     .log("Message: ", e.message)
                     .log("Name: ", e.name)
                     .log("Code: ", e.code);
-                else console.error('Company event error (not mongo):', e)
+                else console.error("Company event error (not mongo):", e);
               } finally {
                 await client.close();
               }
+
+              // make sure company is in postgres otherwise put in not_found
+              await getCompanyInfo(jsonObject.resource_id);
             } catch (e) {
               if (e instanceof SyntaxError)
                 console.error(

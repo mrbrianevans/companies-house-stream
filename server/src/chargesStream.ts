@@ -4,6 +4,7 @@ import { promisify } from "util";
 import { getMongoClient } from "./getMongoClient";
 import { MongoError } from "mongodb";
 import * as logger from "node-color-log";
+import { getCompanyInfo } from "./getCompanyInfo";
 
 let mostRecentWaitTime = 0;
 const wait = promisify((s, c) => {
@@ -147,7 +148,7 @@ export const StreamCharges = (io, mode: "test" | "live") => {
                     0.5
                   );
               }
-              io.emit("event", jsonObject);
+              const companyNumber = jsonObject.resource_uri.match(/^\/company\/([A-Z0-9]{6,8})\/charges/)[1];
               // save event in mongo db
               const client = await getMongoClient();
               try {
@@ -157,6 +158,11 @@ export const StreamCharges = (io, mode: "test" | "live") => {
                   .insertOne({
                     _id: jsonObject.resource_id,
                     ...jsonObject
+                  }).then(async () => {
+                    // make sure company is in postgres otherwise put in not_found
+                    const companyProfile = await getCompanyInfo(companyNumber);
+                    // emit event because its not a duplicate
+                    io.emit("event", { ...jsonObject, companyProfile });
                   });
               } catch (e) {
                 if (e instanceof MongoError && e.code != 11000)
