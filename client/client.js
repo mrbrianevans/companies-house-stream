@@ -121,8 +121,7 @@ const companyProfileCard = async (event) => {
 }
 
 const officerCard = async (event) => {
-  const [, companyNumber] = event.resource_uri.match(/^\/company\/([A-Z0-9]{6,8})\/appointments/)
-  const companyProfile = await fetch(functionUrl+companyNumber).then(r=>r.json())
+  const companyProfile = event.companyProfile
   const resigned = event.data.resigned_on !== undefined
   return `<div class="officer-card"><div class="row">
       <h3>${companyProfile?.name ?? companyNumber}</h3>
@@ -135,8 +134,7 @@ const officerCard = async (event) => {
 }
 
 const pscCard = async (event) => {
-  const [, companyNumber] = event.resource_uri.match(/^\/company\/([A-Z0-9]{6,8})\/persons-with-significant-control/)
-  const companyProfile = await fetch(functionUrl+companyNumber).then(r=>r.json())
+  const companyProfile = event.companyProfile
   const ceased = event.data.ceased_on !== undefined
   return `<div class="psc-card"><div class="row">
       <h3>${companyProfile?.name ?? companyNumber}</h3>

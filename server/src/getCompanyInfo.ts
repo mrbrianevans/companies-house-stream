@@ -98,6 +98,7 @@ const saveCompanyInMongo = async (company) => {
 };
 
 const saveCompanyInTodoList = async (companyNumber) => {
+  if (Number(process.env.MONGO_CACHING) !== 1) return;
   const mongo = await getMongoClient()
   await mongo.db("not_found").collection("companies")
     .insertOne({ _id: companyNumber, timestampAdded: Date.now(), companyNumber })

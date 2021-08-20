@@ -1,6 +1,10 @@
 import * as request from "request";
+import { getMongoClient } from "./getMongoClient";
+import { MongoError } from "mongodb";
 import * as logger from "node-color-log";
-
+import { getCompanyInfo } from "./getCompanyInfo";
+const TARGET_QUEUE_SIZE = 20
+const MIN_DELAY = 200 //ms
 export const StreamPsc = (io, mode: "test" | "live") => {
   if (mode == "test") {
     setTimeout(() => {
@@ -13,6 +17,7 @@ export const StreamPsc = (io, mode: "test" | "live") => {
       StreamPsc(io, "test");
     }, Math.random() * 15000);
   } else {
+	  let queue = []
     let dataBuffer = "";
     const reqStream = request
       .get("https://stream.companieshouse.gov.uk/persons-with-significant-control")
@@ -48,8 +53,33 @@ export const StreamPsc = (io, mode: "test" | "live") => {
             if (jsonText.length === 0) continue;
             try {
               let jsonObject = JSON.parse(jsonText);
-              io.emit("event", jsonObject);
-              
+			  const [, companyNumber] = jsonObject.resource_uri.match(/^\/company\/([A-Z0-9]{6,8})\/persons-with-significant-control/)
+			  // save event in mongo db
+              const client = await getMongoClient();
+              try {
+                await client
+                  .db("events")
+                  .collection("psc_events")
+                  .insertOne({
+                    _id: jsonObject.resource_id,
+                    ...jsonObject
+                  }).then(async () => {
+                    // make sure company is in postgres otherwise put in not_found
+                    const companyProfile = await getCompanyInfo(companyNumber);
+                    // queue event because its not a duplicate, send company profile with event
+					queue.push({ ...jsonObject, companyProfile })
+                  });
+              } catch (e) {
+                if (e instanceof MongoError && e.code != 11000)
+                  logger
+                    .color("red")
+                    .log("failed to save company-event in mongodb")
+                    .log("Message: ", e.message)
+                    .log("Name: ", e.name)
+                    .log("Code: ", e.code);
+              } finally {
+                await client.close();
+              }
             } catch (e) {
               console.error(
                 `\x1b[31mCOULD NOT PARSE psc: \x1b[0m*${jsonText}*`
@@ -64,6 +94,27 @@ export const StreamPsc = (io, mode: "test" | "live") => {
       .on("end", () => {
         console.error("psc stream ended");
       });
+	  let releasedCount = 0
+	  //console.log(`qtyReleased,queueLength,delay`)
+	  setInterval(()=>{
+		  //console.log(`${releasedCount},${queue.length},${Math.round(delay)}`)
+	  }, 1000)
+	  let delay = 1000 // milliseconds between emits
+	  // shift the first event in the queue
+	  const releaseEvent = () => {
+		  // only release an event if there are more than zero queue length
+		  if(queue.length > 0) {
+			  releasedCount++
+			  io.emit('event', queue.shift())
+		  }
+		  //if the queue is shorter than desired, increase the delay, otherwise decrease it
+		  if(queue.length < TARGET_QUEUE_SIZE) delay *= 1.1
+		  else if(queue.length > TARGET_QUEUE_SIZE) delay /= 1.1
+		  delay = Math.max(Math.round(delay),MIN_DELAY) // prevent going below MIN_DELAY
+		  setTimeout(releaseEvent, delay)
+	  }
+	  releaseEvent()
+	  
  }
 };
 

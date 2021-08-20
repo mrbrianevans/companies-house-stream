@@ -2,8 +2,12 @@ version: '3'
 services:
   redis-cache:
     image: redis
+    volumes: 
+      - redisdata:/data
   mongo-cache:
     image: mongo
+    volumes: 
+      - mongodata:/data
   stream-server:
     build: .
     ports:
@@ -17,4 +21,6 @@ services:
       - redis-cache
 
 
-
+volumes:
+  mongodata:
+  redisdata:
