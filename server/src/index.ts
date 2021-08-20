@@ -2,6 +2,8 @@ import { StreamCompanies } from "./companiesStream";
 import { StreamCharges } from "./chargesStream";
 import { StreamFilings } from "./filingStream";
 import { StreamInsolvencies } from "./insolvencyStream";
+import { StreamOfficers } from "./officersStream";
+import { StreamPsc } from "./pscStream";
 import { getCompanyInfoApi } from "./getCompanyInfo";
 import { getFilingDescription } from "./getFilingDescription";
 import { generateGraphData } from "./getEventsGraph";
@@ -41,21 +43,27 @@ REDIS_CACHING: ${Number(process.env.REDIS_CACHING) === 1 ? "ENABLED" : "DISABLED
   )
 );
 
-// StreamCompanies(io, "test")
+//StreamCompanies(io, "test")
 // StreamCharges(io, "test")
-// StreamFilings(io, "test")
+//StreamFilings(io, "test")
 // StreamInsolvencies(io, "test")
+//StreamOfficers(io, "test");
+//StreamPsc(io, "test");
 
 StreamCompanies(io, "live");
 StreamCharges(io, "live");
 StreamFilings(io, "live");
 StreamInsolvencies(io, "live");
+StreamOfficers(io, "live");
+StreamPsc(io, "live");
 
 setInterval(() => {
   console.log("Starting all streams (24th hour interval)");
   StreamCompanies(io, "live");
-  StreamCharges(io, "live");
-  StreamFilings(io, "live");
-  StreamInsolvencies(io, "live");
+	StreamCharges(io, "live");
+	StreamFilings(io, "live");
+	StreamInsolvencies(io, "live");
+	StreamOfficers(io, "live");
+	StreamPsc(io, "live");
   // reset the stream every 24 hours 150 milliseconds
 }, 1000 * 60 * 60 * 24 + 150);

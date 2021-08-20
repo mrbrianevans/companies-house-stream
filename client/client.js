@@ -30,10 +30,16 @@ const pushEvent = async (e) => {
     case 'company-insolvency':
       eventCard.innerHTML = await insolvencyCard(e)
       break;
+	case 'company-officers':
+		eventCard.innerHTML = await officerCard(e)
+		break;
+	case 'company-psc-individual':
+		eventCard.innerHTML = await pscCard(e)
+		break;
     default:
       eventCard.innerHTML = `
         <div class="alert"><h3>New format of event!</h3>
-        <p>${e.resource_kind}</p></div>
+        <pre>${e}</pre></div>
         `
       break;
   }
@@ -111,6 +117,34 @@ const companyProfileCard = async (event) => {
     </div>
     <p class="new-company">${newCompany ? 'New company' : ''} ${event.event.fields_changed ? event.event.fields_changed.join(', ') : ''}</p>
     <p>${event.event.type} ${event.resource_kind} at ${new Date(event.event.published_at).toLocaleTimeString()}</p>
+    </div>`
+}
+
+const officerCard = async (event) => {
+  const [, companyNumber] = event.resource_uri.match(/^\/company\/([A-Z0-9]{6,8})\/appointments/)
+  const companyProfile = await fetch(functionUrl+companyNumber).then(r=>r.json())
+  const resigned = event.data.resigned_on !== undefined
+  return `<div class="officer-card"><div class="row">
+      <h3>${companyProfile?.name ?? companyNumber}</h3>
+      <sub><code><a href="https://filterfacility.co.uk/company/${companyNumber}" target="_blank">${companyNumber}</a></code></sub>
+    </div>
+    <p>${event.data.name} appointed ${event.data.officer_role} on ${event.data.appointed_on}</p>
+	${resigned ? `<b>Resigned on ${event.data.resigned_on}</b>`: ''}
+    <p>${event.resource_kind} at ${new Date(event.event.published_at).toLocaleTimeString()}</p>
+    </div>`
+}
+
+const pscCard = async (event) => {
+  const [, companyNumber] = event.resource_uri.match(/^\/company\/([A-Z0-9]{6,8})\/persons-with-significant-control/)
+  const companyProfile = await fetch(functionUrl+companyNumber).then(r=>r.json())
+  const ceased = event.data.ceased_on !== undefined
+  return `<div class="psc-card"><div class="row">
+      <h3>${companyProfile?.name ?? companyNumber}</h3>
+      <sub><code><a href="https://filterfacility.co.uk/company/${companyNumber}" target="_blank">${companyNumber}</a></code></sub>
+    </div>
+    <p>${event.data.name} notified on ${event.data.notified_on}</p>
+	${ceased ? `<b>Ceased on ${event.data.ceased_on}</b>`: ''}
+    <p>${event.resource_kind} at ${new Date(event.event.published_at).toLocaleTimeString()}</p>
     </div>`
 }
 
