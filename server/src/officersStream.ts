@@ -6,6 +6,7 @@ import { getCompanyInfo } from "./getCompanyInfo";
 
 const TARGET_QUEUE_SIZE = 20
 const MIN_DELAY = 200 //ms
+const MAX_DELAY = 600_000 //ms (10 minutes)
 export const StreamOfficers = (io, mode: "test" | "live") => {
   if (mode == "test") {
     setTimeout(() => {
@@ -112,6 +113,7 @@ export const StreamOfficers = (io, mode: "test" | "live") => {
 		  if(queue.length < TARGET_QUEUE_SIZE) delay *= 1.1
 		  else if(queue.length > TARGET_QUEUE_SIZE) delay /= 1.1
 		  delay = Math.max(Math.round(delay),MIN_DELAY) // prevent going below MIN_DELAY
+		  delay = Math.min(Math.round(delay),MAX_DELAY) // prevent going above MAX_DELAY
 		  setTimeout(releaseEvent, delay)
 	  }
 	  releaseEvent()

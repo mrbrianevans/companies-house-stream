@@ -5,22 +5,9 @@ import { MongoError } from "mongodb";
 import * as logger from "node-color-log";
 import { getCompanyInfo } from "./getCompanyInfo";
 
-const { promisify } = require("util");
-let mostRecentWaitTime = 0;
-const wait = promisify((s, c) => {
-  mostRecentWaitTime = s;
-  if (!isFinite(s)) s = 300;
-  if (s > 5000) s = 5000;
-  setTimeout(() => c(null, "done waiting"), s);
-});
-let qtyOfNotifications = 0;
-let averageProcessingTime = 0;
-let startTime = Date.now();
-let reportStatsInterval;
-let resetStatsInterval;
-let last60NotificationTimes = [];
-let last60ProcessingTimes = [];
-let last60Backlog = [];
+const TARGET_QUEUE_SIZE = 20
+const MIN_DELAY = 200 //ms
+const MAX_DELAY = 600_000 //ms (10 minutes)
 export const StreamFilings = (io, mode: "test" | "live") => {
   if (mode == "test") {
     setTimeout(async () => {
@@ -34,11 +21,11 @@ export const StreamFilings = (io, mode: "test" | "live") => {
     }, Math.random() * 2000);
   } else {
     let dataBuffer = "";
+	const queue = []
     const reqStream = request
       .get("https://stream.companieshouse.gov.uk/filings")
       .auth(process.env.APIUSER, "")
       .on("response", (r: any) => {
-        startTime = Date.now();
         setTimeout(() => {
           console.log("Killing the filing stream after 24 hours");
           reqStream.end();
@@ -47,50 +34,6 @@ export const StreamFilings = (io, mode: "test" | "live") => {
         switch (r.statusCode) {
           case 200:
             console.time("Listening on filing stream");
-            //TRYING TO NOT RESET STATS ANYMORE
-            // resetStatsInterval = setInterval(() => {
-            //     console.timeLog("Listening on filing stream", `Reset filing stats after ${qtyOfNotifications} notifications`)
-            //     // reset stats every hour
-            //     last60NotificationTimes = []
-            //     last60ProcessingTimes = []
-            //     last60Backlog = []
-            //     qtyOfNotifications = 0
-            //     averageProcessingTime = 0
-            //     startTime = Date.now()
-            // }, 2001111)// staggered reseting to prevent them all reseting at the same time for an unfortunate user experience
-            reportStatsInterval = setInterval(() => {
-              // console.log(`Filing - Average processing time: ${Math.round(averageProcessingTime)}ms, new notification every ${Math.round((Date.now() - startTime) / qtyOfNotifications)}ms`)
-              const last60TotalTime =
-                last60NotificationTimes[0] -
-                last60NotificationTimes[last60NotificationTimes.length - 1];
-              const last60ProcessingTime = last60ProcessingTimes
-                .slice(0, 5)
-                .reduce(
-                  (previousValue, currentValue) => previousValue + currentValue,
-                  0
-                );
-              const recentProcessingTimePerNotification =
-                last60ProcessingTime / last60ProcessingTimes.slice(0, 5).length;
-              const averageTimePerNewNotification =
-                last60TotalTime / (last60NotificationTimes.length + 1);
-              const averageBacklog =
-                last60Backlog.reduce(
-                  (previousValue, currentValue) => previousValue + currentValue,
-                  0
-                ) /
-                last60Backlog.length /
-                1000;
-              // console.log("Last 60 average proc time", Math.round(last60ProcessingTimes.reduce((previousValue, currentValue) => previousValue+currentValue)/last60ProcessingTimes.length) / 1000, 'seconds')
-              // console.log("Last 60 average notification time", Math.round(averageTimePerNewNotification) / 1000, 'seconds')
-              // process.stdout.clearLine(null)
-              // process.stdout.cursorTo(0)
-              // process.stdout.write(`Backlog: ${Math.round(averageBacklog)}s | proc/note ${Math.round(recentProcessingTimePerNotification / averageTimePerNewNotification * 100)}% | Processing time: ${Math.round(recentProcessingTimePerNotification)}ms | Notification freq: ${Math.round(averageTimePerNewNotification)}ms/new notif. Array sizes: ${last60ProcessingTimes.length}, ${last60NotificationTimes.length}, ${last60Backlog.length} | most recent wait time: ${Math.round(mostRecentWaitTime)}ms`)
-              console.log(
-                "FILING: Average backlog on filing: ",
-                Math.round(averageBacklog),
-                "seconds"
-              );
-            }, 1000000);
             console.log("Listening to updates on filing stream");
             break;
           case 416:
@@ -112,10 +55,6 @@ export const StreamFilings = (io, mode: "test" | "live") => {
           dataBuffer += d.toString("utf8");
           dataBuffer = dataBuffer.replace("}}{", "}}\n{");
           while (dataBuffer.includes("\n")) {
-            let singleStartTime = Date.now();
-            last60NotificationTimes.unshift(Date.now());
-            if (qtyOfNotifications > 100) last60NotificationTimes.pop();
-            // console.time('Process filing history')
             let newLinePosition = dataBuffer.search("\n");
             let jsonText = dataBuffer.slice(0, newLinePosition);
             dataBuffer = dataBuffer.slice(newLinePosition + 1);
@@ -137,7 +76,7 @@ export const StreamFilings = (io, mode: "test" | "live") => {
                     // make sure company is in postgres otherwise put in not_found
                     const companyProfile = await getCompanyInfo(companyNumber);
                     // emit event because its not a duplicate
-                    io.emit("event", { ...jsonObject, companyProfile });
+					queue.push({ ...jsonObject, companyProfile })
                   });
               } catch (e) {
                 if (e instanceof MongoError && e.code != 11000)
@@ -151,98 +90,6 @@ export const StreamFilings = (io, mode: "test" | "live") => {
                 await client.close();
               }
 
-              // query enumeration map in database to figure out what the company has filed
-              // slow down the stream and send more meaningful information in teh notification
-              // let {
-              //     rows: companyProfile,
-              //     rowCount: companysFound
-              // } = await client.query("SELECT * FROM companies WHERE number=$1 LIMIT 1", [companyNumber])
-              //
-              // const {
-              //     rows: descriptions,
-              //     rowCount
-              // } = await client.query("SELECT value FROM filing_history_descriptions WHERE key=$1 LIMIT 1", [jsonObject.data.description])
-              // // console.timeLog('Process filing history',{"Database response": descriptions})
-              // if (rowCount === 1) {
-              //     const description: string = descriptions[0]['value']
-              //     let formattedDescription = description.replace(/{([a-z_]+)}/g, (s) => jsonObject.data.description_values ? jsonObject.data.description_values[s.slice(1, s.length - 1)] || '' : '')
-              //     formattedDescription = formattedDescription.replace(/^\*\*/, '<b>')
-              //     formattedDescription = formattedDescription.replace(/\*\*/, '</b>')
-              //     // console.log(formattedDescription)
-              //     // if(companysFound === 1)
-              //     const eventToEmit: FilingEmit = {
-              //         source: 'filing-history',
-              //         title: formattedDescription.match(/<b>(.+)<\/b>/) ? formattedDescription.match(/<b>(.+)<\/b>/)[1] : jsonObject.data.category,
-              //         description: formattedDescription,
-              //         published: new Date(jsonObject.event.published_at),
-              //         companyNumber: companyNumber,
-              //         resource_kind: 'filing-history',
-              //         companyProfile: companysFound === 1 ? companyProfile[0] : undefined
-              //     }
-              last60Backlog.unshift(
-                Date.now() - new Date(jsonObject.event.published_at).valueOf()
-              );
-
-              //work out rolling average of receival time using notifications and processing timing arrays
-              if (qtyOfNotifications > 5) {
-                const last60TotalTime =
-                  last60NotificationTimes[0] -
-                  last60NotificationTimes[last60NotificationTimes.length - 1];
-                const last60ProcessingTime = last60ProcessingTimes
-                  .slice(0, 5)
-                  .reduce(
-                    (previousValue, currentValue) =>
-                      previousValue + currentValue,
-                    0
-                  );
-                const recentProcessingTimePerNotification =
-                  last60ProcessingTime /
-                  last60ProcessingTimes.slice(0, 5).length;
-                const averageTimePerNewNotification =
-                  last60TotalTime / (last60NotificationTimes.length + 1);
-                const averageBacklog =
-                  last60Backlog.reduce(
-                    (previousValue, currentValue) =>
-                      previousValue + currentValue,
-                    0
-                  ) /
-                  last60Backlog.length /
-                  1000;
-                // console.log(last60TotalTime,last60ProcessingTime,recentProcessingTimePerNotification,averageTimePerNewNotification,averageBacklog)
-                last60Backlog.pop();
-                // if average processing time is less than 70% of the frequency of new notifications
-                if (
-                  (recentProcessingTimePerNotification /
-                    averageTimePerNewNotification) *
-                  100 <
-                  70 &&
-                  averageBacklog < 60 * 10
-                )
-                  await wait(
-                    averageTimePerNewNotification -
-                    (Date.now() - singleStartTime)
-                  );
-                else if (
-                  (recentProcessingTimePerNotification /
-                    averageTimePerNewNotification) *
-                  100 <
-                  100 &&
-                  averageBacklog < 60 * 10
-                )
-                  // kill switch to never exceed 100%
-                  await wait(
-                    (averageTimePerNewNotification -
-                      (Date.now() - singleStartTime)) *
-                    0.5
-                  );
-                // else
-                //     console.log('\nPercentage: ', Math.round(recentProcessingTimePerNotification / averageTimePerNewNotification * 100), '% | Backlog:', Math.round(averageBacklog), 'seconds')
-              }
-              // io.emit('event', eventToEmit)
-              // } else {
-              //     if (jsonObject.data.description && jsonObject.data.description !== 'legacy') // some are undefined and legacy
-              //         console.log("\x1b[31mDatabase could not find description\x1b[0m for", jsonObject.data.description)
-              // }
             } catch (e) {
               // error handling
               if (e instanceof SyntaxError)
@@ -252,15 +99,8 @@ export const StreamFilings = (io, mode: "test" | "live") => {
               else console.error("\x1b[31m", e, "\x1b[0m");
             } finally {
               // await client.release() // release the client when finished, regardless of errors
-              // console.timeEnd('Process filing history')
             }
 
-            let totalTimeSoFar =
-              qtyOfNotifications++ * averageProcessingTime +
-              (Date.now() - singleStartTime);
-            averageProcessingTime = totalTimeSoFar / qtyOfNotifications;
-            last60ProcessingTimes.unshift(Date.now() - singleStartTime);
-            if (qtyOfNotifications > 50) last60ProcessingTimes.pop();
           }
           reqStream.resume();
         } else {
@@ -268,15 +108,30 @@ export const StreamFilings = (io, mode: "test" | "live") => {
         }
       })
       .on("end", async () => {
-        try {
-          clearInterval(reportStatsInterval);
-          clearInterval(resetStatsInterval);
-        } catch (e) {
-        }
-
         console.timeEnd("Listening on filing stream");
         console.error("Filing stream ended");
       });
+	  let releasedCount = 0
+	  //console.log(`qtyReleased,queueLength,delay`)
+	  setInterval(()=>{
+		  //console.log(`${releasedCount},${queue.length},${Math.round(delay)}`)
+	  }, 1000)
+	  let delay = 1000 // milliseconds between emits
+	  // shift the first event in the queue
+	  const releaseEvent = () => {
+		  // only release an event if there are more than zero queue length
+		  if(queue.length > 0) {
+			  releasedCount++
+			  io.emit('event', queue.shift())
+		  }
+		  //if the queue is shorter than desired, increase the delay, otherwise decrease it
+		  if(queue.length < TARGET_QUEUE_SIZE) delay *= 1.1
+		  else if(queue.length > TARGET_QUEUE_SIZE) delay /= 1.1
+		  delay = Math.max(Math.round(delay),MIN_DELAY) // prevent going below MIN_DELAY
+		  delay = Math.min(Math.round(delay),MAX_DELAY) // prevent going above MAX_DELAY
+		  setTimeout(releaseEvent, delay)
+	  }
+	  releaseEvent()
   }
 };
 
