@@ -1,9 +1,9 @@
-import * as request from "request";
-import { CompanyProfileEvent } from "./types/eventTypes";
-import { getMongoClient } from "./getMongoClient";
-import * as logger from "node-color-log";
-import { MongoError } from "mongodb";
-import { getCompanyInfo } from "./getCompanyInfo";
+import * as request from "request"
+import { CompanyProfileEvent } from "./types/eventTypes"
+import { getMongoClient } from "./getMongoClient"
+import * as logger from "node-color-log"
+import { MongoError } from "mongodb"
+import { getCompanyInfo } from "./getCompanyInfo"
 // //Variables for status update:
 // let latestTimepoint = ''
 // let numberOfPackets = 0
@@ -12,16 +12,16 @@ import { getCompanyInfo } from "./getCompanyInfo";
 // let numberOfNewCompanies = 0
 // let startTime = Date.now()
 // let streamPaused = false
-const { promisify } = require("util");
+const { promisify } = require("util")
 const wait = promisify((s, c) => {
   // console.log("Waiting for", s, "ms on company")
-  if (!isFinite(s)) s = 300;
-  if (s > 5000) s = 5000;
-  setTimeout(() => c(null, "done waiting"), s / 3); // divide by 3 to stop getting kicked off companies house server
-});
-let qtyOfNotifications = 0;
-let averageProcessingTime = 0;
-let startTime = Date.now();
+  if (!isFinite(s)) s = 300
+  if (s > 5000) s = 5000
+  setTimeout(() => c(null, "done waiting"), s / 3) // divide by 3 to stop getting kicked off companies house server
+})
+let qtyOfNotifications = 0
+let averageProcessingTime = 0
+let startTime = Date.now()
 export const StreamCompanies = (io, mode: "test" | "live") => {
   if (mode == "test") {
     // setTimeout(()=>io.emit("heartbeat", {}), Math.random()*10000)
@@ -30,34 +30,34 @@ export const StreamCompanies = (io, mode: "test" | "live") => {
         "event",
         sampleCompanyProfiles[
           Math.floor(Math.random() * sampleCompanyProfiles.length)
-          ]
-      );
-      StreamCompanies(io, "test");
-    }, Math.random() * 3000);
+        ]
+      )
+      StreamCompanies(io, "test")
+    }, Math.random() * 3000)
   } else {
-    let dataBuffer = "";
+    let dataBuffer = ""
     const reqStream = request
       .get("https://stream.companieshouse.gov.uk/companies")
       .auth(process.env.APIUSER, "")
       .on("response", (r: any) => {
-        console.log("company Headers received, status", r.statusCode);
+        console.log("company Headers received, status", r.statusCode)
         setTimeout(() => {
-          console.log("Killing the company stream after 24 hours");
-          reqStream.end();
-        }, 1000 * 60 * 60 * 24); // end after 24 hours
+          console.log("Killing the company stream after 24 hours")
+          reqStream.end()
+        }, 1000 * 60 * 60 * 24) // end after 24 hours
         switch (r.statusCode) {
           case 200:
-            console.time("Listening on company stream");
+            console.time("Listening on company stream")
             setInterval(() => {
               console.timeLog(
                 "Listening on company stream",
                 `Reset comp stats after ${qtyOfNotifications} notifications`
-              );
+              )
               // reset stats every hour
-              qtyOfNotifications = 0;
-              averageProcessingTime = 0;
-              startTime = Date.now();
-            }, 2501111); // staggered reseting to prevent them all reseting at the same time for an unfortunate user experience
+              qtyOfNotifications = 0
+              averageProcessingTime = 0
+              startTime = Date.now()
+            }, 2501111) // staggered reseting to prevent them all reseting at the same time for an unfortunate user experience
             setInterval(() => {
               console.log(
                 `Company - Average processing time: ${Math.round(
@@ -65,36 +65,36 @@ export const StreamCompanies = (io, mode: "test" | "live") => {
                 )}ms, new notification every ${Math.round(
                   (Date.now() - startTime) / qtyOfNotifications
                 )}ms`
-              );
-            }, 1000000);
-            break;
+              )
+            }, 1000000)
+            break
           case 416:
-            console.log("Timepoint out of date");
-            break;
+            console.log("Timepoint out of date")
+            break
           case 429:
-            console.log("RATE LIMITED, exiting now");
-            process.exit();
-            break;
+            console.log("RATE LIMITED, exiting now")
+            process.exit()
+            break
           default:
-            process.exit();
+            process.exit()
         }
       })
       .on("error", (e: any) => console.error("error", e))
       .on("data", async (d: any) => {
         if (d.toString().length > 1) {
-          reqStream.pause();
+          reqStream.pause()
 
-          dataBuffer += d.toString("utf8");
-          dataBuffer = dataBuffer.replace("}}{", "}}\n{");
+          dataBuffer += d.toString("utf8")
+          dataBuffer = dataBuffer.replace("}}{", "}}\n{")
           while (dataBuffer.includes("\n")) {
-            let singleStartTime = Date.now();
-            let newLinePosition = dataBuffer.search("\n");
-            let jsonText = dataBuffer.slice(0, newLinePosition);
-            dataBuffer = dataBuffer.slice(newLinePosition + 1);
-            if (jsonText.length === 0) continue;
+            let singleStartTime = Date.now()
+            let newLinePosition = dataBuffer.search("\n")
+            let jsonText = dataBuffer.slice(0, newLinePosition)
+            dataBuffer = dataBuffer.slice(newLinePosition + 1)
+            if (jsonText.length === 0) continue
             try {
               let jsonObject: CompanyProfileEvent.CompanyProfileEvent =
-                JSON.parse(jsonText);
+                JSON.parse(jsonText)
               // query database for previous information held on company to detect what has changed
               // This stops the wait from limiting the rate of receival too much
               // console.log("Processing time as a % of time per new notification: ", Math.round(averageProcessingTime/((Date.now() - startTime) / qtyOfNotifications)*100))
@@ -102,29 +102,29 @@ export const StreamCompanies = (io, mode: "test" | "live") => {
                 qtyOfNotifications > 75 &&
                 (averageProcessingTime /
                   ((Date.now() - startTime) / qtyOfNotifications)) *
-                100 <
-                60
+                  100 <
+                  60
               )
                 await wait(
                   (Date.now() - startTime) / qtyOfNotifications -
-                  (Date.now() - singleStartTime) -
-                  100
-                );
+                    (Date.now() - singleStartTime) -
+                    100
+                )
               // always minus 100 milliseconds
               else if (
                 qtyOfNotifications > 70 &&
                 (averageProcessingTime /
                   ((Date.now() - startTime) / qtyOfNotifications)) *
-                100 <
-                100
+                  100 <
+                  100
               )
                 // kill switch to never exceed 100%
                 await wait(
                   ((Date.now() - startTime) / qtyOfNotifications -
                     (Date.now() - singleStartTime)) *
-                  0.5 -
-                  100
-                );
+                    0.5 -
+                    100
+                )
 
               // const companyFromStream = {
               //     name: jsonObject.data.company_name,
@@ -179,58 +179,63 @@ export const StreamCompanies = (io, mode: "test" | "live") => {
               // } else {
               //     // console.log("Potential new company? ", companyFromStream.number, companyFromStream.date)
               // }
-              io.emit("event", jsonObject);
+              io.emit("event", jsonObject)
               // save event in mongo db
-              const client = await getMongoClient();
+              const client = await getMongoClient()
               try {
                 await client
                   .db("events")
-                  .collection<CompanyProfileEvent.CompanyProfileEvent>("company_events")
+                  .collection<CompanyProfileEvent.CompanyProfileEvent>(
+                    "company_events"
+                  )
                   // upsert logic. unique combo of company number and data. company number to try and help efficiency. not sure it works tho
-                  .updateOne({
-                    resource_id: jsonObject.resource_id,
-                    data: jsonObject.data
-                  }, { $set:jsonObject }, { upsert: true });
+                  .updateOne(
+                    {
+                      resource_id: jsonObject.resource_id,
+                      data: jsonObject.data,
+                    },
+                    { $set: jsonObject },
+                    { upsert: true }
+                  )
               } catch (e) {
-
                 if (e instanceof MongoError)
                   logger
                     .color("red")
                     .log("failed to save company-event in mongodb")
                     .log("Message: ", e.message)
                     .log("Name: ", e.name)
-                    .log("Code: ", e.code);
-                else console.error("Company event error (not mongo):", e);
+                    .log("Code: ", e.code)
+                else console.error("Company event error (not mongo):", e)
               } finally {
-                await client.close();
+                await client.close()
               }
 
               // make sure company is in postgres otherwise put in not_found
-              await getCompanyInfo(jsonObject.resource_id);
+              await getCompanyInfo(jsonObject.resource_id)
             } catch (e) {
               if (e instanceof SyntaxError)
                 console.error(
                   `\x1b[31mCOULD NOT PARSE company profile: \x1b[0m*${jsonText}*`
-                );
-              else console.error(e);
+                )
+              else console.error(e)
             }
 
             let totalTimeSoFar =
               qtyOfNotifications++ * averageProcessingTime +
-              (Date.now() - singleStartTime);
-            averageProcessingTime = totalTimeSoFar / qtyOfNotifications;
+              (Date.now() - singleStartTime)
+            averageProcessingTime = totalTimeSoFar / qtyOfNotifications
           }
-          reqStream.resume();
+          reqStream.resume()
         } else {
-          io.emit("heartbeat", {});
+          io.emit("heartbeat", {})
         }
       })
       .on("end", () => {
-        console.error("Company profile stream ended");
-        console.timeEnd("Listening on company stream");
-      });
+        console.error("Company profile stream ended")
+        console.timeEnd("Listening on company stream")
+      })
   }
-};
+}
 
 const companyTypeConversion = {
   "private-unlimited": "Private unlimited company",
@@ -272,8 +277,8 @@ const companyTypeConversion = {
   "scottish-charitable-incorporated-organisation":
     "Scottish charitable incorporated organisation",
   "further-education-or-sixth-form-college-corporation":
-    "Further education or sixth form college corporation"
-};
+    "Further education or sixth form college corporation",
+}
 
 // some sample companies from the stream to use as an example of the format to expect
 const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
@@ -287,7 +292,7 @@ const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
         last_accounts: [Object],
         next_accounts: [Object],
         next_due: "2021-10-31",
-        next_made_up_to: "2021-01-31"
+        next_made_up_to: "2021-01-31",
       },
       can_file: true,
       company_name: "DE LUXE GROUP LIMITED",
@@ -296,7 +301,7 @@ const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
       confirmation_statement: {
         last_made_up_to: "2021-01-06",
         next_due: "2022-01-20",
-        next_made_up_to: "2022-01-06"
+        next_made_up_to: "2022-01-06",
       },
       date_of_creation: "2016-01-07",
       etag: "e5929a49e6c4d3af5141cf6f835c72344a80abfc",
@@ -306,7 +311,7 @@ const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
         officers: "/company/09940905/officers",
         persons_with_significant_control:
           "/company/09940905/persons-with-significant-control",
-        self: "/company/09940905"
+        self: "/company/09940905",
       },
       registered_office_address: {
         address_line_1: "97 Woolwich New Road",
@@ -314,16 +319,16 @@ const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
         country: "England",
         locality: "London",
         postal_code: "SE18 6EF",
-        region: "London"
+        region: "London",
       },
       sic_codes: ["62090"],
-      type: "ltd"
+      type: "ltd",
     },
     event: {
       timepoint: 22990417,
       published_at: "2021-01-28T21:59:04",
-      type: "changed"
-    }
+      type: "changed",
+    },
   },
   {
     resource_kind: "company-profile",
@@ -335,7 +340,7 @@ const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
         last_accounts: [Object],
         next_accounts: [Object],
         next_due: "2021-10-31",
-        next_made_up_to: "2021-01-31"
+        next_made_up_to: "2021-01-31",
       },
       can_file: true,
       company_name: "HEALTH RENEW LIMITED",
@@ -344,7 +349,7 @@ const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
       confirmation_statement: {
         last_made_up_to: "2021-01-02",
         next_due: "2022-01-16",
-        next_made_up_to: "2022-01-02"
+        next_made_up_to: "2022-01-02",
       },
       date_of_creation: "2017-01-04",
       etag: "79059447c3ce43ee325ea650b7e3bc2eb9f6ba36",
@@ -354,22 +359,22 @@ const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
         officers: "/company/10547255/officers",
         persons_with_significant_control_statements:
           "/company/10547255/persons-with-significant-control-statements",
-        self: "/company/10547255"
+        self: "/company/10547255",
       },
       registered_office_address: {
         address_line_1: "58a Ilford Lane",
         country: "England",
         locality: "Ilford",
-        postal_code: "IG1 2JY"
+        postal_code: "IG1 2JY",
       },
       sic_codes: ["96040"],
-      type: "ltd"
+      type: "ltd",
     },
     event: {
       timepoint: 22990426,
       published_at: "2021-01-28T22:00:04",
-      type: "changed"
-    }
+      type: "changed",
+    },
   },
   {
     resource_kind: "company-profile",
@@ -381,7 +386,7 @@ const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
         last_accounts: [Object],
         next_accounts: [Object],
         next_due: "2021-10-31",
-        next_made_up_to: "2021-01-31"
+        next_made_up_to: "2021-01-31",
       },
       can_file: true,
       company_name: "THORNWOOD CONSULTANCY LIMITED",
@@ -390,7 +395,7 @@ const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
       confirmation_statement: {
         last_made_up_to: "2021-01-24",
         next_due: "2022-02-07",
-        next_made_up_to: "2022-01-24"
+        next_made_up_to: "2022-01-24",
       },
       date_of_creation: "2016-01-25",
       etag: "9ebf081fb814e47f91e3f8e500511c61848c0f8c",
@@ -400,23 +405,23 @@ const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
         officers: "/company/09966521/officers",
         persons_with_significant_control:
           "/company/09966521/persons-with-significant-control",
-        self: "/company/09966521"
+        self: "/company/09966521",
       },
       registered_office_address: {
         address_line_1: "A2 Patrick Tobin Business Park Bolton Road",
         address_line_2: "Wath-Upon-Dearne",
         country: "England",
         locality: "Rotherham",
-        postal_code: "S63 7LL"
+        postal_code: "S63 7LL",
       },
       sic_codes: ["82990"],
-      type: "ltd"
+      type: "ltd",
     },
     event: {
       timepoint: 22990427,
       published_at: "2021-01-28T22:00:03",
-      type: "changed"
-    }
+      type: "changed",
+    },
   },
   {
     resource_kind: "company-profile",
@@ -428,7 +433,7 @@ const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
         last_accounts: [Object],
         next_accounts: [Object],
         next_due: "2021-08-31",
-        next_made_up_to: "2020-11-30"
+        next_made_up_to: "2020-11-30",
       },
       can_file: true,
       company_name: "EVECAS CAPITAL LIMITED",
@@ -437,7 +442,7 @@ const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
       confirmation_statement: {
         last_made_up_to: "2020-11-12",
         next_due: "2021-11-26",
-        next_made_up_to: "2021-11-12"
+        next_made_up_to: "2021-11-12",
       },
       date_of_creation: "2017-11-13",
       etag: "a1baea1067e8bf62e09708c6321c87306016ae67",
@@ -447,22 +452,22 @@ const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
         officers: "/company/11061407/officers",
         persons_with_significant_control:
           "/company/11061407/persons-with-significant-control",
-        self: "/company/11061407"
+        self: "/company/11061407",
       },
       registered_office_address: {
         address_line_1: "51 St. Johns Road",
         country: "England",
         locality: "Ipswich",
-        postal_code: "IP4 5DE"
+        postal_code: "IP4 5DE",
       },
       sic_codes: ["64999"],
-      type: "ltd"
+      type: "ltd",
     },
     event: {
       timepoint: 22990428,
       published_at: "2021-01-28T22:00:03",
-      type: "changed"
-    }
+      type: "changed",
+    },
   },
   {
     resource_kind: "company-profile",
@@ -474,7 +479,7 @@ const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
         last_accounts: [Object],
         next_accounts: [Object],
         next_due: "2021-12-31",
-        next_made_up_to: "2021-03-31"
+        next_made_up_to: "2021-03-31",
       },
       can_file: true,
       company_name: "CM1 ACCOUNTANTS LTD",
@@ -483,7 +488,7 @@ const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
       confirmation_statement: {
         last_made_up_to: "2020-11-28",
         next_due: "2021-12-12",
-        next_made_up_to: "2021-11-28"
+        next_made_up_to: "2021-11-28",
       },
       date_of_creation: "2016-11-29",
       etag: "91b19e494555733c1d72c5f2893c3e38385646de",
@@ -493,7 +498,7 @@ const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
         officers: "/company/10502722/officers",
         persons_with_significant_control:
           "/company/10502722/persons-with-significant-control",
-        self: "/company/10502722"
+        self: "/company/10502722",
       },
       registered_office_address: {
         address_line_1: "50 50 Victoria Road",
@@ -501,16 +506,16 @@ const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
         country: "United Kingdom",
         locality: "Chelmsford",
         postal_code: "CM1 3PA",
-        region: "Essex"
+        region: "Essex",
       },
       sic_codes: ["69201"],
-      type: "ltd"
+      type: "ltd",
     },
     event: {
       timepoint: 22990456,
       published_at: "2021-01-28T22:01:07",
-      type: "changed"
-    }
+      type: "changed",
+    },
   },
   {
     resource_kind: "company-profile",
@@ -522,7 +527,7 @@ const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
         last_accounts: [Object],
         next_accounts: [Object],
         next_due: "2022-02-28",
-        next_made_up_to: "2021-05-31"
+        next_made_up_to: "2021-05-31",
       },
       can_file: true,
       company_name: "PHEONIX (UK) CONSULTANCY LTD",
@@ -531,7 +536,7 @@ const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
       confirmation_statement: {
         last_made_up_to: "2020-05-15",
         next_due: "2021-05-29",
-        next_made_up_to: "2021-05-15"
+        next_made_up_to: "2021-05-15",
       },
       date_of_creation: "2014-05-15",
       etag: "879328c2bcd59ae8999c38b42b100839e5f2aece",
@@ -542,22 +547,22 @@ const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
         officers: "/company/09040685/officers",
         persons_with_significant_control:
           "/company/09040685/persons-with-significant-control",
-        self: "/company/09040685"
+        self: "/company/09040685",
       },
       registered_office_address: {
         address_line_1: "56 Pavilion Way",
         locality: "Sheffield",
         postal_code: "S5 6EE",
-        region: "South Yorkshire"
+        region: "South Yorkshire",
       },
       sic_codes: ["70229"],
-      type: "ltd"
+      type: "ltd",
     },
     event: {
       timepoint: 22990458,
       published_at: "2021-01-28T22:01:08",
-      type: "changed"
-    }
+      type: "changed",
+    },
   },
   {
     resource_kind: "company-profile",
@@ -569,7 +574,7 @@ const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
         last_accounts: [Object],
         next_accounts: [Object],
         next_due: "2021-07-31",
-        next_made_up_to: "2020-10-31"
+        next_made_up_to: "2020-10-31",
       },
       can_file: true,
       company_name: "AS REQUIRED LIMITED",
@@ -578,7 +583,7 @@ const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
       confirmation_statement: {
         last_made_up_to: "2021-01-19",
         next_due: "2022-02-02",
-        next_made_up_to: "2022-01-19"
+        next_made_up_to: "2022-01-19",
       },
       date_of_creation: "2010-01-19",
       etag: "b4adfbfbaf36b99559a6d79ef945825ac50f791f",
@@ -589,7 +594,7 @@ const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
         officers: "/company/07129789/officers",
         persons_with_significant_control:
           "/company/07129789/persons-with-significant-control",
-        self: "/company/07129789"
+        self: "/company/07129789",
       },
       previous_company_names: [[Object]],
       registered_office_address: {
@@ -597,16 +602,16 @@ const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
         country: "England",
         locality: "Altrincham",
         postal_code: "WA14 4NQ",
-        region: "Cheshire"
+        region: "Cheshire",
       },
       sic_codes: ["69201"],
-      type: "ltd"
+      type: "ltd",
     },
     event: {
       timepoint: 22990466,
       published_at: "2021-01-28T22:03:02",
-      type: "changed"
-    }
+      type: "changed",
+    },
   },
   {
     resource_kind: "company-profile",
@@ -618,7 +623,7 @@ const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
         last_accounts: [Object],
         next_accounts: [Object],
         next_due: "2021-10-31",
-        next_made_up_to: "2021-01-31"
+        next_made_up_to: "2021-01-31",
       },
       can_file: true,
       company_name: "BRIGHTSTAR BOOKS LIMITED",
@@ -627,7 +632,7 @@ const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
       confirmation_statement: {
         last_made_up_to: "2020-01-24",
         next_due: "2021-03-07",
-        next_made_up_to: "2021-01-24"
+        next_made_up_to: "2021-01-24",
       },
       date_of_creation: "2016-01-25",
       etag: "c5ffec2101e4ef74d051a0117be1245bdb41aa4f",
@@ -637,23 +642,23 @@ const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
         officers: "/company/09966552/officers",
         persons_with_significant_control:
           "/company/09966552/persons-with-significant-control",
-        self: "/company/09966552"
+        self: "/company/09966552",
       },
       registered_office_address: {
         address_line_1: "89 Bury New Road",
         address_line_2: "Whitefield",
         country: "United Kingdom",
         locality: "Manchester",
-        postal_code: "M45 7EG"
+        postal_code: "M45 7EG",
       },
       sic_codes: ["58110"],
-      type: "ltd"
+      type: "ltd",
     },
     event: {
       timepoint: 22990467,
       published_at: "2021-01-28T22:03:02",
-      type: "changed"
-    }
+      type: "changed",
+    },
   },
   {
     resource_kind: "company-profile",
@@ -665,7 +670,7 @@ const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
         last_accounts: [Object],
         next_accounts: [Object],
         next_due: "2021-09-30",
-        next_made_up_to: "2020-12-31"
+        next_made_up_to: "2020-12-31",
       },
       can_file: true,
       company_name: "SOUTH LONDON FITNESS LIMITED",
@@ -674,7 +679,7 @@ const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
       confirmation_statement: {
         last_made_up_to: "2020-01-27",
         next_due: "2021-03-10",
-        next_made_up_to: "2021-01-27"
+        next_made_up_to: "2021-01-27",
       },
       date_of_creation: "2019-02-11",
       etag: "36f5caa3a4e80ae1f59e8ddfad8524dd274e0551",
@@ -684,23 +689,23 @@ const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
         officers: "/company/11819836/officers",
         persons_with_significant_control:
           "/company/11819836/persons-with-significant-control",
-        self: "/company/11819836"
+        self: "/company/11819836",
       },
       registered_office_address: {
         address_line_1: "71-75 Shelton Street",
         address_line_2: "Covent Garden",
         country: "England",
         locality: "London",
-        postal_code: "WC2H 9JQ"
+        postal_code: "WC2H 9JQ",
       },
       sic_codes: ["93110"],
-      type: "ltd"
+      type: "ltd",
     },
     event: {
       timepoint: 22990468,
       published_at: "2021-01-28T22:03:02",
-      type: "changed"
-    }
+      type: "changed",
+    },
   },
   {
     resource_kind: "company-profile",
@@ -712,7 +717,7 @@ const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
         last_accounts: [Object],
         next_accounts: [Object],
         next_due: "2021-10-31",
-        next_made_up_to: "2021-01-31"
+        next_made_up_to: "2021-01-31",
       },
       can_file: true,
       company_name: "STRATEGIC ENERGY LIMITED",
@@ -721,7 +726,7 @@ const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
       confirmation_statement: {
         last_made_up_to: "2021-01-27",
         next_due: "2022-02-10",
-        next_made_up_to: "2022-01-27"
+        next_made_up_to: "2022-01-27",
       },
       date_of_creation: "2019-01-28",
       etag: "b80d10879def47cfcc6208e1381e574ae5a36189",
@@ -731,22 +736,22 @@ const sampleCompanyProfiles: CompanyProfileEvent.CompanyProfileEvent[] = [
         officers: "/company/11793514/officers",
         persons_with_significant_control_statements:
           "/company/11793514/persons-with-significant-control-statements",
-        self: "/company/11793514"
+        self: "/company/11793514",
       },
       registered_office_address: {
         address_line_1: "17 Yeoman Way",
         address_line_2: "Hadleigh",
         country: "England",
         locality: "Ipswich",
-        postal_code: "IP7 5HW"
+        postal_code: "IP7 5HW",
       },
       sic_codes: ["70229"],
-      type: "ltd"
+      type: "ltd",
     },
     event: {
       timepoint: 22990469,
       published_at: "2021-01-28T22:03:03",
-      type: "changed"
-    }
-  }
-];
+      type: "changed",
+    },
+  },
+]
