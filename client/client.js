@@ -38,14 +38,15 @@ const pushEvent = async (e) => {
       eventCard.innerHTML = await officerCard(e)
       break
     case "company-psc-individual":
-      eventCard.innerHTML = await pscCard(e)
-      break
+    case "company-psc-corporate":
+      eventCard.innerHTML = await pscCard(e);
+      break;
     default:
       eventCard.innerHTML = `
         <div class="alert"><h3>New format of event!</h3>
         <pre>${e.resource_kind}</pre></div>
-        `
-      break
+        `;
+      break;
   }
 
   let events = document.querySelector("#events")

@@ -32,9 +32,9 @@
 .heart3 {
     width: 0;
     height: 0;
-    border-left: 1.75rem solid transparent;
-    border-right: 1.75rem solid transparent;
-    border-top: 2rem solid crimson;
+    border-left: 35px solid transparent;
+    border-right: 35px solid transparent;
+    border-top: 40px solid crimson;
     position: relative;
     top: -50%;
     left: 15%;

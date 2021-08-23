@@ -1,6 +1,4 @@
-@import "heartbeat.css";
 @import "common.css";
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Roboto+Mono:wght@500&display=swap');
 #events{
     background-color: aliceblue;
     padding: 1em;
@@ -32,43 +30,6 @@
     white-space: nowrap;
 }
 
-.filing-card {
-    background-color: lightgrey;
-    border-color: darkgray;
-}
-
-.companies-card {
-    background-color: cornsilk;
-    border-color: bisque;
-}
-
-.insolvency-card {
-    background-color: lightpink;
-    border-color: firebrick;
-}
-
-.charges-card {
-    background-color: lightsteelblue;
-    border-color: steelblue;
-}
-
-.psc-card {
-    background-color: #85FFBD;
-background-image: linear-gradient(45deg, #85FFBD 0%, #FFFB7D 100%);
-
-    border-color: #85FFBD;
-}
-
-.officer-card {
-	background-color: #FBAB7E;
-	background-image: linear-gradient(62deg, #FBAB7E 0%, #F7CE68 100%);
-    border-color: #FBAB7E;
-}
-
-.alert {
-    background-color: tomato;
-    border-color: firebrick;
-}
 
 @keyframes pop {
     0% {
@@ -170,36 +131,6 @@ sup.event-timestamp{
     display: flex;
     align-items: center;
     justify-content: center;
-}
-.heart1 {
-    width: 50%;
-    height: 50%;
-    border-radius: 50%;
-    position: relative;
-    top: 10%;
-    background: crimson;
-    left: 10%;
-}
-.heart2 {
-    position: relative;
-    top: -40%;
-    left: 40%;
-    background: crimson;
-
-    width: 50%;
-    height: 50%;
-    border-radius: 50%;
-}
-.heart3 {
-    width: 0;
-    height: 0;
-    border-left: 35px solid transparent;
-    border-right: 35px solid transparent;
-    border-top: 40px solid crimson;
-    position: relative;
-    top: -50%;
-    left: 15%;
-    background: transparent;
 }
 
 #events > div.heartbeat > .heart-outer {

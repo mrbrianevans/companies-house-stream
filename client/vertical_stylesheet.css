@@ -1,6 +1,4 @@
-@import 'heartbeat.css';
 @import "common.css";
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Roboto+Mono:wght@500&display=swap');
 
 #events {
     background-color: aliceblue;
@@ -42,30 +40,6 @@ header {
     /*position: fixed;*/
 }
 
-.filing-card {
-    background-color: lightgrey;
-    border-color: darkgray;
-}
-
-.companies-card {
-    background-color: cornsilk;
-    border-color: bisque;
-}
-
-.insolvency-card {
-    background-color: lightpink;
-    border-color: firebrick;
-}
-
-.charges-card {
-    background-color: lightsteelblue;
-    border-color: steelblue;
-}
-
-.alert {
-    background-color: tomato;
-    border-color: firebrick;
-}
 
 @keyframes pop {
     0% {
