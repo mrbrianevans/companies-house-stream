@@ -4,10 +4,12 @@ services:
     image: redis
     volumes: 
       - redisdata:/data
+    restart: unless-stopped
   mongo-cache:
     image: mongo
     volumes: 
       - mongodata:/data
+    restart: unless-stopped
   stream-server:
     build: .
     ports:
