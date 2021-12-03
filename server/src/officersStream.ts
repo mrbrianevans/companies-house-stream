@@ -2,7 +2,8 @@ import * as request from "request"
 import { getMongoClient } from "./getMongoClient"
 import { MongoError } from "mongodb"
 import * as logger from "node-color-log"
-import { getCompanyInfo } from "./getCompanyInfo"
+import { getCompanyInfo } from "./getCompanyInfo";
+import { OfficerEvent } from "./types/eventTypes";
 
 const TARGET_QUEUE_SIZE = 20
 const MIN_DELAY = 200 //ms
@@ -123,7 +124,7 @@ export const StreamOfficers = (io, mode: "test" | "live") => {
   }
 }
 
-const sampleOfficerEvents = [
+const sampleOfficerEvents: OfficerEvent.OfficerEvent[] = [
   {
     resource_kind: "company-officers",
     resource_uri: "/company/06063711/appointments/oa07QETFwXYZSQmyaBvqR1Fvp6w",

@@ -1,5 +1,3 @@
-//TODO: These have the data types, but need mandatory/optional to be added
-
 export declare module CompanyProfileEvent {
   export interface AccountingReferenceDate {
     day: number | string
@@ -482,10 +480,71 @@ export declare module PscEvent {
   }
 
   export interface PscEvent {
-    data: Data
-    event: Event
-    resource_id: string
-    resource_kind: "psc-notified" | "charges" //not sure what this actually is
-    resource_uri: string
+    data: Data;
+    event: Event;
+    resource_id: string;
+    resource_kind: "psc-notified" | "charges"; //not sure what this actually is
+    resource_uri: string;
   }
+}
+
+
+export declare module OfficerEvent {
+
+  export interface OfficerEvent {
+    resource_kind: string;
+    resource_uri: string;
+    resource_id: string;
+    data: IOfficerData;
+    event: IOfficerEvent;
+  }
+
+  interface IOfficerData {
+    address: IOfficerAddress;
+    appointed_on?: string;
+    country_of_residence?: string;
+    date_of_birth?: IOfficerDate_of_birth;
+    links: IOfficerLinks;
+    name: string;
+    nationality?: string;
+    occupation?: string;
+    officer_role: string;
+    resigned_on?: string;
+    identification?: IOfficerIdentification;
+  }
+
+  interface IOfficerIdentification {
+    identification_type: string,
+    registration_number: string,
+    legal_authority?: string,
+    legal_form?: string,
+    place_registered?: string,
+  }
+
+  interface IOfficerAddress {
+    address_line_1?: string;
+    address_line_2?: string;
+    country?: string;
+    locality: string;
+    postal_code: string;
+    premises?: string;
+    region?: string;
+    care_of?: string;
+  }
+
+  interface IOfficerDate_of_birth {
+    month: number;
+    year: number;
+  }
+
+  interface IOfficerLinks {
+    self: string;
+  }
+
+  interface IOfficerEvent {
+    timepoint: number;
+    published_at: string;
+    type: string;
+  }
+
 }
