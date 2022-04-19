@@ -47,22 +47,22 @@ REDIS_CACHING: ${
   )
 )
 
-//StreamCompanies(io, "test")
+// StreamCompanies(io, "test")
 // StreamCharges(io, "test")
-//StreamFilings(io, "test")
+// StreamFilings(io, "test")
 // StreamInsolvencies(io, "test")
-//StreamOfficers(io, "test");
-//StreamPsc(io, "test");
+// StreamOfficers(io, "test");
+// StreamPsc(io, "test");
 
-StreamCompanies(io, "live")
-StreamCharges(io, "live")
-StreamFilings(io, "live")
-StreamInsolvencies(io, "live")
-StreamOfficers(io, "live")
-StreamPsc(io, "live")
+StreamCompanies(io, "live");
+StreamCharges(io, "live");
+StreamFilings(io, "live");
+StreamInsolvencies(io, "live");
+StreamOfficers(io, "live");
+StreamPsc(io, "live");
 
 setInterval(() => {
-  console.log("Starting all streams (24th hour interval)")
+  console.log("Starting all streams (24th hour interval)");
   StreamCompanies(io, "live")
   StreamCharges(io, "live")
   StreamFilings(io, "live")
