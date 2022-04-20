@@ -1,4 +1,6 @@
-import { Pool } from "pg"
+import pg from "pg";
+
+const { Pool } = pg;
 import { Request, Response } from "express";
 import { getValue, setValue } from "../database/asyncRedis";
 

@@ -1,29 +1,49 @@
-const socket = io()
-let connected = false
-document.querySelector("#clock").innerHTML = new Date().toLocaleTimeString()
+let connected = false;
+let socket = new WebSocket("ws://localhost:3000/events");
+setInterval(() => {
+  document.querySelector("#clock").innerHTML = new Date().toLocaleTimeString();
+}, 1000);
 const setConnected = (bool) => {
-  connected = bool
+  connected = bool;
   document.querySelector("#connection-status").innerHTML = connected
     ? "Connected"
-    : "Disconnected"
+    : "Disconnected";
   document.querySelector("#connection-status").className = connected
     ? "connected"
-    : "disconnected"
+    : "disconnected";
   document.querySelector("#connection-status").onclick = () => {
-    console.log("Button pressed, connection:", connected)
-    if (connected) socket.close()
-    else socket.connect()
-  }
-}
+    console.log("Button pressed, connection:", connected);
+    if (connected) socket.close();
+    else socket = new WebSocket("ws://localhost:3000/events");
+    //todo: if the socket variable is reassigned, it loses all event listeners
+  };
+};
+
+// Connection opened
+socket.addEventListener("open", function(event) {
+  setConnected(true);
+});
+
+socket.addEventListener("close", function(event) {
+  setConnected(false);
+});
+
+// Listen for messages
+socket.addEventListener("message", async function(event) {
+  const blob = await event.data.text();
+  const data = JSON.parse(blob);
+  await pushEvent(data);
+});
+
 
 const pushEvent = async (e) => {
   document.querySelector("#notification-counter").innerHTML = (
     Number(document.querySelector("#notification-counter").innerHTML) + 1
-  ).toString()
-  const eventCard = document.createElement("div")
+  ).toString();
+  const eventCard = document.createElement("div");
   switch (e.resource_kind || e.source) {
     case "company-profile": // layout for company profile change card
-      eventCard.innerHTML = await companyProfileCard(e)
+      eventCard.innerHTML = await companyProfileCard(e);
       break
     case "filing-history":
       eventCard.innerHTML = await filingHistoryCard(e)
@@ -62,20 +82,6 @@ const heartbeat = () => {
   if (events.childElementCount === 15) events.removeChild(events.lastChild)
   events.insertAdjacentElement("afterbegin", eventCard)
 }
-socket.on("connect", () => {
-  setConnected(true)
-
-  socket.on("disconnect", () => {
-    setConnected(false)
-    clearInterval(clock)
-  })
-  const clock = setInterval(() => {
-    document.querySelector("#clock").innerHTML = new Date().toLocaleTimeString()
-  }, 1000)
-})
-
-socket.on("event", pushEvent)
-socket.on("heartbeat", heartbeat)
 
 const functionUrl = "/getCompanyInfo?company_number="
 const filingHistoryCard = async (event) => {

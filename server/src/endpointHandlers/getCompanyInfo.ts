@@ -1,5 +1,8 @@
-import { Pool } from "pg"
-import { Request, Response } from "express"
+import pg from "pg";
+
+const { Pool } = pg;
+
+import { Request, Response } from "express";
 import * as logger from "node-color-log";
 import { getMongoClient } from "../database/getMongoClient";
 
@@ -7,7 +10,7 @@ export const getCompanyInfoApi = async (req: Request, res: Response) => {
   // tries to get companyNumber from request JSON body and URL query parameters
   const companyNumber =
     req.query?.company_number?.toString() ||
-    req.body?.company_number?.toString()
+    req.body?.company_number?.toString();
   if (!companyNumber)
     res.status(400).json({ message: "Company number not specified" })
   else {

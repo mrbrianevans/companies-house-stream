@@ -10,5 +10,8 @@
   },
   "devDependencies": {
     "nodemon": "^2.0.15"
+  },
+  "dependencies": {
+    "ws": "^8.5.0"
   }
 }

@@ -67,14 +67,14 @@ export function listenToStream<
 /**
  * Returns a readable stream of events.
  */
-function stream<EventType>(path: StreamPath) {
+export function stream<EventType>(path: StreamPath) {
   const options: RequestOptions = {
     hostname: "stream.companieshouse.gov.uk",
     port: 443,
     path: "/" + path,
-    auth: streamingApiKey + ":",
-  }
-  const pass = new PassThrough({ objectMode: true })
+    auth: streamingApiKey + ":"
+  };
+  const pass = new PassThrough({ objectMode: true });
   const handleError = (e: Error) =>
     console.error(
       `Error on ${path} stream generator`,

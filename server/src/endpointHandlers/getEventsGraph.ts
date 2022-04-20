@@ -1,14 +1,16 @@
-import { Pool } from "pg"
-import { Request, Response } from "express"
+import pg from "pg";
+
+const { Pool } = pg;
+import { Request, Response } from "express";
 
 const generateGraphData = async (req: Request, res: Response) => {
-  const pool = new Pool()
+  const pool = new Pool();
   const timeInterval =
     req.query?.interval?.toString() ||
     req.body?.interval?.toString() ||
-    "minute"
+    "minute";
   if (!["minute", "hour", "day", "month"].includes(timeInterval))
-    res.status(400).end("Invalid time interval")
+    res.status(400).end("Invalid time interval");
   let sqlStatement = `
     SELECT coalesce(company.minute, filing.minute) as minute, company.count as company, filing.count as filing FROM
 (select date_trunc('minute' , f.published) as minute, count(f.published) as count from filing_events f group by date_trunc('minute' , f.published) order by date_trunc('minute' , f.published) desc limit 10) as filing
