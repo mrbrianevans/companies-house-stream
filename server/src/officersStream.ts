@@ -1,5 +1,5 @@
-import { OfficerEvent } from "./types/eventTypes";
-import { listenToStream, streamGenerator } from "./listenOnStream";
+import { OfficerEvent } from "./types/eventTypes"
+import { listenToStream, streamGenerator } from "./listenOnStream"
 
 export const StreamOfficers = (io, mode: "test" | "live") => {
   if (mode == "test") {
@@ -10,19 +10,17 @@ export const StreamOfficers = (io, mode: "test" | "live") => {
           Math.floor(Math.random() * sampleOfficerEvents.length)
         ]
       )
-      StreamOfficers(io, "test");
+      StreamOfficers(io, "test")
     }, Math.random() * 10000)
   } else {
-    listenToStream<OfficerEvent.OfficerEvent>("officers", event => {
-      io.emit("event", event);
-    });
-
+    listenToStream<OfficerEvent.OfficerEvent>("officers", (event) => {
+      io.emit("event", event)
+    })
   }
 }
 
 export async function AsyncStreamOfficers(io) {
-  for await(const event of streamGenerator("officers"))
-    io.emit("event", event);
+  for await (const event of streamGenerator("officers")) io.emit("event", event)
 }
 
 /**
@@ -30,10 +28,9 @@ export async function AsyncStreamOfficers(io) {
  */
 export async function PermOfficers(io) {
   while (true) {
-    await AsyncStreamOfficers(io);
+    await AsyncStreamOfficers(io)
   }
 }
-
 
 const sampleOfficerEvents: OfficerEvent.OfficerEvent[] = [
   {

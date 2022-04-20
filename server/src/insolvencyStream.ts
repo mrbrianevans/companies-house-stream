@@ -1,5 +1,5 @@
-import { InsolvencyEvent } from "./types/eventTypes";
-import { listenToStream, streamGenerator } from "./listenOnStream";
+import { InsolvencyEvent } from "./types/eventTypes"
+import { listenToStream, streamGenerator } from "./listenOnStream"
 
 export const StreamInsolvencies = (io, mode: "test" | "live") => {
   if (mode == "test") {
@@ -8,22 +8,25 @@ export const StreamInsolvencies = (io, mode: "test" | "live") => {
         "event",
         sampleInsolvencyEvents[
           Math.floor(Math.random() * sampleInsolvencyEvents.length)
-          ]
-      );
+        ]
+      )
       StreamInsolvencies(io, "test")
     }, Math.random() * 30000)
   } else {
-    listenToStream<InsolvencyEvent.InsolvencyEvent>("insolvency-cases", event => {
-      io.emit("event", event);
-    });
+    listenToStream<InsolvencyEvent.InsolvencyEvent>(
+      "insolvency-cases",
+      (event) => {
+        io.emit("event", event)
+      }
+    )
     // for await(const event of streamGenerator('insolvency-cases'))
     //   io.emit('event', event)
   }
 }
 
 export async function AsyncStreamInsolvencies(io) {
-  for await(const event of streamGenerator("insolvency-cases"))
-    io.emit("event", event);
+  for await (const event of streamGenerator("insolvency-cases"))
+    io.emit("event", event)
 }
 
 /**
@@ -31,7 +34,7 @@ export async function AsyncStreamInsolvencies(io) {
  */
 export async function PermInsolvencies(io) {
   while (true) {
-    await AsyncStreamInsolvencies(io);
+    await AsyncStreamInsolvencies(io)
   }
 }
 

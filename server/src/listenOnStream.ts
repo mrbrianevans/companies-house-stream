@@ -1,13 +1,13 @@
-import type { RequestOptions } from "https";
-import { request } from "https";
-import type { CompanyProfileEvent, PscEvent } from "./types/eventTypes";
-import { parse } from "JSONStream";
-import { PassThrough, Transform } from "stream";
+import type { RequestOptions } from "https"
+import { request } from "https"
+import type { CompanyProfileEvent, PscEvent } from "./types/eventTypes"
+import { parse } from "JSONStream"
+import { PassThrough, Transform } from "stream"
 
 //Streaming API key
-const streamingApiKey = process.env.STREAMING_KEY;
+const streamingApiKey = process.env.STREAMING_KEY
 type StreamPath =
-  "insolvency-cases"
+  | "insolvency-cases"
   | "companies"
   | "filings"
   | "charges"
@@ -21,27 +21,45 @@ type StreamPath =
  * @param callback - function to call on each event. Will call with the event data as the only parameter.
  * @param startFromTimepoint - timepoint to start from. If omitted, then will start from the latest event.
  */
-export function listenToStream<EventType extends { resource_id: string } = CompanyProfileEvent.CompanyProfileEvent>(path: StreamPath = "companies", callback: (e: EventType) => void = console.log, startFromTimepoint?: number) {
-  if (!streamingApiKey) return console.error("API key environment variable not set");
-  const timepointQueryString = (typeof startFromTimepoint === "number") ? `?timepoint=${startFromTimepoint}` : "";
+export function listenToStream<
+  EventType extends {
+    resource_id: string
+  } = CompanyProfileEvent.CompanyProfileEvent
+>(
+  path: StreamPath = "companies",
+  callback: (e: EventType) => void = console.log,
+  startFromTimepoint?: number
+) {
+  if (!streamingApiKey)
+    return console.error("API key environment variable not set")
+  const timepointQueryString =
+    typeof startFromTimepoint === "number"
+      ? `?timepoint=${startFromTimepoint}`
+      : ""
   const options: RequestOptions = {
     hostname: "stream.companieshouse.gov.uk",
     port: 443,
     path: "/" + path + timepointQueryString,
     method: "GET",
-    auth: streamingApiKey + ":"
-  };
+    auth: streamingApiKey + ":",
+  }
 
-  const handleError = (e: Error) => console.error(`Error on ${path} stream`, "\x1b[31m", e.message, "\x1b[0m");
-  console.time("Request " + path);
-  request(options, res => {
-    console.timeEnd("Request " + path);
-    console.log(path, "responded with STATUS", res.statusCode, res.statusMessage);
+  const handleError = (e: Error) =>
+    console.error(`Error on ${path} stream`, "\x1b[31m", e.message, "\x1b[0m")
+  console.time("Request " + path)
+  request(options, (res) => {
+    console.timeEnd("Request " + path)
+    console.log(
+      path,
+      "responded with STATUS",
+      res.statusCode,
+      res.statusMessage
+    )
     // res.on("data", b => console.log("response body", b.toString()));
-    res.pipe(parse())
-      .on("data", callback)
-      .on("error", handleError);
-  }).on("error", handleError).end();
+    res.pipe(parse()).on("data", callback).on("error", handleError)
+  })
+    .on("error", handleError)
+    .end()
 }
 
 // listenToStream('persons-with-significant-control')
@@ -54,32 +72,49 @@ function stream<EventType>(path: StreamPath) {
     hostname: "stream.companieshouse.gov.uk",
     port: 443,
     path: "/" + path,
-    auth: streamingApiKey + ":"
-  };
-  const pass = new PassThrough({ objectMode: true });
-  const handleError = (e: Error) => console.error(`Error on ${path} stream generator`, "\x1b[31m", e.message, "\x1b[0m");
-  request(options, res => {
-    console.log(path, "responded with STATUS", res.statusCode, res.statusMessage);
-    if (res.statusCode === 429) process.exit(res.statusCode);
-    res.pipe(parse()).on("error", handleError).pipe(pass);
-  }).on("error", handleError).end();
-  return pass;
+    auth: streamingApiKey + ":",
+  }
+  const pass = new PassThrough({ objectMode: true })
+  const handleError = (e: Error) =>
+    console.error(
+      `Error on ${path} stream generator`,
+      "\x1b[31m",
+      e.message,
+      "\x1b[0m"
+    )
+  request(options, (res) => {
+    console.log(
+      path,
+      "responded with STATUS",
+      res.statusCode,
+      res.statusMessage
+    )
+    if (res.statusCode === 429) process.exit(res.statusCode)
+    res.pipe(parse()).on("error", handleError).pipe(pass)
+  })
+    .on("error", handleError)
+    .end()
+  return pass
 }
 
 /**
  * Returns an async iterator of events.
  * @param path
  */
-export async function* streamGenerator<EventType>(path: StreamPath): AsyncGenerator<EventType> {
-  for await(const s of stream(path)) {
-    yield s;
+export async function* streamGenerator<EventType>(
+  path: StreamPath
+): AsyncGenerator<EventType> {
+  for await (const s of stream(path)) {
+    yield s
   }
-  return;
+  return
 }
 
 async function runStream() {
-  for await(const s of streamGenerator<PscEvent.PscEvent>("persons-with-significant-control")) {
-    console.log("event received: ", s);
+  for await (const s of streamGenerator<PscEvent.PscEvent>(
+    "persons-with-significant-control"
+  )) {
+    console.log("event received: ", s)
   }
 }
 
@@ -88,30 +123,29 @@ async function runStream() {
 //   await new Promise(resolve => setTimeout(resolve, 60_000)) // 1min
 // }
 
-
 // would like to make my own Transform stream to parse the JSON, but it isn't working
 class customJsonParse extends Transform {
-  private data: string;
+  private data: string
 
   constructor(callback) {
-    super({ decodeStrings: false });
-    this.data = "";
-    callback();
+    super({ decodeStrings: false })
+    this.data = ""
+    callback()
   }
 
   transform(chunk, encoding, callback) {
-    this.data += chunk;
-    callback();
+    this.data += chunk
+    callback()
   }
 
   flush(callback) {
     try {
       // Make sure is valid json.
-      JSON.parse(this.data);
-      this.push(this.data);
-      callback();
+      JSON.parse(this.data)
+      this.push(this.data)
+      callback()
     } catch (err) {
-      callback(err);
+      callback(err)
     }
   }
 }

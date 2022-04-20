@@ -1,5 +1,5 @@
-import { listenToStream, streamGenerator } from "./listenOnStream";
-import { PscEvent } from "./types/eventTypes";
+import { listenToStream, streamGenerator } from "./listenOnStream"
+import { PscEvent } from "./types/eventTypes"
 
 export const StreamPsc = (io, mode: "test" | "live") => {
   if (mode == "test") {
@@ -7,19 +7,22 @@ export const StreamPsc = (io, mode: "test" | "live") => {
       io.emit(
         "event",
         samplePscEvents[Math.floor(Math.random() * samplePscEvents.length)]
-      );
-      StreamPsc(io, "test");
-    }, Math.random() * 15000);
+      )
+      StreamPsc(io, "test")
+    }, Math.random() * 15000)
   } else {
-    listenToStream<PscEvent.PscEvent>("persons-with-significant-control", event => {
-      io.emit("event", event);
-    });
+    listenToStream<PscEvent.PscEvent>(
+      "persons-with-significant-control",
+      (event) => {
+        io.emit("event", event)
+      }
+    )
   }
-};
+}
 
 export async function AsyncStreamPsc(io) {
-  for await(const event of streamGenerator("persons-with-significant-control"))
-    io.emit("event", event);
+  for await (const event of streamGenerator("persons-with-significant-control"))
+    io.emit("event", event)
 }
 
 /**
@@ -27,7 +30,7 @@ export async function AsyncStreamPsc(io) {
  */
 export async function PermPsc(io) {
   while (true) {
-    await AsyncStreamPsc(io);
+    await AsyncStreamPsc(io)
   }
 }
 

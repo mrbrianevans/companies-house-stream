@@ -1,6 +1,5 @@
-import { FilingEvent } from "./types/eventTypes";
-import { listenToStream, streamGenerator } from "./listenOnStream";
-
+import { FilingEvent } from "./types/eventTypes"
+import { listenToStream, streamGenerator } from "./listenOnStream"
 
 export const StreamFilings = (io, mode: "test" | "live") => {
   if (mode == "test") {
@@ -9,20 +8,19 @@ export const StreamFilings = (io, mode: "test" | "live") => {
         "event",
         sampleFilingEvents[
           Math.floor(Math.random() * sampleFilingEvents.length)
-          ]
-      );
-      StreamFilings(io, "test");
-    }, Math.random() * 2000);
+        ]
+      )
+      StreamFilings(io, "test")
+    }, Math.random() * 2000)
   } else {
-    listenToStream<FilingEvent.FilingEvent>("filings", event => {
-      io.emit("event", event);
-    });
+    listenToStream<FilingEvent.FilingEvent>("filings", (event) => {
+      io.emit("event", event)
+    })
   }
-};
+}
 
 export async function AsyncStreamFilings(io) {
-  for await(const event of streamGenerator("filings"))
-    io.emit("event", event);
+  for await (const event of streamGenerator("filings")) io.emit("event", event)
 }
 
 /**
@@ -30,7 +28,7 @@ export async function AsyncStreamFilings(io) {
  */
 export async function PermFilings(io) {
   while (true) {
-    await AsyncStreamFilings(io);
+    await AsyncStreamFilings(io)
   }
 }
 

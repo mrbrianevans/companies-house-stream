@@ -1,6 +1,5 @@
-import { ChargesEvent } from "./types/eventTypes";
-import { listenToStream, streamGenerator } from "./listenOnStream";
-
+import { ChargesEvent } from "./types/eventTypes"
+import { listenToStream, streamGenerator } from "./listenOnStream"
 
 export const StreamCharges = (io, mode: "test" | "live") => {
   if (mode == "test") {
@@ -9,20 +8,19 @@ export const StreamCharges = (io, mode: "test" | "live") => {
         "event",
         sampleChargeEvents[
           Math.floor(Math.random() * sampleChargeEvents.length)
-          ]
+        ]
       )
-      StreamCharges(io, "test");
+      StreamCharges(io, "test")
     }, Math.random() * 10000)
   } else {
-    listenToStream<ChargesEvent.ChargesEvent>("charges", event => {
-      io.emit("event", event);
-    });
+    listenToStream<ChargesEvent.ChargesEvent>("charges", (event) => {
+      io.emit("event", event)
+    })
   }
 }
 
 export async function AsyncStreamCharges(io) {
-  for await(const event of streamGenerator("charges"))
-    io.emit("event", event);
+  for await (const event of streamGenerator("charges")) io.emit("event", event)
 }
 
 /**
@@ -30,7 +28,7 @@ export async function AsyncStreamCharges(io) {
  */
 export async function PermCharges(io) {
   while (true) {
-    await AsyncStreamCharges(io);
+    await AsyncStreamCharges(io)
   }
 }
 

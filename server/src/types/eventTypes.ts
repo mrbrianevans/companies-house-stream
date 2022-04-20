@@ -5,9 +5,9 @@ export declare module CompanyProfileEvent {
   }
 
   export interface LastAccounts {
-    made_up_to?: string;
-    period_end_on: string;
-    period_start_on: string;
+    made_up_to?: string
+    period_end_on: string
+    period_start_on: string
     type:
       | "full"
       | "small"
@@ -23,7 +23,7 @@ export declare module CompanyProfileEvent {
       | "filing-exemption-subsidiary"
       | "micro-entity"
       | "null"
-      | "unaudited-abridged";
+      | "unaudited-abridged"
   }
 
   export interface NextAccounts {
@@ -33,12 +33,12 @@ export declare module CompanyProfileEvent {
   }
 
   export interface Accounts {
-    accounting_reference_date: AccountingReferenceDate;
-    last_accounts: LastAccounts | { type: "null" };
-    next_accounts: NextAccounts;
-    next_due: string;
-    next_made_up_to: string;
-    overdue?: boolean;
+    accounting_reference_date: AccountingReferenceDate
+    last_accounts: LastAccounts | { type: "null" }
+    next_accounts: NextAccounts
+    next_due: string
+    next_made_up_to: string
+    overdue?: boolean
   }
 
   export interface AnnualReturn {
@@ -103,13 +103,13 @@ export declare module CompanyProfileEvent {
   }
 
   export interface Links {
-    persons_with_significant_control?: string;
-    persons_with_significant_control_statements?: string;
-    registers?: string;
-    self: string;
-    charges?: string;
-    filing_history: string;
-    officers?: string;
+    persons_with_significant_control?: string
+    persons_with_significant_control_statements?: string
+    registers?: string
+    self: string
+    charges?: string
+    filing_history: string
+    officers?: string
   }
 
   export interface PreviousCompanyName {
@@ -418,9 +418,9 @@ export declare module PscEvent {
     care_of?: string
     country?: string
     locality?: string
-    po_box?: string;
-    postal_code?: string;
-    premises: string;
+    po_box?: string
+    postal_code?: string
+    premises: string
     region?: string
   }
 
@@ -454,20 +454,20 @@ export declare module PscEvent {
     address: Address
     ceased?: boolean
     ceased_on?: string
-    country_of_residence?: string;
-    date_of_birth?: DateOfBirth;
-    description?: "super-secure-persons-with-significant-control";
-    etag: string;
-    identification?: Identification;
+    country_of_residence?: string
+    date_of_birth?: DateOfBirth
+    description?: "super-secure-persons-with-significant-control"
+    etag: string
+    identification?: Identification
     kind?:
       | "individual-person-with-significant-control"
       | "corporate-entity-person-with-significant-control"
       | "legal-person-with-significant-control"
-      | "super-secure-person-with-significant-control";
+      | "super-secure-person-with-significant-control"
     links: Links
-    name: string;
-    name_elements?: NameElements;
-    nationality?: string;
+    name: string
+    name_elements?: NameElements
+    nationality?: string
     natures_of_control: string[]
     notified_on: string
   }
@@ -480,71 +480,68 @@ export declare module PscEvent {
   }
 
   export interface PscEvent {
-    data: Data;
-    event: Event;
-    resource_id: string;
-    resource_kind: "company-psc-corporate" | "company-psc-individual";
-    resource_uri: string;
+    data: Data
+    event: Event
+    resource_id: string
+    resource_kind: "company-psc-corporate" | "company-psc-individual"
+    resource_uri: string
   }
 }
 
-
 export declare module OfficerEvent {
-
   export interface OfficerEvent {
-    resource_kind: string;
-    resource_uri: string;
-    resource_id: string;
-    data: IOfficerData;
-    event: IOfficerEvent;
+    resource_kind: string
+    resource_uri: string
+    resource_id: string
+    data: IOfficerData
+    event: IOfficerEvent
   }
 
   interface IOfficerData {
-    address: IOfficerAddress;
-    appointed_on?: string;
-    country_of_residence?: string;
-    date_of_birth?: IOfficerDate_of_birth;
-    links: IOfficerLinks;
-    name: string;
-    nationality?: string;
-    occupation?: string;
-    officer_role: string;
-    resigned_on?: string;
-    identification?: IOfficerIdentification;
+    address: IOfficerAddress
+    appointed_on?: string
+    country_of_residence?: string
+    date_of_birth?: IOfficerDate_of_birth
+    links: IOfficerLinks
+    name: string
+    nationality?: string
+    occupation?: string
+    officer_role: string
+    resigned_on?: string
+    identification?: IOfficerIdentification
   }
 
   interface IOfficerIdentification {
-    identification_type: string,
-    registration_number: string,
-    legal_authority?: string,
-    legal_form?: string,
-    place_registered?: string,
+    identification_type: string
+    registration_number: string
+    legal_authority?: string
+    legal_form?: string
+    place_registered?: string
   }
 
   interface IOfficerAddress {
-    address_line_1?: string;
-    address_line_2?: string;
-    country?: string;
-    locality: string;
-    postal_code: string;
-    premises?: string;
-    region?: string;
-    care_of?: string;
+    address_line_1?: string
+    address_line_2?: string
+    country?: string
+    locality: string
+    postal_code: string
+    premises?: string
+    region?: string
+    care_of?: string
   }
 
   interface IOfficerDate_of_birth {
-    month: number;
-    year: number;
+    month: number
+    year: number
   }
 
   interface IOfficerLinks {
-    self: string;
+    self: string
   }
 
   interface IOfficerEvent {
-    timepoint: number;
-    published_at: string;
-    type: string;
+    timepoint: number
+    published_at: string
+    type: string
   }
-
 }
