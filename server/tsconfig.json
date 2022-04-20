@@ -2,15 +2,15 @@
   "compileOnSave": true,
   "compilerOptions": {
     "outDir": "dist",
-    "target": "ES2019",
+    "target": "ES2022",
     "moduleResolution": "node",
     "removeComments": true,
-    "module": "CommonJS"
+    "module": "ES2022",
+    "lib": [
+      "ESNext"
+    ]
   },
   "include": [
     "src"
-  ],
-  "exclude": [
-    "types"
   ]
 }

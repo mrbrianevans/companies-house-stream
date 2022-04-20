@@ -1,28 +1,6 @@
-import * as request from "request"
-import { CompanyProfileEvent, InsolvencyEvent } from "./types/eventTypes"
-import { getMongoClient } from "./getMongoClient"
-import { MongoError } from "mongodb"
-import * as logger from "node-color-log"
-import { getCompanyInfo } from "./getCompanyInfo"
+import { InsolvencyEvent } from "./types/eventTypes";
+import { listenToStream, streamGenerator } from "./listenOnStream";
 
-const { promisify } = require("util")
-let mostRecentWaitTime = 0
-const wait = promisify((s, c) => {
-  mostRecentWaitTime = s
-  // if(Math.random() > 0.9) // only print out sometimes at random
-  //     console.log("Waiting for", s, "ms on filing")
-  if (!isFinite(s)) s = 300
-  if (s > 5000) s = 5000
-  setTimeout(() => c(null, "done waiting"), s) //divide by 5 to stop getting kicked off server
-})
-let qtyOfNotifications = 0
-let averageProcessingTime = 0
-let startTime = Date.now()
-let reportStatsInterval
-let resetStatsInterval
-let last60NotificationTimes = []
-let last60ProcessingTimes = []
-let last60Backlog = []
 export const StreamInsolvencies = (io, mode: "test" | "live") => {
   if (mode == "test") {
     setTimeout(() => {
@@ -30,177 +8,16 @@ export const StreamInsolvencies = (io, mode: "test" | "live") => {
         "event",
         sampleInsolvencyEvents[
           Math.floor(Math.random() * sampleInsolvencyEvents.length)
-        ]
-      )
+          ]
+      );
       StreamInsolvencies(io, "test")
     }, Math.random() * 30000)
   } else {
-    let dataBuffer = ""
-    const reqStream = request
-      .get("https://stream.companieshouse.gov.uk/insolvency-cases")
-      .auth(process.env.APIUSER, "")
-      .on("response", (r: any) => {
-        startTime = Date.now()
-        setTimeout(() => {
-          console.log("Killing the insolvency stream after 24 hours")
-          reqStream.end()
-        }, 1000 * 60 * 60 * 24) // end after 24 hours
-        reportStatsInterval = setInterval(() => {
-          const averageBacklog =
-            last60Backlog.reduce(
-              (previousValue, currentValue) => previousValue + currentValue,
-              0
-            ) /
-            last60Backlog.length /
-            1000
-          console.log(
-            "Average backlog on insolvencies: ",
-            Math.round(averageBacklog),
-            "seconds"
-          )
-        }, 1001000)
-        console.log("insolvency Headers received, status", r.statusCode)
-        switch (r.statusCode) {
-          case 200:
-            console.log("Listening to updates on insolvency stream")
-            break
-          case 416:
-            console.log("Timepoint out of date")
-            break
-          case 429:
-            console.log("RATE LIMITED, exiting now")
-            process.exit()
-            break
-          default:
-            process.exit()
-        }
-      })
-      .on("error", (e: any) => console.error("error", e))
-      .on("data", async (d: any) => {
-        if (d.toString().length > 1) {
-          reqStream.pause()
-
-          dataBuffer += d.toString("utf8")
-          dataBuffer = dataBuffer.replace("}}{", "}}\n{")
-          while (dataBuffer.includes("\n")) {
-            let singleStartTime = Date.now()
-            last60NotificationTimes.unshift(Date.now())
-            if (qtyOfNotifications > 100) last60NotificationTimes.pop()
-            let newLinePosition = dataBuffer.search("\n")
-            let jsonText = dataBuffer.slice(0, newLinePosition)
-            dataBuffer = dataBuffer.slice(newLinePosition + 1)
-            if (jsonText.length === 0) continue
-            try {
-              let jsonObject: InsolvencyEvent.InsolvencyEvent =
-                JSON.parse(jsonText)
-              last60Backlog.unshift(
-                Date.now() - new Date(jsonObject.event.published_at).valueOf()
-              )
-              //work out rolling average of receival time using notifications and processing timing arrays
-              if (qtyOfNotifications > 5) {
-                const last60TotalTime =
-                  last60NotificationTimes[0] -
-                  last60NotificationTimes[last60NotificationTimes.length - 1]
-                const last60ProcessingTime = last60ProcessingTimes
-                  .slice(0, 5)
-                  .reduce(
-                    (previousValue, currentValue) =>
-                      previousValue + currentValue,
-                    0
-                  )
-                const recentProcessingTimePerNotification =
-                  last60ProcessingTime /
-                  last60ProcessingTimes.slice(0, 5).length
-                const averageTimePerNewNotification =
-                  last60TotalTime / (last60NotificationTimes.length + 1)
-                const averageBacklog =
-                  last60Backlog.reduce(
-                    (previousValue, currentValue) =>
-                      previousValue + currentValue,
-                    0
-                  ) /
-                  last60Backlog.length /
-                  1000
-                last60Backlog.pop()
-                // if average processing time is less than 70% of the frequency of new notifications
-                if (
-                  (recentProcessingTimePerNotification /
-                    averageTimePerNewNotification) *
-                    100 <
-                    70 &&
-                  averageBacklog < 60 * 10
-                )
-                  await wait(
-                    averageTimePerNewNotification -
-                      (Date.now() - singleStartTime)
-                  )
-                else if (
-                  (recentProcessingTimePerNotification /
-                    averageTimePerNewNotification) *
-                    100 <
-                    100 &&
-                  averageBacklog < 60 * 10
-                )
-                  // kill switch to never exceed 100%
-                  await wait(
-                    (averageTimePerNewNotification -
-                      (Date.now() - singleStartTime)) *
-                      0.5
-                  )
-              }
-              io.emit("event", jsonObject)
-              // save event in mongo db
-              const client = await getMongoClient()
-              try {
-                await client
-                  .db("events")
-                  .collection<InsolvencyEvent.InsolvencyEvent>(
-                    "insolvency_events"
-                  )
-                  // upsert logic. unique combo of company number and data. company number to try and help efficiency. not sure it works tho
-                  .updateOne(
-                    {
-                      resource_id: jsonObject.resource_id,
-                      data: jsonObject.data,
-                    },
-                    { $set: jsonObject },
-                    { upsert: true }
-                  )
-              } catch (e) {
-                if (e instanceof MongoError && e.code != 11000)
-                  logger
-                    .color("red")
-                    .log("failed to save insolvency-event in mongodb")
-                    .log("Message: ", e.message)
-                    .log("Name: ", e.name)
-                    .log("Code: ", e.code)
-              } finally {
-                await client.close()
-              }
-              // make sure company is in postgres otherwise put in not_found
-              await getCompanyInfo(jsonObject.resource_id)
-            } catch (e) {
-              console.error(
-                `\x1b[31mCOULD NOT PARSE insolvency: \x1b[0m*${jsonText}*`
-              )
-            }
-
-            let totalTimeSoFar =
-              qtyOfNotifications++ * averageProcessingTime +
-              (Date.now() - singleStartTime)
-            averageProcessingTime = totalTimeSoFar / qtyOfNotifications
-            last60ProcessingTimes.unshift(Date.now() - singleStartTime)
-            if (qtyOfNotifications > 50) last60ProcessingTimes.pop()
-          }
-          reqStream.resume()
-        } else {
-          io.emit("heartbeat", {})
-        }
-      })
-      .on("end", () => {
-        clearInterval(reportStatsInterval)
-        console.error("Insolvency stream ended")
-      })
+    listenToStream<InsolvencyEvent.InsolvencyEvent>("insolvency-cases", event => {
+      io.emit("event", event);
+    });
+    // for await(const event of streamGenerator('insolvency-cases'))
+    //   io.emit('event', event)
   }
 }
 
