@@ -1,5 +1,5 @@
-import { request } from "https";
 import type { RequestOptions } from "https";
+import { request } from "https";
 import type { CompanyProfileEvent, PscEvent } from "./types/eventTypes";
 import { parse } from "JSONStream";
 import { PassThrough, Transform } from "stream";
@@ -33,11 +33,11 @@ export function listenToStream<EventType extends { resource_id: string } = Compa
   };
 
   const handleError = (e: Error) => console.error(`Error on ${path} stream`, "\x1b[31m", e.message, "\x1b[0m");
-  console.time("Request");
+  console.time("Request " + path);
   request(options, res => {
-    console.timeEnd("Request");
+    console.timeEnd("Request " + path);
     console.log(path, "responded with STATUS", res.statusCode, res.statusMessage);
-    res.on("data", b => console.log("response body", b.toString()));
+    // res.on("data", b => console.log("response body", b.toString()));
     res.pipe(parse())
       .on("data", callback)
       .on("error", handleError);
@@ -60,6 +60,7 @@ function stream<EventType>(path: StreamPath) {
   const handleError = (e: Error) => console.error(`Error on ${path} stream generator`, "\x1b[31m", e.message, "\x1b[0m");
   request(options, res => {
     console.log(path, "responded with STATUS", res.statusCode, res.statusMessage);
+    if (res.statusCode === 429) process.exit(res.statusCode);
     res.pipe(parse()).on("error", handleError).pipe(pass);
   }).on("error", handleError).end();
   return pass;
@@ -82,7 +83,10 @@ async function runStream() {
   }
 }
 
-runStream();
+// while(true){
+//   runStream();
+//   await new Promise(resolve => setTimeout(resolve, 60_000)) // 1min
+// }
 
 
 // would like to make my own Transform stream to parse the JSON, but it isn't working

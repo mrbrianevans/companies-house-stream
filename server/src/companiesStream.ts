@@ -1,27 +1,6 @@
-import * as request from "request";
 import { CompanyProfileEvent } from "./types/eventTypes";
-import { getMongoClient } from "./getMongoClient";
-import * as logger from "node-color-log";
-import { MongoError } from "mongodb";
-import { getCompanyInfo } from "./getCompanyInfo";
-// //Variables for status update:
-// let latestTimepoint = ''
-// let numberOfPackets = 0
-// let numberOfHeartbeats = 0
-// let numberOfEvents = 0
-// let numberOfNewCompanies = 0
-// let startTime = Date.now()
-// let streamPaused = false
-const { promisify } = require("util");
-const wait = promisify((s, c) => {
-  // console.log("Waiting for", s, "ms on company")
-  if (!isFinite(s)) s = 300;
-  if (s > 5000) s = 5000;
-  setTimeout(() => c(null, "done waiting"), s / 3); // divide by 3 to stop getting kicked off companies house server
-});
-let qtyOfNotifications = 0;
-let averageProcessingTime = 0;
-let startTime = Date.now();
+import { listenToStream, streamGenerator } from "./listenOnStream";
+
 export const StreamCompanies = (io, mode: "test" | "live") => {
   if (mode == "test") {
     // setTimeout(()=>io.emit("heartbeat", {}), Math.random()*10000)
@@ -35,205 +14,23 @@ export const StreamCompanies = (io, mode: "test" | "live") => {
       StreamCompanies(io, "test");
     }, Math.random() * 3000);
   } else {
-    let dataBuffer = "";
-    const reqStream = request
-      .get("https://stream.companieshouse.gov.uk/companies")
-      .auth(process.env.APIUSER, "")
-      .on("response", (r: any) => {
-        console.log("company Headers received, status", r.statusCode);
-        setTimeout(() => {
-          console.log("Killing the company stream after 24 hours");
-          reqStream.end();
-        }, 1000 * 60 * 60 * 24); // end after 24 hours
-        switch (r.statusCode) {
-          case 200:
-            console.time("Listening on company stream");
-            setInterval(() => {
-              console.timeLog(
-                "Listening on company stream",
-                `Reset comp stats after ${qtyOfNotifications} notifications`
-              );
-              // reset stats every hour
-              qtyOfNotifications = 0;
-              averageProcessingTime = 0;
-              startTime = Date.now();
-            }, 2501111); // staggered reseting to prevent them all reseting at the same time for an unfortunate user experience
-            setInterval(() => {
-              console.log(
-                `Company - Average processing time: ${Math.round(
-                  averageProcessingTime
-                )}ms, new notification every ${Math.round(
-                  (Date.now() - startTime) / qtyOfNotifications
-                )}ms`
-              );
-            }, 1000000);
-            break;
-          case 416:
-            console.log("Timepoint out of date");
-            break;
-          case 429:
-            console.log("RATE LIMITED, exiting now");
-            process.exit();
-            break;
-          default:
-            process.exit();
-        }
-      })
-      .on("error", (e: any) => console.error("error", e))
-      .on("data", async (d: any) => {
-        if (d.toString().length > 1) {
-          reqStream.pause();
+    listenToStream<CompanyProfileEvent.CompanyProfileEvent>("companies", event => {
+      io.emit("event", event);
+    });
+  }
+};
 
-          dataBuffer += d.toString("utf8");
-          dataBuffer = dataBuffer.replace("}}{", "}}\n{");
-          while (dataBuffer.includes("\n")) {
-            let singleStartTime = Date.now();
-            let newLinePosition = dataBuffer.search("\n");
-            let jsonText = dataBuffer.slice(0, newLinePosition);
-            dataBuffer = dataBuffer.slice(newLinePosition + 1);
-            if (jsonText.length === 0) continue;
-            try {
-              let jsonObject: CompanyProfileEvent.CompanyProfileEvent =
-                JSON.parse(jsonText);
-              // query database for previous information held on company to detect what has changed
-              // This stops the wait from limiting the rate of receival too much
-              // console.log("Processing time as a % of time per new notification: ", Math.round(averageProcessingTime/((Date.now() - startTime) / qtyOfNotifications)*100))
-              if (
-                qtyOfNotifications > 75 &&
-                (averageProcessingTime /
-                  ((Date.now() - startTime) / qtyOfNotifications)) *
-                100 <
-                60
-              )
-                await wait(
-                  (Date.now() - startTime) / qtyOfNotifications -
-                  (Date.now() - singleStartTime) -
-                  100
-                )
-              // always minus 100 milliseconds
-              else if (
-                qtyOfNotifications > 70 &&
-                (averageProcessingTime /
-                  ((Date.now() - startTime) / qtyOfNotifications)) *
-                100 <
-                100
-              )
-                // kill switch to never exceed 100%
-                await wait(
-                  ((Date.now() - startTime) / qtyOfNotifications -
-                    (Date.now() - singleStartTime)) *
-                  0.5 -
-                  100
-                )
+export async function AsyncStreamCompanies(io) {
+  for await(const event of streamGenerator("companies"))
+    io.emit("event", event);
+}
 
-              // const companyFromStream = {
-              //     name: jsonObject.data.company_name,
-              //     number: jsonObject.data.company_number,
-              //     streetaddress: jsonObject.data.registered_office_address?.address_line_1 || '',
-              //     county: jsonObject.data.registered_office_address?.region || '',
-              //     country: jsonObject.data.registered_office_address?.country || '',
-              //     postcode: jsonObject.data.registered_office_address?.postal_code || '',
-              //     category: companyTypeConversion[jsonObject.data.type],
-              //     origin: jsonObject.data.foreign_company_details?.originating_registry.country || 'United Kingdom',
-              //     status: jsonObject.data.company_status,
-              //     date: new Date(jsonObject.data.date_of_creation)
-              //     // sicCodes: jsonObject.data.sic_codes,
-              // }
-              // const {
-              //     rows: companyFromDatabase,
-              //     rowCount: companiesFoundInDatabase
-              // } = await dbPool.query('SELECT * FROM companies WHERE number=$1', [jsonObject.data.company_number])
-              //
-              // if (companiesFoundInDatabase) {
-              //     // compare details to see what changed
-              //     const differences = []
-              //     for (const companyFromStreamKey in companyFromStream) {
-              //         switch (companyFromStreamKey) {
-              //             case 'date':
-              //                 break; // date of creation can't change once its happened
-              //             case 'streetaddress': // special comparison for street addresses
-              //                 if (!String(companyFromStream[companyFromStreamKey]).toUpperCase().startsWith(String(companyFromDatabase[0][companyFromStreamKey]).toUpperCase()))
-              //                     differences.push({
-              //                         label: companyFromStreamKey,
-              //                         new: companyFromStream[companyFromStreamKey],
-              //                         old: companyFromDatabase[0][companyFromStreamKey]
-              //                     })
-              //                 break;
-              //             default:
-              //                 if (String(companyFromStream[companyFromStreamKey]).toUpperCase() !== String(companyFromDatabase[0][companyFromStreamKey]).toUpperCase())
-              //                     differences.push({
-              //                         label: companyFromStreamKey,
-              //                         new: companyFromStream[companyFromStreamKey],
-              //                         old: companyFromDatabase[0][companyFromStreamKey]
-              //                     })
-              //                 break;
-              //         }
-              //     }
-              //     if (differences.length > 0) {
-              //         if (differences.findIndex(difference => difference.label === 'streetaddress') > -1 &&
-              //             differences.findIndex(difference => difference.label === 'postcode') > -1)
-              //             jsonObject.event.fields_changed = [["Address changed from ", companyFromDatabase[0].streetaddress, 'to', companyFromStream.streetaddress].join(' ')]
-              //         // else console.log("Differences found in company", companyFromStream.number, differences)
-              //     }
-              //     // else console.log("No differences found between stream and database for company", companyFromStream.number)
-              // } else {
-              //     // console.log("Potential new company? ", companyFromStream.number, companyFromStream.date)
-              // }
-              io.emit("event", jsonObject);
-              // save event in mongo db
-              const client = await getMongoClient();
-              try {
-                await client
-                  .db("events")
-                  .collection<CompanyProfileEvent.CompanyProfileEvent>(
-                    "company_events"
-                  )
-                  // upsert logic. unique combo of company number and data. company number to try and help efficiency. not sure it works tho
-                  .updateOne(
-                    {
-                      resource_id: jsonObject.resource_id,
-                      data: jsonObject.data
-                    },
-                    { $set: jsonObject },
-                    { upsert: true }
-                  )
-              } catch (e) {
-                if (e instanceof MongoError)
-                  logger
-                    .color("red")
-                    .log("failed to save company-event in mongodb")
-                    .log("Message: ", e.message)
-                    .log("Name: ", e.name)
-                    .log("Code: ", e.code);
-                else console.error("Company event error (not mongo):", e);
-              } finally {
-                await client.close();
-              }
-
-              // make sure company is in postgres otherwise put in not_found
-              await getCompanyInfo(jsonObject.resource_id);
-            } catch (e) {
-              if (e instanceof SyntaxError)
-                console.error(
-                  `\x1b[31mCOULD NOT PARSE company profile: \x1b[0m*${jsonText}*`
-                );
-              else console.error(e);
-            }
-
-            let totalTimeSoFar =
-              qtyOfNotifications++ * averageProcessingTime +
-              (Date.now() - singleStartTime);
-            averageProcessingTime = totalTimeSoFar / qtyOfNotifications;
-          }
-          reqStream.resume();
-        } else {
-          io.emit("heartbeat", {});
-        }
-      })
-      .on("end", () => {
-        console.error("Company profile stream ended");
-        console.timeEnd("Listening on company stream");
-      })
+/**
+ * Permanently reconnect to companies stream when stream ends
+ */
+export async function PermCompanies(io) {
+  while (true) {
+    await AsyncStreamCompanies(io);
   }
 }
 

@@ -418,9 +418,9 @@ export declare module PscEvent {
     care_of?: string
     country?: string
     locality?: string
-    po_box?: string
-    postal_code: string
-    premises: string
+    po_box?: string;
+    postal_code?: string;
+    premises: string;
     region?: string
   }
 
@@ -454,20 +454,20 @@ export declare module PscEvent {
     address: Address
     ceased?: boolean
     ceased_on?: string
-    country_of_residence?: string
-    date_of_birth: DateOfBirth
-    description?: "super-secure-persons-with-significant-control"
-    etag: string
-    identification: Identification
+    country_of_residence?: string;
+    date_of_birth?: DateOfBirth;
+    description?: "super-secure-persons-with-significant-control";
+    etag: string;
+    identification?: Identification;
     kind?:
       | "individual-person-with-significant-control"
       | "corporate-entity-person-with-significant-control"
       | "legal-person-with-significant-control"
-      | "super-secure-person-with-significant-control"
+      | "super-secure-person-with-significant-control";
     links: Links
-    name: string
-    name_elements: NameElements
-    nationality?: string
+    name: string;
+    name_elements?: NameElements;
+    nationality?: string;
     natures_of_control: string[]
     notified_on: string
   }
@@ -483,7 +483,7 @@ export declare module PscEvent {
     data: Data;
     event: Event;
     resource_id: string;
-    resource_kind: "psc-notified" | "charges"; //not sure what this actually is
+    resource_kind: "company-psc-corporate" | "company-psc-individual";
     resource_uri: string;
   }
 }

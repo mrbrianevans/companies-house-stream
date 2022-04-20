@@ -1,73 +1,39 @@
-import { StreamCompanies } from "./companiesStream"
-import { StreamCharges } from "./chargesStream"
-import { StreamFilings } from "./filingStream"
-import { StreamInsolvencies } from "./insolvencyStream"
-import { StreamOfficers } from "./officersStream"
-import { StreamPsc } from "./pscStream"
-import { getCompanyInfoApi } from "./getCompanyInfo"
-import { getFilingDescription } from "./getFilingDescription"
-import { generateGraphData } from "./getEventsGraph"
+import express from "express";
+import { Server } from "http";
+import { Server as Socket } from "socket.io";
+import * as path from "path";
+import { PermPsc } from "./pscStream";
+import { PermOfficers } from "./officersStream";
 
-const express = require("express")
-const index = express()
-const httpServer = require("http").Server(index)
-const io = require("socket.io")(httpServer)
-const path = require("path")
+const index = express();
+const httpServer = new Server(index);
+const io = new Socket(httpServer);
 // log each request:
 index.use((req, res, next) => {
-  console.log("Request to", req.path)
-  // console.log('params:', req.params)
-  // console.log('body:', req.body)
-  // console.log('query:', req.query)
-  next()
-})
+  console.log("Request to", req.path);
+  next();
+});
+index.use(express.static(path.resolve("..", "client")));
 
-index.use(express.static(path.join(__dirname, "../..", "client")))
+// API endpoints
+index.use(express.json());
+// index.post("/getCompanyInfo", getCompanyInfoApi)
+// index.get("/getCompanyInfo", getCompanyInfoApi)
+// index.post("/getFilingDescription", getFilingDescription)
+// index.get("/generateGraphData", generateGraphData)
 
-if (!process.env.PGPASSWORD) process.env.PGPASSWORD = "postgres"
-// these are API endpoints
-index.use(express.json())
-index.post("/getCompanyInfo", getCompanyInfoApi)
-index.get("/getCompanyInfo", getCompanyInfoApi)
-index.post("/getFilingDescription", getFilingDescription)
-index.get("/generateGraphData", generateGraphData)
-const port = 3000
+const port = 3000;
 httpServer.listen(port, () =>
-  console.log(
-    `\x1b[32mListening on http://localhost:${port}\x1b[0m
-Graph on http://localhost:${port}/graph
+  console.log(`\x1b[32mListening on http://localhost:${port}\x1b[0m
+-----------------------------------------------------\n`)
+);
 
-MONGO_CACHING: ${
-      Number(process.env.MONGO_CACHING) === 1 ? "ENABLED" : "DISABLED"
-    }
-REDIS_CACHING: ${
-      Number(process.env.REDIS_CACHING) === 1 ? "ENABLED" : "DISABLED"
-    }
-`
-  )
-)
+await Promise.all([
+  // PermCharges(io),
+  // PermCompanies(io),
+  // PermFilings(io),
+  // PermInsolvencies(io),
+  PermOfficers(io),
+  PermPsc(io)
+]);
 
-// StreamCompanies(io, "test")
-// StreamCharges(io, "test")
-// StreamFilings(io, "test")
-// StreamInsolvencies(io, "test")
-// StreamOfficers(io, "test");
-// StreamPsc(io, "test");
-
-StreamCompanies(io, "live");
-StreamCharges(io, "live");
-StreamFilings(io, "live");
-StreamInsolvencies(io, "live");
-StreamOfficers(io, "live");
-StreamPsc(io, "live");
-
-setInterval(() => {
-  console.log("Starting all streams (24th hour interval)");
-  StreamCompanies(io, "live")
-  StreamCharges(io, "live")
-  StreamFilings(io, "live")
-  StreamInsolvencies(io, "live")
-  StreamOfficers(io, "live")
-  StreamPsc(io, "live")
-  // reset the stream every 24 hours 150 milliseconds
-}, 1000 * 60 * 60 * 24 + 150)

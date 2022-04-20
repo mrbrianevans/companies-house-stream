@@ -21,6 +21,20 @@ export const StreamInsolvencies = (io, mode: "test" | "live") => {
   }
 }
 
+export async function AsyncStreamInsolvencies(io) {
+  for await(const event of streamGenerator("insolvency-cases"))
+    io.emit("event", event);
+}
+
+/**
+ * Permanently reconnect to insolvency stream when stream ends
+ */
+export async function PermInsolvencies(io) {
+  while (true) {
+    await AsyncStreamInsolvencies(io);
+  }
+}
+
 const sampleInsolvencyEvents: InsolvencyEvent.InsolvencyEvent[] = [
   {
     resource_kind: "company-insolvency",

@@ -79,30 +79,33 @@ socket.on("heartbeat", heartbeat)
 
 const functionUrl = "/getCompanyInfo?company_number="
 const filingHistoryCard = async (event) => {
-  const { companyProfile } = event
-  const companyNumber = companyProfile.number
-  const description = await fetch("/getFilingDescription", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      description: event.data.description,
-      description_values: event.data.description_values,
-    }),
-  })
-    .then((j) => j.json())
-    .then((j) => j.formattedDescription)
-    .catch(console.error)
+  // const { companyProfile } = event
+  const companyNumber = event.resource_uri.match(
+    /^\/company\/([A-Z0-9]{6,8})\/filing-history/
+  )[1];
+  const { description } = event.data;
+  // const description = await fetch("/getFilingDescription", {
+  //   method: "POST",
+  //   headers: {
+  //     "content-type": "application/json",
+  //   },
+  //   body: JSON.stringify({
+  //     description: event.data.description,
+  //     description_values: event.data.description_values,
+  //   }),
+  // })
+  //   .then((j) => j.json())
+  //   .then((j) => j.formattedDescription)
+  //   .catch(console.error)
   const e = {
     companyNumber,
-    companyProfile,
+    // companyProfile,
     description: description ?? event.data.description,
     published: new Date(event.event.published_at),
     resource_kind: event.resource_kind,
     source: event.resource_kind,
-    title: event.data.category,
-  }
+    title: event.data.category
+  };
   return `
       <div class="filing-card">
     <div class="row">

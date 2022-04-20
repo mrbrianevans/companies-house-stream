@@ -5,7 +5,7 @@
   "scripts": {
     "build": "tsc",
     "build:watch": "tsc -w",
-    "start": "node dist",
+    "start": "node --experimental-specifier-resolution=node dist",
     "start:watch": "nodemon dist"
   },
   "devDependencies": {

@@ -1,13 +1,6 @@
-import * as request from "request"
-import { getMongoClient } from "./getMongoClient"
-import { MongoError } from "mongodb"
-import * as logger from "node-color-log"
-import { getCompanyInfo } from "./getCompanyInfo";
 import { OfficerEvent } from "./types/eventTypes";
+import { listenToStream, streamGenerator } from "./listenOnStream";
 
-const TARGET_QUEUE_SIZE = 20
-const MIN_DELAY = 200 //ms
-const MAX_DELAY = 600_000 //ms (10 minutes)
 export const StreamOfficers = (io, mode: "test" | "live") => {
   if (mode == "test") {
     setTimeout(() => {
@@ -17,112 +10,30 @@ export const StreamOfficers = (io, mode: "test" | "live") => {
           Math.floor(Math.random() * sampleOfficerEvents.length)
         ]
       )
-      StreamOfficers(io, "test")
+      StreamOfficers(io, "test");
     }, Math.random() * 10000)
   } else {
-    let queue = []
-    let dataBuffer = ""
-    const reqStream = request
-      .get("https://stream.companieshouse.gov.uk/officers")
-      .auth(process.env.APIUSER, "")
-      .on("response", (r: any) => {
-        console.log("officer Headers received, status", r.statusCode)
-        switch (r.statusCode) {
-          case 200:
-            console.log("Listening to updates on officer stream")
-            break
-          case 416:
-            console.log("Timepoint out of date")
-            break
-          case 429:
-            console.log("RATE LIMITED, exiting now")
-            process.exit()
-            break
-          default:
-            process.exit()
-        }
-      })
-      .on("error", (e: any) => console.error("error", e))
-      .on("data", async (d: any) => {
-        if (d.toString().length > 1) {
-          reqStream.pause()
+    listenToStream<OfficerEvent.OfficerEvent>("officers", event => {
+      io.emit("event", event);
+    });
 
-          dataBuffer += d.toString("utf8")
-          dataBuffer = dataBuffer.replace("}}{", "}}\n{")
-          while (dataBuffer.includes("\n")) {
-            let newLinePosition = dataBuffer.search("\n")
-            let jsonText = dataBuffer.slice(0, newLinePosition)
-            dataBuffer = dataBuffer.slice(newLinePosition + 1)
-            if (jsonText.length === 0) continue
-            try {
-              let jsonObject = JSON.parse(jsonText)
-              const [, companyNumber] = jsonObject.resource_uri.match(
-                /^\/company\/([A-Z0-9]{6,8})\/appointments/
-              )
-              // save event in mongo db
-              const client = await getMongoClient()
-              try {
-                await client
-                  .db("events")
-                  .collection("officer_events")
-                  .insertOne({
-                    _id: jsonObject.resource_id,
-                    ...jsonObject,
-                  })
-                  .then(async () => {
-                    // make sure company is in postgres otherwise put in not_found
-                    const companyProfile = await getCompanyInfo(companyNumber)
-                    // queue event because its not a duplicate, send company profile with event
-                    queue.push({ ...jsonObject, companyProfile })
-                  })
-              } catch (e) {
-                if (e instanceof MongoError && e.code != 11000)
-                  logger
-                    .color("red")
-                    .log("failed to save company-event in mongodb")
-                    .log("Message: ", e.message)
-                    .log("Name: ", e.name)
-                    .log("Code: ", e.code)
-              } finally {
-                await client.close()
-              }
-            } catch (e) {
-              console.error(
-                `\x1b[31mCOULD NOT PARSE officer: \x1b[0m*${jsonText}*`
-              )
-            }
-          }
-          reqStream.resume()
-        } else {
-          io.emit("heartbeat", {})
-        }
-      })
-      .on("end", () => {
-        console.error("officer stream ended")
-      })
-    let releasedCount = 0
-    //console.log(`qtyReleased,queueLength,delay`)
-    setInterval(() => {
-      //console.log(`${releasedCount},${queue.length},${Math.round(delay)}`)
-    }, 1000)
-    let delay = 1000 // milliseconds between emits
-    // shift the first event in the queue
-    const releaseEvent = () => {
-      // only release an event if there are more than zero queue length
-      if (queue.length > 0) {
-        releasedCount++
-        io.emit("event", queue.shift())
-      }
-      //if the queue is shorter than desired, increase the delay, otherwise decrease it
-      if (queue.length < TARGET_QUEUE_SIZE) delay *= 1.1
-      else if (queue.length > TARGET_QUEUE_SIZE) delay /= 1.1
-      delay = Math.max(Math.round(delay), MIN_DELAY) // prevent going below MIN_DELAY
-      delay = Math.min(Math.round(delay), MAX_DELAY) // prevent going above MAX_DELAY
-      setTimeout(releaseEvent, delay)
-    }
-    releaseEvent()
   }
 }
+
+export async function AsyncStreamOfficers(io) {
+  for await(const event of streamGenerator("officers"))
+    io.emit("event", event);
+}
+
+/**
+ * Permanently reconnect to officers stream when stream ends
+ */
+export async function PermOfficers(io) {
+  while (true) {
+    await AsyncStreamOfficers(io);
+  }
+}
+
 
 const sampleOfficerEvents: OfficerEvent.OfficerEvent[] = [
   {
