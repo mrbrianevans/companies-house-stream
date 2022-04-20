@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "build": "tsc",
-    "build:watch": "tsc -w",
+    "build": "tsc --build",
+    "build:watch": "tsc --build --watch",
     "start": "node --experimental-specifier-resolution=node dist",
     "start:watch": "nodemon dist"
   },

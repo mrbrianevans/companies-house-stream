@@ -1,5 +1,5 @@
-import { FilingEvent } from "./types/eventTypes"
-import { listenToStream, streamGenerator } from "./listenOnStream"
+import { FilingEvent } from "../types/eventTypes";
+import { listenToStream, streamGenerator } from "./listenOnStream";
 
 export const StreamFilings = (io, mode: "test" | "live") => {
   if (mode == "test") {

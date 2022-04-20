@@ -1,5 +1,5 @@
-import { CompanyProfileEvent } from "./types/eventTypes"
-import { listenToStream, streamGenerator } from "./listenOnStream"
+import { CompanyProfileEvent } from "../types/eventTypes";
+import { listenToStream, streamGenerator } from "./listenOnStream";
 
 export const StreamCompanies = (io, mode: "test" | "live") => {
   if (mode == "test") {

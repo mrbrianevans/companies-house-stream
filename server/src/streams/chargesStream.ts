@@ -1,5 +1,5 @@
-import { ChargesEvent } from "./types/eventTypes"
-import { listenToStream, streamGenerator } from "./listenOnStream"
+import { ChargesEvent } from "../types/eventTypes";
+import { listenToStream, streamGenerator } from "./listenOnStream";
 
 export const StreamCharges = (io, mode: "test" | "live") => {
   if (mode == "test") {

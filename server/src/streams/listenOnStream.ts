@@ -1,7 +1,7 @@
 import type { RequestOptions } from "https"
-import { request } from "https"
-import type { CompanyProfileEvent, PscEvent } from "./types/eventTypes"
-import { parse } from "JSONStream"
+import { request } from "https";
+import type { CompanyProfileEvent, PscEvent } from "../types/eventTypes";
+import { parse } from "JSONStream";
 import { PassThrough, Transform } from "stream"
 
 //Streaming API key

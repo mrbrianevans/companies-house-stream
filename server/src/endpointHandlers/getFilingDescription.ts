@@ -1,6 +1,6 @@
 import { Pool } from "pg"
-import { Request, Response } from "express"
-import { getValue, setValue } from "./asyncRedis"
+import { Request, Response } from "express";
+import { getValue, setValue } from "../database/asyncRedis";
 
 export const getFilingDescription = async (req: Request, res: Response) => {
   if (

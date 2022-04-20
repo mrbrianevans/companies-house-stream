@@ -1,5 +1,5 @@
-import { listenToStream, streamGenerator } from "./listenOnStream"
-import { PscEvent } from "./types/eventTypes"
+import { listenToStream, streamGenerator } from "./listenOnStream";
+import { PscEvent } from "../types/eventTypes";
 
 export const StreamPsc = (io, mode: "test" | "live") => {
   if (mode == "test") {

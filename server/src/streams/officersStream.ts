@@ -1,5 +1,5 @@
-import { OfficerEvent } from "./types/eventTypes"
-import { listenToStream, streamGenerator } from "./listenOnStream"
+import { OfficerEvent } from "../types/eventTypes";
+import { listenToStream, streamGenerator } from "./listenOnStream";
 
 export const StreamOfficers = (io, mode: "test" | "live") => {
   if (mode == "test") {

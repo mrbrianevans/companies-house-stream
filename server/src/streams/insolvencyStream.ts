@@ -1,5 +1,5 @@
-import { InsolvencyEvent } from "./types/eventTypes"
-import { listenToStream, streamGenerator } from "./listenOnStream"
+import { InsolvencyEvent } from "../types/eventTypes";
+import { listenToStream, streamGenerator } from "./listenOnStream";
 
 export const StreamInsolvencies = (io, mode: "test" | "live") => {
   if (mode == "test") {
