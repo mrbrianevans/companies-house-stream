@@ -1,6 +1,7 @@
 {
   "compileOnSave": true,
   "compilerOptions": {
+    "skipLibCheck": true,
     "outDir": "dist",
     "target": "ES2022",
     "moduleResolution": "node",
@@ -15,6 +16,6 @@
     "src"
   ],
   "exclude": [
-    "node_modules"
+    "../node_modules"
   ]
 }

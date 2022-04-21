@@ -1,5 +1,29 @@
 let connected = false;
-let socket = new WebSocket("ws://localhost:3000/events");
+
+let closeSocket;
+
+/** Opens a websocket and returns a function to close the socket */
+function openSocket() {
+  const socket = new WebSocket("ws://localhost:3000/events");
+// Connection opened
+  socket.addEventListener("open", function(event) {
+    setConnected(true);
+  });
+
+  socket.addEventListener("close", function(event) {
+    setConnected(false);
+  });
+
+// Listen for messages
+  socket.addEventListener("message", async function(event) {
+    const blob = await event.data.text();
+    const data = JSON.parse(blob);
+    await pushEvent(data);
+  });
+  return () => socket.close();
+}
+
+closeSocket = openSocket();
 setInterval(() => {
   document.querySelector("#clock").innerHTML = new Date().toLocaleTimeString();
 }, 1000);
@@ -13,27 +37,11 @@ const setConnected = (bool) => {
     : "disconnected";
   document.querySelector("#connection-status").onclick = () => {
     console.log("Button pressed, connection:", connected);
-    if (connected) socket.close();
-    else socket = new WebSocket("ws://localhost:3000/events");
+    if (connected) closeSocket();
+    else closeSocket = openSocket();
     //todo: if the socket variable is reassigned, it loses all event listeners
   };
 };
-
-// Connection opened
-socket.addEventListener("open", function(event) {
-  setConnected(true);
-});
-
-socket.addEventListener("close", function(event) {
-  setConnected(false);
-});
-
-// Listen for messages
-socket.addEventListener("message", async function(event) {
-  const blob = await event.data.text();
-  const data = JSON.parse(blob);
-  await pushEvent(data);
-});
 
 
 const pushEvent = async (e) => {

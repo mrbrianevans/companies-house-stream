@@ -1,20 +1,18 @@
+import "dotenv/config";
 import express from "express";
-import { createServer, Server } from "http";
 import * as path from "path";
-import { PermPsc } from "./streams/pscStream";
-import { PermOfficers } from "./streams/officersStream";
 import { getCompanyInfoApi } from "./endpointHandlers/getCompanyInfo";
 import { getFilingDescription } from "./endpointHandlers/getFilingDescription";
 import { generateGraphData } from "./endpointHandlers/getEventsGraph";
-import { WebSocketServer, createWebSocketStream } from "ws";
+import { WebSocketServer } from "ws";
 import { parse } from "url";
-import { stream, streamGenerator } from "./streams/listenOnStream";
-import { pipeline } from "stream";
+import { stream } from "./streams/listenOnStream";
+import { keyHolder } from "./utils/KeyHolder";
 
 const index = express();
-// const httpServer = new Server(index);
-
-// const io = new Socket(httpServer);
+keyHolder.addKey(process.env.STREAM_KEY1);
+keyHolder.addKey(process.env.STREAM_KEY2);
+keyHolder.addKey(process.env.STREAM_KEY3);
 // log each request:
 index.use((req, res, next) => {
   console.log("Request to", req.path);
@@ -23,6 +21,7 @@ index.use((req, res, next) => {
 index.use(express.static(path.resolve("..", "client")));
 
 // API endpoints
+// @ts-ignore
 index.use(express.json());
 index.post("/getCompanyInfo", getCompanyInfoApi);
 index.get("/getCompanyInfo", getCompanyInfoApi);
@@ -34,18 +33,32 @@ const server = index.listen(port, () =>
   console.log(`\x1b[32mListening on http://localhost:${port}\x1b[0m
 -----------------------------------------------------\n`)
 );
-const inputStream = stream("companies");
+//todo: these need to be replaced with permanent stream that will reconnect if they get disconnected
+const companyStream = stream("companies");
+const filingStream = stream("filings");
+const officerStream = stream("officers");
+const pscStream = stream("persons-with-significant-control");
+const chargeStream = stream("charges");
+const insolvencyStream = stream("insolvency-cases");
 
 // web socket server for sending events to client
 const wss = new WebSocketServer({ noServer: true });
 wss.on("connection", function connection(ws, req) {
-  const eventStream = createWebSocketStream(ws);
-  // @ts-ignore typescript doesn't have the latest stream methods
-  inputStream.map(e => {
-    console.log("Event at ", new Date());
-    return JSON.stringify(e);
-  }).pipe(eventStream);
-  //todo: need to stop piping events when websocket closes
+  const sendEvent = event => ws.send(JSON.stringify(event));
+  companyStream.addListener("data", sendEvent);
+  filingStream.addListener("data", sendEvent);
+  officerStream.addListener("data", sendEvent);
+  pscStream.addListener("data", sendEvent);
+  chargeStream.addListener("data", sendEvent);
+  insolvencyStream.addListener("data", sendEvent);
+  ws.on("close", () => {
+    companyStream.removeListener("data", sendEvent);
+    filingStream.removeListener("data", sendEvent);
+    officerStream.removeListener("data", sendEvent);
+    pscStream.removeListener("data", sendEvent);
+    chargeStream.removeListener("data", sendEvent);
+    insolvencyStream.removeListener("data", sendEvent);
+  });
 });
 
 
@@ -62,13 +75,3 @@ server.on("upgrade", function upgrade(request, socket, head) {
     socket.destroy();
   }
 });
-
-
-await Promise.all([
-  // PermCharges(io),
-  // PermCompanies(io),
-  // PermFilings(io),
-  // PermInsolvencies(io),
-  // PermOfficers(io),
-  // PermPsc(io),
-]);

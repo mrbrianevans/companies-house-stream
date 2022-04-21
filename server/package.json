@@ -9,9 +9,11 @@
     "start:watch": "nodemon dist"
   },
   "devDependencies": {
+    "@types/ws": "^8.5.3",
     "nodemon": "^2.0.15"
   },
   "dependencies": {
+    "dotenv": "^16.0.0",
     "ws": "^8.5.0"
   }
 }

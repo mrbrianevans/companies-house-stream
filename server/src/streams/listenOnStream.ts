@@ -2,10 +2,9 @@ import type { RequestOptions } from "https"
 import { request } from "https";
 import type { CompanyProfileEvent, PscEvent } from "../types/eventTypes";
 import { parse } from "JSONStream";
-import { PassThrough, Transform } from "stream"
+import { PassThrough, Transform } from "stream";
+import { keyHolder } from "../utils/KeyHolder";
 
-//Streaming API key
-const streamingApiKey = process.env.STREAMING_KEY
 type StreamPath =
   | "insolvency-cases"
   | "companies"
@@ -30,18 +29,17 @@ export function listenToStream<
   callback: (e: EventType) => void = console.log,
   startFromTimepoint?: number
 ) {
-  if (!streamingApiKey)
-    return console.error("API key environment variable not set")
+  const streamKey = keyHolder.useKey();
   const timepointQueryString =
     typeof startFromTimepoint === "number"
       ? `?timepoint=${startFromTimepoint}`
-      : ""
+      : "";
   const options: RequestOptions = {
     hostname: "stream.companieshouse.gov.uk",
     port: 443,
     path: "/" + path + timepointQueryString,
     method: "GET",
-    auth: streamingApiKey + ":",
+    auth: streamKey + ":"
   }
 
   const handleError = (e: Error) =>
@@ -68,11 +66,12 @@ export function listenToStream<
  * Returns a readable stream of events.
  */
 export function stream<EventType>(path: StreamPath) {
+  const streamKey = keyHolder.useKey();
   const options: RequestOptions = {
     hostname: "stream.companieshouse.gov.uk",
     port: 443,
     path: "/" + path,
-    auth: streamingApiKey + ":"
+    auth: streamKey + ":"
   };
   const pass = new PassThrough({ objectMode: true });
   const handleError = (e: Error) =>
@@ -88,9 +87,14 @@ export function stream<EventType>(path: StreamPath) {
       "responded with STATUS",
       res.statusCode,
       res.statusMessage
-    )
-    if (res.statusCode === 429) process.exit(res.statusCode)
-    res.pipe(parse()).on("error", handleError).pipe(pass)
+    );
+    if (res.statusCode === 429) process.exit(res.statusCode);
+    res.pipe(parse()).on("error", handleError).pipe(pass);
+    res.on("close", () => {
+      console.log(path, "stream closed, relinquish key");
+      keyHolder.disuseKey(streamKey);
+    });
+
   })
     .on("error", handleError)
     .end()
