@@ -1,84 +1,80 @@
 # Companies Stream
 
-This project is a visualiser of changes made to the companies house database of UK companies. It
+This project is a visualiser of changes made to the Companies House database of UK companies. It
 shows events as they happen in realtime, such as a new company registering, or a company going
 insolvent.
 
 ## Technology
 
-- NodeJS server
-- WebSockets with Socket.io
+- [NodeJS](https://nodejs.org) server with [express](https://www.npmjs.com/package/express)
+- [WebSockets](https://javascript.info/websocket)
 - HTML frontend with pure JavaScript and CSS
-- Redis, MongoDB and PostgreSQL databases
 
 ## How it works
 
-The Node server makes a request to the companies house server, which sends a response each time there is an update. The
-server does some processing on this event, such as finding more details about the company from an internal database. The
-server opens a socket with each client, and emits the event through this socket. The client receives the event and
-displays it.
+The Node server makes requests to the companies house server, which sends a response each time there is an event.
 
-## Databases
+The frontend client connects to the server via a WebSocket, on which the server sends events when they are received.
+The client displays these events in HTML.
 
-Companies house offers a [bulk download of company data](https://download.companieshouse.gov.uk/en_output.html) of all
-UK companies, which I have loaded into a Postgres database. When an event comes in, the database is queried to get the
-companies name and some other information about it. To reduce the load on my Postgres database, which is mainly used
-for [Filter Facility](https://filterfacility.co.uk), I cache company information in a Mongo document database. Filing
-events are sent by companies house with a filing description code rather than the actual description. They offer
-a [list of all the formatted descriptions](https://github.com/companieshouse/api-enumerations/blob/master/filing_history_descriptions.yml)
-, which I have also loaded into Postgres. These are cached in a Redis key-value database. The overall data caching
-architecture works like this:
-![data caching architecture diagram](docs/caching-diagram.svg)
 
 ## Make your own
 
 If you are interested in using the companies house streaming API,
 visit [developer-specs.company-information.service.gov.uk](https://developer-specs.company-information.service.gov.uk/streaming-api/guides/overview "Companies house developer website")
 to create an account for a free API key. The API base url is https://stream.companieshouse.gov.uk
-with endpoints `/companies`, `/filings`, `/charges` and `/insolvency-cases`
+with endpoints `/companies`, `/filings`, `/officers`, `persons-with-significant-control`, `/charges`
+and `/insolvency-cases`
 
 Here is a minimum working example using TypeScript:
 
 ```typescript
-import * as request from "request"; // requires $ npm i request
-import {CompanyProfileEvent} from "./eventTypes"; // type definitions
+import { request, RequestOptions } from "https"
+import { parse } from "JSONStream" // requires npm i JSONStream to parse JSON events
 
-export const StreamEvents = () => {
-
-    let dataBuffer = '' // stores incoming data until it makes a complete JSON object
-    const reqStream = request.get('https://stream.companieshouse.gov.uk/companies')
-        .auth(process.env.APIUSER, '') // this is your API key from your companies house account
-        .on('response', (r: any) => {
-            if (r.statusCode === 200) console.log("Successfully connected to stream")
-            else console.log("Received a status code of", r.statusCode)
-        })
-        .on('error', (e: any) => console.error('error', e))
-        .on('data', async (d: any) => {
-            if (d.toString().length > 1) {
-                reqStream.pause() // pauses receiving new information from companies house
-
-                dataBuffer += d.toString('utf8')
-                dataBuffer = dataBuffer.replace('}}{', '}}\n{')
-                while (dataBuffer.includes('\n')) {
-                    let newLinePosition = dataBuffer.search('\n')
-                    let jsonText = dataBuffer.slice(0, newLinePosition)
-                    dataBuffer = dataBuffer.slice(newLinePosition + 1)
-                    if (jsonText.length === 0) continue;
-                    try {
-                        // types are in eventTypes.ts
-                        let jsonObject: CompanyProfileEvent.CompanyProfileEvent = JSON.parse(jsonText)
-                        console.log("Received EVENT:", jsonObject)
-                    } catch (e) {
-                        if (e instanceof SyntaxError)
-                            console.error(`\x1b[31mCOULD NOT PARSE event: \x1b[0m*${jsonText}*`)
-                    }
-                }
-                reqStream.resume()// resumes receiving new information from companies house
-            } else {
-                console.log("Received heartbeat")
-            }
-        })
-        .on('end', () => console.error("Stream ended"))
+const streamKey = process.env.STREAM_KEY // API key from Companies House website
+const options: RequestOptions = {
+  hostname: "stream.companieshouse.gov.uk",
+  port: 443,
+  path: "/filings", // change this depending on which stream you want
+  method: "GET",
+  auth: streamKey + ":"
 }
 
+const handleError = (e: Error) => console.error(`Error on stream`, "\x1b[31m", e.message, "\x1b[0m")
+
+request(options, (res) => {
+  if (res.statusCode === 200) console.log("Stream opened at", Date())
+  else console.log('Stream could not open:', res.statusCode, res.statusMessage)
+  res.pipe(parse())
+    .on("data", event => console.log('Event received:', event))
+    .on("error", handleError)
+    .on("end", () => console.log('Stream ended at', Date()))
+})
+  .on("error", handleError)
+  .end() // this sends the request
+
 ```
+
+For a more complete example of listening on a stream, as well as some more options of how to integrate it with
+NodeJS streams,
+see [server/src/streams/listenOnStream.ts](https://github.com/mrbrianevans/companies-house-stream/blob/master/server/src/streams/listenOnStream.ts)
+.
+
+# Connection limits
+
+Companies House currently only allows each API key to authorise 2 streams at a time, but there are 6 streams in total.
+
+To get around this limitation and connect to all 6 streams at the same time, I created the KeyHolder class
+in `server/src/utils`.
+This takes 3 API keys and assigns one to each stream to ensure that each key is only used to authorise 2 streams at a
+time.
+
+# Questions?
+
+If you have any questions or suggestions please open an issue on the repository, and I will get back to you.
+
+## Using this code
+
+You are welcome to use this open source code for your own projects.
+See the [LICENSE](https://github.com/mrbrianevans/companies-house-stream/blob/master/LICENSE) file for more information.
