@@ -16,8 +16,7 @@ function openSocket() {
 
 // Listen for messages
   socket.addEventListener("message", async function(event) {
-    const blob = await event.data.text();
-    const data = JSON.parse(blob);
+    const data = JSON.parse(event.data)
     await pushEvent(data);
   });
   return () => socket.close();
@@ -39,7 +38,6 @@ const setConnected = (bool) => {
     console.log("Button pressed, connection:", connected);
     if (connected) closeSocket();
     else closeSocket = openSocket();
-    //todo: if the socket variable is reassigned, it loses all event listeners
   };
 };
 
@@ -194,35 +192,37 @@ const chargesCard = async (event) => {
   const [, companyNumber] = event.resource_uri.match(
     /^\/company\/([A-Z0-9]{6,8})\/charges/
   )
-  const companyProfile = await fetch(functionUrl + companyNumber)
-    .then((r) => r.json())
-    .catch(console.error)
+  const companyProfile = {}
+  // const companyProfile = await fetch(functionUrl + companyNumber)
+  //   .then((r) => r.json())
+  //   .catch(console.error)
   return `
         <div class="charges-card"><h3>${companyProfile?.name ?? companyNumber}
         <sub><code><a href="https://filterfacility.co.uk/company/${companyNumber}" target="_blank">${companyNumber}</a></code></sub>
         </h3>
         <p>${event.data.classification.description}</p>
         <p>Charge published at ${new Date(
-          event.event.published_at
-        ).toLocaleTimeString()}</p>
+    event.event.published_at
+  ).toLocaleTimeString()}</p>
         </div>
       `
 }
 const insolvencyCard = async (event) => {
   const companyNumber = event.resource_id
-  const companyProfile = await fetch(functionUrl + companyNumber)
-    .then((r) => r.json())
-    .catch(console.error)
+  const companyProfile = {}
+  // const companyProfile = await fetch(functionUrl + companyNumber)
+  //   .then((r) => r.json())
+  //   .catch(console.error)
   return `
         <div class="insolvency-card"><h3>Insolvency: ${
-          companyProfile?.name ?? companyNumber
-        }
+    companyProfile?.name ?? companyNumber
+  }
         <sub><code><a href="https://filterfacility.co.uk/company/${
-          event.resource_id
-        }" target="_blank">${event.resource_id}</a></code></sub>
+    event.resource_id
+  }" target="_blank">${event.resource_id}</a></code></sub>
         </h3><p>${event.data.cases[0].type}</p>
         <p>Published at ${new Date(
-          event.event.published_at
+    event.event.published_at
         ).toLocaleTimeString()}</p>
         </div>
         `

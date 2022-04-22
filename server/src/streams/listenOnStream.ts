@@ -1,9 +1,9 @@
 import type { RequestOptions } from "https"
-import { request } from "https";
-import type { CompanyProfileEvent, PscEvent } from "../types/eventTypes";
-import { parse } from "JSONStream";
-import { PassThrough, Transform } from "stream";
-import { keyHolder } from "../utils/KeyHolder";
+import { request } from "https"
+import type { CompanyProfileEvent, PscEvent } from "../types/eventTypes"
+import { parse } from "JSONStream"
+import { PassThrough, Transform } from "stream"
+import { keyHolder } from "../utils/KeyHolder"
 
 type StreamPath =
   | "insolvency-cases"
@@ -20,20 +20,11 @@ type StreamPath =
  * @param callback - function to call on each event. Will call with the event data as the only parameter.
  * @param startFromTimepoint - timepoint to start from. If omitted, then will start from the latest event.
  */
-export function listenToStream<
-  EventType extends {
-    resource_id: string
-  } = CompanyProfileEvent.CompanyProfileEvent
->(
-  path: StreamPath = "companies",
-  callback: (e: EventType) => void = console.log,
-  startFromTimepoint?: number
-) {
-  const streamKey = keyHolder.useKey();
-  const timepointQueryString =
-    typeof startFromTimepoint === "number"
-      ? `?timepoint=${startFromTimepoint}`
-      : "";
+export function listenToStream<EventType extends {
+  resource_id: string
+} = CompanyProfileEvent.CompanyProfileEvent>(path: StreamPath = "companies", callback: (e: EventType) => void = console.log, startFromTimepoint?: number) {
+  const streamKey = keyHolder.useKey()
+  const timepointQueryString = typeof startFromTimepoint === "number" ? `?timepoint=${startFromTimepoint}` : ""
   const options: RequestOptions = {
     hostname: "stream.companieshouse.gov.uk",
     port: 443,
@@ -42,17 +33,11 @@ export function listenToStream<
     auth: streamKey + ":"
   }
 
-  const handleError = (e: Error) =>
-    console.error(`Error on ${path} stream`, "\x1b[31m", e.message, "\x1b[0m")
+  const handleError = (e: Error) => console.error(`Error on ${path} stream`, "\x1b[31m", e.message, "\x1b[0m")
   console.time("Request " + path)
   request(options, (res) => {
     console.timeEnd("Request " + path)
-    console.log(
-      path,
-      "responded with STATUS",
-      res.statusCode,
-      res.statusMessage
-    )
+    console.log(path, "responded with STATUS", res.statusCode, res.statusMessage)
     // res.on("data", b => console.log("response body", b.toString()));
     res.pipe(parse()).on("data", callback).on("error", handleError)
   })
@@ -66,35 +51,20 @@ export function listenToStream<
  * Returns a readable stream of events.
  */
 export function stream<EventType>(path: StreamPath) {
-  const streamKey = keyHolder.useKey();
+  const streamKey = keyHolder.useKey()
   const options: RequestOptions = {
-    hostname: "stream.companieshouse.gov.uk",
-    port: 443,
-    path: "/" + path,
-    auth: streamKey + ":"
-  };
-  const pass = new PassThrough({ objectMode: true });
-  const handleError = (e: Error) =>
-    console.error(
-      `Error on ${path} stream generator`,
-      "\x1b[31m",
-      e.message,
-      "\x1b[0m"
-    )
+    hostname: "stream.companieshouse.gov.uk", port: 443, path: "/" + path, auth: streamKey + ":"
+  }
+  const pass = new PassThrough({ objectMode: true })
+  const handleError = (e: Error) => console.error(`Error on ${path} stream generator`, "\x1b[31m", e.message, "\x1b[0m")
   request(options, (res) => {
-    console.log(
-      path,
-      "responded with STATUS",
-      res.statusCode,
-      res.statusMessage
-    );
-    if (res.statusCode === 429) process.exit(res.statusCode);
-    res.pipe(parse()).on("error", handleError).pipe(pass);
+    console.log(path, "responded with STATUS", res.statusCode, res.statusMessage)
+    if (res.statusCode === 429) process.exit(res.statusCode)
+    // res.on("data", b => console.log("response body", b.toString()));
+    res.pipe(parse()).on("error", handleError).pipe(pass)
     res.on("close", () => {
-      console.log(path, "stream closed, relinquish key");
-      keyHolder.disuseKey(streamKey);
-    });
-
+      keyHolder.disuseKey(streamKey) // relinquish key when stream closes
+    })
   })
     .on("error", handleError)
     .end()
@@ -105,9 +75,7 @@ export function stream<EventType>(path: StreamPath) {
  * Returns an async iterator of events.
  * @param path
  */
-export async function* streamGenerator<EventType>(
-  path: StreamPath
-): AsyncGenerator<EventType> {
+export async function* streamGenerator<EventType>(path: StreamPath): AsyncGenerator<EventType> {
   for await (const s of stream(path)) {
     yield s
   }
@@ -115,9 +83,7 @@ export async function* streamGenerator<EventType>(
 }
 
 async function runStream() {
-  for await (const s of streamGenerator<PscEvent.PscEvent>(
-    "persons-with-significant-control"
-  )) {
+  for await (const s of streamGenerator<PscEvent.PscEvent>("persons-with-significant-control")) {
     console.log("event received: ", s)
   }
 }
