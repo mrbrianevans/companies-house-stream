@@ -1,12 +1,12 @@
-import { keyHolder } from "./utils/KeyHolder"
+import { streamKeyHolder } from "./utils/KeyHolder"
 import { request, RequestOptions } from "https"
 import { parse } from "JSONStream"
 import "dotenv/config"
 
-keyHolder.addKey(process.env.STREAM_KEY1)
+streamKeyHolder.addKey(process.env.STREAM_KEY1)
 
 function listenToStream(path = "companies", callback: (e) => void = console.log) {
-  const streamKey = keyHolder.useKey()
+  const streamKey = streamKeyHolder.useKey()
   const options: RequestOptions = {
     hostname: "stream.companieshouse.gov.uk",
     port: 443,
@@ -20,7 +20,7 @@ function listenToStream(path = "companies", callback: (e) => void = console.log)
   request(options, (res) => {
     console.timeLog("Request " + path, "responded with STATUS", res.statusCode, res.statusMessage)
     console.timeEnd("Request " + path)
-    res.pipe(parse()).on("data", callback).on("error", handleError).on("end", () => keyHolder.disuseKey(streamKey))
+    res.pipe(parse()).on("data", callback).on("error", handleError).on("end", () => streamKeyHolder.disuseKey(streamKey))
   })
     .on("error", handleError)
     .end()

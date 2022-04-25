@@ -53,4 +53,5 @@ class KeyHolder {
 }
 
 // singleton KeyHolder to be accessed by different files in application
-export const keyHolder = new KeyHolder()
+export const streamKeyHolder = new KeyHolder()
+export const restKeyHolder = new KeyHolder()

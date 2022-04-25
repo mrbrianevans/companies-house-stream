@@ -1,13 +1,10 @@
-FROM node:16-slim
-
-RUN mkdir -p /app
+FROM node:18
 
 WORKDIR /app
 
-COPY package.json .
-COPY package-lock.json .
+COPY package*.json .
 
-RUN npm i
+RUN npm ci
 
 COPY . .
 
@@ -15,4 +12,4 @@ RUN npm run build
 
 EXPOSE 3000
 
-CMD ["npm", "start"]
+CMD ["npm","start"]

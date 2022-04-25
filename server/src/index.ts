@@ -1,28 +1,29 @@
 import "dotenv/config";
 import express from "express";
-import * as path from "path";
-import { getCompanyInfoApi } from "./endpointHandlers/getCompanyInfo";
-import { getFilingDescription } from "./endpointHandlers/getFilingDescription";
-import { generateGraphData } from "./endpointHandlers/getEventsGraph";
-import { WebSocketServer } from "ws";
-import { parse } from "url";
-import { stream } from "./streams/listenOnStream";
-import { keyHolder } from "./utils/KeyHolder";
+import * as path from "path"
+import { getCompanyInfoApi } from "./endpointHandlers/getCompanyInfo"
+import { getFilingDescription } from "./endpointHandlers/getFilingDescription"
+import { generateGraphData } from "./endpointHandlers/getEventsGraph"
+import { WebSocketServer } from "ws"
+import { parse } from "url"
+import { stream } from "./streams/listenOnStream"
+import { restKeyHolder, streamKeyHolder } from "./utils/KeyHolder"
 
-const index = express();
-keyHolder.addKey(process.env.STREAM_KEY1);
-keyHolder.addKey(process.env.STREAM_KEY2);
-keyHolder.addKey(process.env.STREAM_KEY3);
+const index = express()
+streamKeyHolder.addKey(process.env.STREAM_KEY1)
+streamKeyHolder.addKey(process.env.STREAM_KEY2)
+streamKeyHolder.addKey(process.env.STREAM_KEY3)
+restKeyHolder.addKey(process.env.REST_KEY1)
 // log each request:
 index.use((req, res, next) => {
-  console.log("Request to", req.path);
-  next();
-});
-index.use(express.static(path.resolve("..", "client")));
+  console.log("Request to", req.path)
+  next()
+})
+index.use(express.static(path.resolve("..", "client")))
 
 // API endpoints
 // @ts-ignore
-index.use(express.json());
+index.use(express.json())
 index.post("/getCompanyInfo", getCompanyInfoApi);
 index.get("/getCompanyInfo", getCompanyInfoApi);
 index.post("/getFilingDescription", getFilingDescription);

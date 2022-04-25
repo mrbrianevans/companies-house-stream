@@ -3,7 +3,7 @@ import { request } from "https"
 import type { CompanyProfileEvent, PscEvent } from "../types/eventTypes"
 import { parse } from "JSONStream"
 import { PassThrough, Transform } from "stream"
-import { keyHolder } from "../utils/KeyHolder"
+import { streamKeyHolder } from "../utils/KeyHolder"
 
 type StreamPath =
   | "insolvency-cases"
@@ -23,7 +23,7 @@ type StreamPath =
 export function listenToStream<EventType extends {
   resource_id: string
 } = CompanyProfileEvent.CompanyProfileEvent>(path: StreamPath = "companies", callback: (e: EventType) => void = console.log, startFromTimepoint?: number) {
-  const streamKey = keyHolder.useKey()
+  const streamKey = streamKeyHolder.useKey()
   const timepointQueryString = typeof startFromTimepoint === "number" ? `?timepoint=${startFromTimepoint}` : ""
   const options: RequestOptions = {
     hostname: "stream.companieshouse.gov.uk",
@@ -51,7 +51,7 @@ export function listenToStream<EventType extends {
  * Returns a readable stream of events.
  */
 export function stream<EventType>(path: StreamPath) {
-  const streamKey = keyHolder.useKey()
+  const streamKey = streamKeyHolder.useKey()
   const options: RequestOptions = {
     hostname: "stream.companieshouse.gov.uk", port: 443, path: "/" + path, auth: streamKey + ":"
   }
@@ -63,7 +63,7 @@ export function stream<EventType>(path: StreamPath) {
     // res.on("data", b => console.log("response body", b.toString()));
     res.pipe(parse()).on("error", handleError).pipe(pass)
     res.on("close", () => {
-      keyHolder.disuseKey(streamKey) // relinquish key when stream closes
+      streamKeyHolder.disuseKey(streamKey) // relinquish key when stream closes
     })
   })
     .on("error", handleError)
