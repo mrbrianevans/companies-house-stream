@@ -2,16 +2,16 @@ version: '3'
 services:
   redis-cache:
     image: redis
-    volumes: 
+    volumes:
       - redisdata:/data
     restart: unless-stopped
   mongo-cache:
     image: mongo
-    volumes: 
+    volumes:
       - mongodata:/data
     restart: unless-stopped
   stream-server:
-    build: .
+    build: server
     ports:
       - "80:3000"
       - "443:3000"
