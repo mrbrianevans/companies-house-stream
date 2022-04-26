@@ -1,0 +1,21 @@
+#cloud-config
+
+package_update: true
+
+bootcmd:
+  - curl -fsSL https://deb.nodesource.com/setup_current.x | sudo -E bash - # for nodejs
+
+packages:
+  - docker.io
+  - docker-compose
+  - nodejs
+
+# create the docker group
+groups:
+  - docker
+
+# assign a VM's default user, which is dockeruser, to the docker group
+users:
+  - default
+  - name: dockeruser
+    groups: docker

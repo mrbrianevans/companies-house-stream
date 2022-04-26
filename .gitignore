@@ -3,3 +3,4 @@
 server/**/*.js
 **/*.env*
 .idea
+/terraform/env.tfvars
