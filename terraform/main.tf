@@ -2,11 +2,14 @@ resource "digitalocean_project" "companies-stream" {
   name        = "companies-stream"
   description = "Companies House event streaming web app."
   environment = "Production"
-  resources   = [digitalocean_droplet.event-listener.urn]
+  resources   = [digitalocean_droplet.event-listener.urn, digitalocean_droplet.pubsub.urn]
 }
 
-data "template_file" "user_data" {
+data "template_file" "docker-node" {
   template = file("./docker-node.yaml")
+}
+data "template_file" "redis-data" {
+  template = file("./redis-data.yaml")
 }
 resource "digitalocean_droplet" "event-listener" {
   image    = "ubuntu-20-04-x64"
@@ -23,7 +26,7 @@ resource "digitalocean_droplet" "event-listener" {
     private_key = file(var.pvt_key)
     timeout     = "2m"
   }
-  user_data  = data.template_file.user_data.rendered
+  user_data  = data.template_file.docker-node.rendered
   tags       = ["terraform"]
   monitoring = true
 }
@@ -51,6 +54,29 @@ resource "docker_registry_image" "event-listener" {
     auth_config {
       host_name = "registry.digitalocean.com"
     }
-    context = "..\\server"
+    no_cache        = true
+    suppress_output = false
+    context         = "..\\server"
+    dockerfile      = "Dockerfile"
   }
+}
+
+resource "digitalocean_droplet" "pubsub" {
+  image    = "ubuntu-20-04-x64"
+  name     = "pubsub"
+  region   = "lon1"
+  size     = "s-1vcpu-1gb"
+  ssh_keys = [
+    data.digitalocean_ssh_key.terraform.id
+  ]
+  connection {
+    host        = self.ipv4_address
+    user        = "root"
+    type        = "ssh"
+    private_key = file(var.pvt_key)
+    timeout     = "2m"
+  }
+  user_data  = data.template_file.redis-data.rendered
+  tags       = ["terraform"]
+  monitoring = true
 }

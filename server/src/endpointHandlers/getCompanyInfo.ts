@@ -3,7 +3,6 @@ import pg from "pg";
 const { Pool } = pg;
 
 import { Request, Response } from "express";
-import * as logger from "node-color-log";
 import { getMongoClient } from "../database/getMongoClient";
 
 export const getCompanyInfoApi = async (req: Request, res: Response) => {

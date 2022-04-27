@@ -3,7 +3,6 @@
 package_update: true
 
 bootcmd:
-  - curl -fsSL https://deb.nodesource.com/setup_current.x | sudo -E bash - # for nodejs
   - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg # for docker
   - |
     echo \
@@ -15,7 +14,6 @@ packages:
   - docker-ce-cli
   - containerd.io
   - docker-compose-plugin
-  - nodejs
 
 # create the docker group
 groups:
@@ -34,10 +32,17 @@ write_files:
     content: |
       version: '3'
       services:
-        event-listener:
-          image: registry.digitalocean.com/stream-images/event-listener:latest
+        pubsubdb:
+          image: redis:latest
           restart: unless-stopped
+          ports: 
+            - "6379:6379"
+          volumes:
+            - redisdata:/data
+      volumes:
+        redisdata:
 
+# start redis server
 runcmd:
   - cd /app
   - docker compose up -d
