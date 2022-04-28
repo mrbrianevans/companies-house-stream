@@ -1,7 +1,10 @@
 import { createClient } from "redis"
 
 export async function getRedisClient() {
-  const client = createClient({ url: "redis://206.189.26.20:6379" })
+  const client = createClient({
+    url: `redis://${process.env.PUBSUB_REDIS_IP}:6379`,
+    password: process.env.PUBSUB_REDIS_PASS
+  })
   await client.connect()
   return client
 }

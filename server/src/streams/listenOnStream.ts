@@ -64,6 +64,7 @@ export function stream<EventType>(path: StreamPath) {
     res.pipe(parse()).on("error", handleError).pipe(pass)
     res.on("close", () => {
       streamKeyHolder.disuseKey(streamKey) // relinquish key when stream closes
+      console.log(path, "stream ended", Date())
     })
   })
     .on("error", handleError)

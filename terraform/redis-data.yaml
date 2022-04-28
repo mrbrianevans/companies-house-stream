@@ -39,8 +39,15 @@ write_files:
             - "6379:6379"
           volumes:
             - redisdata:/data
+            - ./redis.conf:/usr/local/etc/redis/redis.conf
+          command: redis-server /usr/local/etc/redis/redis.conf
       volumes:
         redisdata:
+  - path: /app/redis.conf
+    permissions: 0755
+    content: |
+      requirepass ${redis_password}
+
 
 # start redis server
 runcmd:

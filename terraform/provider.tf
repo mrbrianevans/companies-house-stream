@@ -8,6 +8,10 @@ terraform {
       source  = "kreuzwerker/docker"
       version = "2.16.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "3.0.1"
+    }
   }
 }
 
@@ -18,6 +22,8 @@ provider "digitalocean" {
   token = var.do_token
 }
 
+provider "random" {
+}
 data "digitalocean_ssh_key" "terraform" {
   name = "Brian"
 }

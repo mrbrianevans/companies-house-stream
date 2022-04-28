@@ -35,9 +35,17 @@ write_files:
       version: '3'
       services:
         event-listener:
-          image: registry.digitalocean.com/stream-images/event-listener:latest
+          build: 
+            context: server
+            dockerfile: Dockerfile
+          command: npm run stream-pub
           restart: unless-stopped
+          env_file: 
+            - .redis.env
+            - .api.env
 
 runcmd:
   - cd /app
+  - echo "PUBSUB_REDIS_IP=${pubsub_redis_ip}" > .redis.env
+  - echo "PUBSUB_REDIS_PASS=\"${redis_password}\"" >> .redis.env
   - docker compose up -d

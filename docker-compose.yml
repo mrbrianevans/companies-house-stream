@@ -5,6 +5,7 @@ services:
     volumes:
       - redisdata:/data
     restart: unless-stopped
+    command: redis-server /usr/local/etc/redis/redis.conf
   mongo-cache:
     image: mongo
     volumes:
