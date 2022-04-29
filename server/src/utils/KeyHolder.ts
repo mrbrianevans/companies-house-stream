@@ -50,6 +50,10 @@ class KeyHolder {
   disuseKey(key: string) {
     this.keys[key]--
   }
+
+  keyCount() {
+    return Object.keys(this.keys).length
+  }
 }
 
 // singleton KeyHolder to be accessed by different files in application

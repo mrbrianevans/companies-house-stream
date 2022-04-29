@@ -45,15 +45,15 @@ export function listenToStream<EventType extends {
     .end()
 }
 
-// listenToStream('persons-with-significant-control')
 
 /**
  * Returns a readable stream of events.
  */
-export function stream<EventType>(path: StreamPath) {
+export function stream<EventType>(path: StreamPath, startFromTimepoint?: number) {
   const streamKey = streamKeyHolder.useKey()
+  const timepointQueryString = typeof startFromTimepoint === "number" ? `?timepoint=${startFromTimepoint}` : ""
   const options: RequestOptions = {
-    hostname: "stream.companieshouse.gov.uk", port: 443, path: "/" + path, auth: streamKey + ":"
+    hostname: "stream.companieshouse.gov.uk", port: 443, path: "/" + path + timepointQueryString, auth: streamKey + ":"
   }
   const pass = new PassThrough({ objectMode: true })
   const handleError = (e: Error) => console.error(`Error on ${path} stream generator`, "\x1b[31m", e.message, "\x1b[0m")
@@ -65,6 +65,7 @@ export function stream<EventType>(path: StreamPath) {
     res.on("close", () => {
       streamKeyHolder.disuseKey(streamKey) // relinquish key when stream closes
       console.log(path, "stream ended", Date())
+      pass.end() // end the passthrough stream as well
     })
   })
     .on("error", handleError)
