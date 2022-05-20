@@ -1,5 +1,4 @@
-# https://companies.stream
-:80 {
+companies.stream {
     log
 	handle_path /api/* {
 		reverse_proxy rest-api:3000 {

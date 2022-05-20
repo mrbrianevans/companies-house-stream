@@ -2,19 +2,22 @@ import { getRedisClient } from "../database/getRedisClient"
 import { PassThrough } from "stream"
 import express from "express"
 import { WebSocketServer } from "ws"
-import { parse } from "url"
 
-const client = await getRedisClient()
+
+const redisClient = await getRedisClient()
 
 const str = new PassThrough({ objectMode: true })
-await client.pSubscribe("event:*",
+await redisClient.pSubscribe("event:*",
   (event, channel) => {
     str.write(JSON.parse(event))
   })
 
-
-// for await(const m of str)
-//   console.log("event in stream", m.resource_id, m.resource_kind)
+const clients = []
+str.addListener("data", event => {
+  for (const c of clients) {
+    c.send(JSON.stringify(event))
+  }
+})
 
 
 const app = express()
@@ -29,18 +32,17 @@ const server = app.listen(3000, () => console.log("Listening on port 3000"))
 // web socket server for sending events to client
 const wss = new WebSocketServer({ noServer: true })
 wss.on("connection", function connection(ws, req) {
-  console.log("Connected to websocket")
-  const sendEvent = event => ws.send(JSON.stringify(event))
-  str.addListener("data", sendEvent)
+  clients.push(ws)
+  console.log("Websocket connected.", clients.length, "clients")
   ws.on("close", (code, reason) => {
-    console.log("Websocket closed", code, reason.toString())
-    str.removeListener("data", sendEvent)
+    clients.splice(clients.indexOf(ws), 1)
+    console.log("Websocket disconnected.", clients.length, "clients")
   })
 })
 server.on("request", (req) => console.log("Request to web socket server", req.url))
 // handles websocket on /events path of server
 server.on("upgrade", function upgrade(request, socket, head) {
-  const { pathname } = new URL(request.url, `ws://${request.headers.host}`)
+  const { pathname } = new URL(request.url, `wss://${request.headers.host}`)
 
   if (pathname === "/events") {
     wss.handleUpgrade(request, socket, head, function done(ws) {

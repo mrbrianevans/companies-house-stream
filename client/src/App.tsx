@@ -20,7 +20,7 @@ const App: Component = () => {
   setInterval(() => setEvents(e => e.slice(0, 100)), 15000)
 
   function openSocket() {
-    const socket = new WebSocket(`ws://${window.location.host}/events`)
+    const socket = new WebSocket(`wss://${window.location.host}/events`)
 // Connection opened
     socket.addEventListener("open", function(event) {
       setConnected(true)
