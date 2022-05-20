@@ -3,6 +3,7 @@
 package_update: true
 
 bootcmd:
+  - curl -fsSL https://deb.nodesource.com/setup_current.x | sudo -E bash - # for nodejs
   - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg # for docker
   - |
     echo \
@@ -17,7 +18,7 @@ packages:
 
 write_files:
   - path: /app/docker-compose.yaml
-    permissions: 0755
+    permissions: '0755'
     content: |
       version: '3'
       services:

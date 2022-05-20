@@ -18,6 +18,7 @@ class KeyHolder {
    * keyHolder.addKey(process.env.STREAM_KEY);
    */
   addKey(key: string) {
+    if (!key) throw new Error("Attempted to add empty key to KeyHolder")
     this.keys[key] = 0
   }
 

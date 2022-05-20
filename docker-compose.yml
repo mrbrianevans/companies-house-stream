@@ -1,29 +1,55 @@
 version: '3'
 services:
-  redis-cache:
+  pubsubdb:
     image: redis
+    restart: unless-stopped
     volumes:
       - redisdata:/data
-    restart: unless-stopped
-    command: redis-server /usr/local/etc/redis/redis.conf
-  mongo-cache:
-    image: mongo
+
+  client: # builds the frontend into a volume to be served by caddy
+    build: client
     volumes:
-      - mongodata:/data
+      - client_dist:/client/dist
+
+  webserver:
+    image: caddy
     restart: unless-stopped
-  stream-server:
-    build: server
     ports:
-      - "80:3000"
-      - "443:3000"
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - client_dist:/client
+      - caddy_data:/data
+      - caddy_config:/config
+
+  event-publisher:
+    build: server
+    command: npm run stream-pub
+    environment:
+      PUBSUB_REDIS_IP: pubsubdb
     env_file:
-      # postgres connection details
-      - .env
-    depends_on:
-      - mongo-cache
-      - redis-cache
+      - .api.env
+
+  event-subscriber:
+    build: server
+    command: npm run stream-sub
+    environment:
+      PUBSUB_REDIS_IP: pubsubdb
+
+  rest-api:
+    build: server
+    command: npm run api
+    volumes:
+      - mongodata:/mongodata
+    env_file:
+      - .api.env
 
 
 volumes:
-  mongodata:
   redisdata:
+  caddy_data:
+    external: true
+  caddy_config:
+  mongodata:
+  client_dist:

@@ -1,111 +1,101 @@
-let connected = false
+let connected = false;
 
-let closeSocket
+let closeSocket;
 
 /** Opens a websocket and returns a function to close the socket */
 function openSocket() {
-  const socket = new WebSocket("ws://localhost:3000/events")
+  const socket = new WebSocket(`ws://${window.location.host}/events`)
 // Connection opened
   socket.addEventListener("open", function(event) {
-    setConnected(true)
-  })
+    setConnected(true);
+  });
 
   socket.addEventListener("close", function(event) {
-    setConnected(false)
-  })
+    setConnected(false);
+  });
 
 // Listen for messages
   socket.addEventListener("message", async function(event) {
     const data = JSON.parse(event.data)
-    await pushEvent(data)
-  })
-  return () => socket.close()
+    await pushEvent(data);
+  });
+  return () => socket.close();
 }
 
-closeSocket = openSocket()
+closeSocket = openSocket();
 setInterval(() => {
-  document.querySelector("#clock").innerHTML = new Date().toLocaleTimeString()
-}, 1000)
+  document.querySelector("#clock").innerHTML = new Date().toLocaleTimeString();
+}, 1000);
 const setConnected = (bool) => {
-  connected = bool
+  connected = bool;
   document.querySelector("#connection-status").innerHTML = connected
     ? "Connected"
-    : "Disconnected"
+    : "Disconnected";
   document.querySelector("#connection-status").className = connected
     ? "connected"
-    : "disconnected"
+    : "disconnected";
   document.querySelector("#connection-status").onclick = () => {
-    console.log("Button pressed, connection:", connected)
-    if (connected) closeSocket()
-    else closeSocket = openSocket()
-  }
-}
+    console.log("Button pressed, connection:", connected);
+    if (connected) closeSocket();
+    else closeSocket = openSocket();
+  };
+};
 
 
 const pushEvent = async (e) => {
   document.querySelector("#notification-counter").innerHTML = (
     Number(document.querySelector("#notification-counter").innerHTML) + 1
-  ).toString()
-  const eventCard = document.createElement("div")
-  let column = "companies"
+  ).toString();
+  const eventCard = document.createElement("div");
   switch (e.resource_kind || e.source) {
     case "company-profile": // layout for company profile change card
-      eventCard.innerHTML = await companyProfileCard(e)
-      column = "companies"
+      eventCard.innerHTML = await companyProfileCard(e);
       break
     case "filing-history":
       eventCard.innerHTML = await filingHistoryCard(e)
-      column = "filings"
       break
     case "company-charges":
       eventCard.innerHTML = await chargesCard(e)
-      column = "charges"
       break
     case "company-insolvency":
       eventCard.innerHTML = await insolvencyCard(e)
-      column = "insolvencies"
       break
     case "company-officers":
       eventCard.innerHTML = await officerCard(e)
-      column = "officers"
       break
     case "company-psc-individual":
     case "company-psc-corporate":
-      eventCard.innerHTML = await pscCard(e)
-      column = "psc"
-      break
+      eventCard.innerHTML = await pscCard(e);
+      break;
     default:
       eventCard.innerHTML = `
         <div class="alert"><h3>New format of event!</h3>
         <pre>${e.resource_kind}</pre></div>
-        `
-      break
+        `;
+      break;
   }
-  eventCard.className = "event"
-  let events = document.getElementById(column)
+
+  let events = document.querySelector("#events")
   if (events.childElementCount === 15) events.removeChild(events.lastChild)
-  const heading = document.querySelector(`#${column}>h3`)
-  heading.insertAdjacentElement("afterend", eventCard)
-  setTimeout(() => events.removeChild(eventCard), 60_000) // remove after wait time
+  events.insertAdjacentElement("afterbegin", eventCard)
 }
-// const heartbeat = () => {
-//   const eventCard = document.createElement("div")
-//   eventCard.innerHTML =
-//     "<div class='heart-outer'><div class='heart1'></div><div class='heart2'></div><div class='heart3'></div></div>"
-//   eventCard.className = "heartbeat"
-//   let heartbeats = document.getElementById('heartbeats')
-//   if (heartbeats.childElementCount === 15) heartbeats.removeChild(heartbeats.lastChild)
-//   heartbeats.insertAdjacentElement("afterbegin", eventCard)
-//   setTimeout(()=>heartbeats.removeChild(eventCard), 30_000)
-// }
+const heartbeat = () => {
+  const eventCard = document.createElement("div")
+  eventCard.innerHTML =
+    "<div class='heart-outer'><div class='heart1'></div><div class='heart2'></div><div class='heart3'></div></div>"
+  eventCard.className = "heartbeat"
+  let events = document.querySelector("#events")
+  if (events.childElementCount === 15) events.removeChild(events.lastChild)
+  events.insertAdjacentElement("afterbegin", eventCard)
+}
 
 const functionUrl = "/getCompanyInfo?company_number="
 const filingHistoryCard = async (event) => {
   // const { companyProfile } = event
   const companyNumber = event.resource_uri.match(
     /^\/company\/([A-Z0-9]{6,8})\/filing-history/
-  )[1]
-  const { description } = event.data
+  )[1];
+  const { description } = event.data;
   // const description = await fetch("/getFilingDescription", {
   //   method: "POST",
   //   headers: {
@@ -127,7 +117,7 @@ const filingHistoryCard = async (event) => {
     resource_kind: event.resource_kind,
     source: event.resource_kind,
     title: event.data.category
-  }
+  };
   return `
       <div class="filing-card">
     <div class="row">
@@ -148,8 +138,8 @@ const companyProfileCard = async (event) => {
   return `<div class="companies-card"><div class="row">
       <h3>${event.data.company_name}</h3>
       <sub><code><a href="https://filterfacility.co.uk/company/${
-    event.data.company_number
-  }" target="_blank">${event.data.company_number}</a></code></sub>
+        event.data.company_number
+      }" target="_blank">${event.data.company_number}</a></code></sub>
     </div>
     <p class="new-company">${newCompany ? "New company" : ""} ${
     event.event.fields_changed ? event.event.fields_changed.join(", ") : ""
@@ -233,7 +223,7 @@ const insolvencyCard = async (event) => {
         </h3><p>${event.data.cases[0].type}</p>
         <p>Published at ${new Date(
     event.event.published_at
-  ).toLocaleTimeString()}</p>
+        ).toLocaleTimeString()}</p>
         </div>
         `
 }

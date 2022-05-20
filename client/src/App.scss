@@ -1,0 +1,18 @@
+#connection-status.connected {
+  background-color: dodgerblue;
+  color: aliceblue;
+}
+
+#connection-status.disconnected {
+  background-color: tomato;
+  color: honeydew;
+}
+
+#connection-status {
+  border-radius: 0.25em;
+  padding: 0.25em;
+  margin: 0.25em;
+  display: inline-block;
+  border: none;
+  font-size: inherit;
+}

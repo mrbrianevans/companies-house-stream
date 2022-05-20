@@ -1,34 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <link href="stylesheet.css" media="screen and (min-width: 900px)" rel="stylesheet"
-          type="text/css"/>
-    <link href="vertical_stylesheet.css" media="screen and (max-width: 900px)" rel="stylesheet"
-          type="text/css"/>
-
-    <title>Companies House Stream</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#000000" />
+  <title>Solid App</title>
 </head>
 <body>
-<header>
-    <h1>Stream data from companies house in realtime</h1>
-    <div class="view-source"><code><a href="https://github.com/mrbrianevans/companies-house-stream"
-                                      target="_blank">View source code</a></code>
-        <!--        <code><a href="/graph">View Graph</a></code><code><a href="/hybrid">Hybrid</a></code>-->
-    </div>
-    <div class="row">
-        <button class="disconnected" id="connection-status">Disconnected</button>
-        <div id="clock-container">
-            <div id="clock" class="bubble"></div>
-        </div>
-        <div id="counter-container">
-            <div class="bubble">Notifications: <span id="notification-counter">0</span></div>
-        </div>
-    </div>
-</header>
+<noscript>You need to enable JavaScript to run this app.</noscript>
+<div id="root"></div>
 
-<div id="events"></div>
-    <script src="client.js"></script>
+<script src="/src/index.tsx" type="module"></script>
 </body>
 </html>

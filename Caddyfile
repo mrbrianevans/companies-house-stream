@@ -1,0 +1,24 @@
+# https://companies.stream
+:80 {
+    log
+	handle_path /api/* {
+		reverse_proxy rest-api:3000 {
+		}
+	}
+
+	handle {
+		root * /client
+		try_files {path} /index.html
+		file_server
+	}
+
+    @websockets {
+    	header Connection *Upgrade*
+    	header Upgrade    websocket
+    	# protocol ws
+    }
+
+    handle @websockets {
+        reverse_proxy event-subscriber:3000
+    }
+}

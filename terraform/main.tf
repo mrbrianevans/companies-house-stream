@@ -122,17 +122,7 @@ resource "digitalocean_firewall" "redis" {
 
   outbound_rule {
     protocol              = "tcp"
-    port_range            = "443"
-    destination_addresses = ["0.0.0.0/0", "::/0"]
-  }
-  outbound_rule {
-    protocol              = "tcp"
-    port_range            = "80"
-    destination_addresses = ["0.0.0.0/0", "::/0"]
-  }
-  outbound_rule {
-    protocol              = "tcp"
-    port_range            = "53" # dns
+    port_range            = "1-65535"
     destination_addresses = ["0.0.0.0/0", "::/0"]
   }
 }
@@ -149,17 +139,7 @@ resource "digitalocean_firewall" "only-ssh" {
 
   outbound_rule {
     protocol              = "tcp"
-    port_range            = "443"
-    destination_addresses = ["0.0.0.0/0", "::/0"]
-  }
-  outbound_rule {
-    protocol              = "tcp"
-    port_range            = "80"
-    destination_addresses = ["0.0.0.0/0", "::/0"]
-  }
-  outbound_rule {
-    protocol              = "tcp"
-    port_range            = "53" # dns
+    port_range            = "1-65535"
     destination_addresses = ["0.0.0.0/0", "::/0"]
   }
 }
@@ -179,17 +159,7 @@ resource "digitalocean_firewall" "web-server-only-lb" {
 
   outbound_rule {
     protocol              = "tcp"
-    port_range            = "443"
-    destination_addresses = ["0.0.0.0/0", "::/0"]
-  }
-  outbound_rule {
-    protocol              = "tcp"
-    port_range            = "80"
-    destination_addresses = ["0.0.0.0/0", "::/0"]
-  }
-  outbound_rule {
-    protocol              = "tcp"
-    port_range            = "53" # dns
+    port_range            = "1-65535"
     destination_addresses = ["0.0.0.0/0", "::/0"]
   }
 }
