@@ -1,25 +1,26 @@
 import { Component, createMemo } from "solid-js"
-import type { FilingEvent } from "../types/eventTypes"
+import type { PscEvent } from "../types/eventTypes"
 import { Temporal } from "temporal-polyfill"
 
-interface FilingEventCardProps {
-  event: FilingEvent.FilingEvent
+interface PscEventCardProps {
+  event: PscEvent.PscEvent
 }
 
-export const FilingEventCard: Component<FilingEventCardProps> = ({ event }) => {
+export const PscEventCard: Component<PscEventCardProps> = ({ event }) => {
   const companyNumber = createMemo(() => event.resource_uri.match(
-    /^\/company\/([A-Z0-9]{6,8})\/filing-history/
+    /^\/company\/([A-Z0-9]{6,8})\//
   )[1])
   const published = Temporal.PlainDateTime.from(event.event.published_at)
   return <div class={"event"}>
-    <div class="filing-card">
+    <div class="psc-card">
       <div class="row">
         <h3>{companyNumber()}</h3>
         <sub><code><a href={`https://filterfacility.co.uk/company/${companyNumber()}`}
                       target="_blank">{companyNumber()}</a></code></sub>
       </div>
-      <p>{event.data.description}</p>
-      <p>{event.data.category} published at {published.toPlainTime().toString()}</p>
+      <p>{event.data.name} notified on {event.data.notified_on}</p>
+      {event.data.ceased_on !== undefined ? `<b>Ceased on ${event.data.ceased_on}</b>` : ""}
+      <p>{event.resource_kind} published at {published.toPlainTime().toString()}</p>
     </div>
   </div>
 }

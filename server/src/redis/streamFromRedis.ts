@@ -32,14 +32,15 @@ wss.on("connection", function connection(ws, req) {
   console.log("Connected to websocket")
   const sendEvent = event => ws.send(JSON.stringify(event))
   str.addListener("data", sendEvent)
-  ws.on("close", () => {
+  ws.on("close", (code, reason) => {
+    console.log("Websocket closed", code, reason.toString())
     str.removeListener("data", sendEvent)
   })
 })
 server.on("request", (req) => console.log("Request to web socket server", req.url))
 // handles websocket on /events path of server
 server.on("upgrade", function upgrade(request, socket, head) {
-  const { pathname } = parse(request.url)
+  const { pathname } = new URL(request.url, `ws://${request.headers.host}`)
 
   if (pathname === "/events") {
     wss.handleUpgrade(request, socket, head, function done(ws) {

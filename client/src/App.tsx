@@ -1,15 +1,51 @@
-import { Component, onCleanup } from "solid-js"
+import { Component, createSignal, For, JSX, onCleanup, PropsWithChildren } from "solid-js"
 import "./styles/column_layout.scss"
+import { Clock } from "./components/Clock"
+import { createStore } from "solid-js/store"
+import { FilingEventCard } from "./eventCards/FilingEventCard"
+import type { AnyEvent } from "./types/eventTypes"
+import { CompanyProfileEventCard } from "./eventCards/CompanyProfileEventCard"
+import { OfficerEventCard } from "./eventCards/OfficerEventCard"
+import { PscEventCard } from "./eventCards/PscEventCard"
+import { ChargesEventCard } from "./eventCards/ChargesEventCard"
+import { InsolvencyEventCard } from "./eventCards/InsolvencyEventCard"
 
 const App: Component = () => {
-  const socket = new WebSocket(`ws://${window.location.host}/events`)
+  const [connected, setConnected] = createSignal(false)
+  const [count, setCount] = createSignal(0)
+  const [online, setOnline] = createSignal(true)
+  addEventListener("online", () => setOnline(true))
+  addEventListener("offline", () => setOnline(false))
+  const [events, setEvents] = createStore<AnyEvent[]>([])
+  setInterval(() => setEvents(e => e.slice(0, 100)), 15000)
 
-  socket.addEventListener("message", async function(event) {
-    const data = JSON.parse(event.data)
-    console.log(data) // todo: create event component
-  })
+  function openSocket() {
+    const socket = new WebSocket(`ws://${window.location.host}/events`)
+// Connection opened
+    socket.addEventListener("open", function(event) {
+      setConnected(true)
+    })
+
+    socket.addEventListener("close", function(event) {
+      setConnected(false)
+    })
+
+// Listen for messages
+    socket.addEventListener("message", async function(event) {
+      setCount(prev => ++prev)
+      const data: AnyEvent = JSON.parse(event.data)
+      setEvents(e => [data, ...e])
+      setTimeout(() => {
+        //remove event from events store after 15 seconds
+        setEvents(ev => ev.filter(e => e?.resource_id !== data.resource_id))
+      }, 15000)
+    })
+    return () => socket.close()
+  }
+
+  let socket = openSocket()
   onCleanup(() => {
-    socket.close()
+    socket()
   })
   return (
     <>
@@ -19,23 +55,34 @@ const App: Component = () => {
                                           target="_blank">View source code</a></code>
         </div>
         <div class="row">
-          <button class="disconnected" id="connection-status">Disconnected</button>
-          <div id="clock-container">
-            <div id="clock" class="bubble"></div>
-          </div>
+          <button class={connected() ? "connected" : "disconnected"} id="connection-status"
+                  onClick={() => connected() ? socket() : socket = openSocket()}>{connected() ? "Connected" : "Disconnected"}</button>
+          <Clock />
           <div id="counter-container">
-            <div class="bubble">Notifications: <span id="notification-counter">0</span></div>
+            <div class="bubble">Event count: <span id="notification-counter">{count()}</span></div>
           </div>
         </div>
       </header>
-
+      {/*<div>Events on screen: {events.length}</div>*/}
       <div id="events">
-        <div id="companies"><h3>Company events</h3></div>
-        <div id="filings"><h3>Filing events</h3></div>
-        <div id="officers"><h3>Officer events</h3></div>
-        <div id="psc"><h3>PSC events</h3></div>
-        <div id="charges"><h3>Charge events</h3></div>
-        <div id="insolvencies"><h3>Insolvency events</h3></div>
+        <div><h3>Company events</h3><For
+          each={events.filter(e => e?.resource_kind === "company-profile")}>{event => event.resource_kind === "company-profile" ?
+          <CompanyProfileEventCard event={event} /> : ""}</For></div>
+        <div><h3>Filing events</h3><For
+          each={events.filter(e => e?.resource_kind === "filing-history")}>{event => event.resource_kind === "filing-history" ?
+          <FilingEventCard event={event} /> : ""}</For></div>
+        <div><h3>Officer events</h3><For
+          each={events.filter(e => e?.resource_kind === "company-officers")}>{event => event.resource_kind === "company-officers" ?
+          <OfficerEventCard event={event} /> : ""}</For></div>
+        <div><h3>PSC events</h3><For
+          each={events.filter(e => e?.resource_kind.startsWith("company-psc"))}>{event => event.resource_kind === "company-psc-corporate" || event.resource_kind === "company-psc-individual" ?
+          <PscEventCard event={event} /> : ""}</For></div>
+        <div><h3>Charge events</h3><For
+          each={events.filter(e => e?.resource_kind === "company-charges")}>{event => event.resource_kind === "company-charges" ?
+          <ChargesEventCard event={event} /> : ""}</For></div>
+        <div><h3>Insolvency events</h3><For
+          each={events.filter(e => e?.resource_kind === "company-insolvency")}>{event => event.resource_kind === "company-insolvency" ?
+          <InsolvencyEventCard event={event} /> : ""}</For></div>
       </div>
     </>
   )
