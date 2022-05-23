@@ -5,12 +5,14 @@
     "outDir": "dist",
     "target": "ES2022",
     "moduleResolution": "node",
-    "removeComments": true,
+    //    "removeComments": true,
     "module": "ES2022",
     "allowSyntheticDefaultImports": true,
     "lib": [
       "ESNext"
-    ]
+    ],
+    "inlineSourceMap": true,
+    "inlineSources": true
   },
   "include": [
     "src"

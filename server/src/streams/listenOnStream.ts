@@ -2,8 +2,11 @@ import type { RequestOptions } from "https"
 import { request } from "https"
 import type { CompanyProfileEvent, PscEvent } from "../types/eventTypes"
 import { parse } from "JSONStream"
-import { PassThrough, Transform } from "stream"
+import { PassThrough, Stream, Transform } from "stream"
 import { streamKeyHolder } from "../utils/KeyHolder"
+import { performance } from "perf_hooks"
+import pino from "pino"
+import { CustomJsonParse } from "./jsonParseStream"
 
 type StreamPath =
   | "insolvency-cases"
@@ -49,28 +52,54 @@ export function listenToStream<EventType extends {
 /**
  * Returns a readable stream of events.
  */
-export function stream<EventType>(path: StreamPath, startFromTimepoint?: number) {
+export function stream<EventType>(streamPath: StreamPath, startFromTimepoint?: number) {
+  const logger = pino({ base: { streamPath } })
   const streamKey = streamKeyHolder.useKey()
   const timepointQueryString = typeof startFromTimepoint === "number" ? `?timepoint=${startFromTimepoint}` : ""
+  const path = "/" + streamPath + timepointQueryString
   const options: RequestOptions = {
-    hostname: "stream.companieshouse.gov.uk", port: 443, path: "/" + path + timepointQueryString, auth: streamKey + ":"
+    hostname: "stream.companieshouse.gov.uk", port: 443, path, auth: streamKey + ":"
   }
-  const pass = new PassThrough({ objectMode: true })
-  const handleError = (e: Error) => console.error(`Error on ${path} stream generator`, "\x1b[31m", e.message, "\x1b[0m")
+  const parser = new CustomJsonParse({}, true)
+  const handleError = (e: Error) => {
+    console.error(`Error on ${streamPath} stream Stream`, "\x1b[31m", e.message, "\x1b[0m")
+    parser.end()
+  }
+  logger.info({ path }, "Requesting to connect to stream")
   request(options, (res) => {
-    console.log(path, "responded with STATUS", res.statusCode, res.statusMessage)
-    if (res.statusCode === 429) process.exit(res.statusCode)
-    // res.on("data", b => console.log("response body", b.toString()));
-    res.pipe(parse()).on("error", handleError).pipe(pass)
-    res.on("close", () => {
-      streamKeyHolder.disuseKey(streamKey) // relinquish key when stream closes
-      console.log(path, "stream ended", Date())
-      pass.end() // end the passthrough stream as well
+    const { statusMessage, statusCode } = res
+    logger.info({ path, res: { statusMessage, statusCode } }, "Response received from stream")
+    switch (res.statusCode) {
+      case 429:
+        logger.error("Exiting due to hitting rate limit")
+        process.exit(res.statusCode)
+        break
+      case 200:
+        logger.info("Stream started successfully, piping through json parser")
+        res.pipe(parser).on("error", handleError)
+        break
+      default:
+        res.pipe(process.stdout)
+        break
+    }
+    res.on("end", () => {
+      logger.info("Stream ended. 'end' event triggered")
+    }).on("error", (err) => {
+      logger.error(err, "Error on stream")
     })
+    // res.on("close", () => {
+    //   streamKeyHolder.disuseKey(streamKey) // relinquish key when stream closes
+    //   console.log(streamPath, "stream ended", Date())
+    //   parser.end() // end the passthrough stream as well
+    // }).on('error', ()=>{
+    //   streamKeyHolder.disuseKey(streamKey)
+    //   console.log(streamPath, "stream errored", Date())
+    //   parser.end()
+    // })
   })
     .on("error", handleError)
     .end()
-  return pass
+  return parser
 }
 
 /**
@@ -96,28 +125,3 @@ async function runStream() {
 // }
 
 // would like to make my own Transform stream to parse the JSON, but it isn't working
-class customJsonParse extends Transform {
-  private data: string
-
-  constructor(callback) {
-    super({ decodeStrings: false })
-    this.data = ""
-    callback()
-  }
-
-  transform(chunk, encoding, callback) {
-    this.data += chunk
-    callback()
-  }
-
-  flush(callback) {
-    try {
-      // Make sure is valid json.
-      JSON.parse(this.data)
-      this.push(this.data)
-      callback()
-    } catch (err) {
-      callback(err)
-    }
-  }
-}

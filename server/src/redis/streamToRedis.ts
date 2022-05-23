@@ -2,6 +2,7 @@ import "dotenv/config"
 import { stream } from "../streams/listenOnStream"
 import { getRedisClient } from "../database/getRedisClient"
 import { restKeyHolder, streamKeyHolder } from "../utils/KeyHolder"
+import { setTimeout } from "node:timers/promises"
 /*
 
   This file listens to the Companies House long polling streaming API, and when events are received, they are posted
@@ -29,5 +30,7 @@ const startStream = streamPath => getMostRecentTimepoint(streamPath)
   )// restart on end
 for (const streamPath of streamPaths) {
   await startStream(streamPath)
-  await new Promise(resolve => setTimeout(resolve, 5000))
+  await setTimeout(5000)
 }
+//todo:
+// - this doesn't yet achieve perfect uptime. There are some circumstances which cause it to not reconnect on some streams
