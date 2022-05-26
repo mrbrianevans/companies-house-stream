@@ -22,6 +22,7 @@ type StreamPath =
  * @param path - URL path to listen on. Defaults to `companies`. Can be `filings` or `persons-with-significant-control` etc.
  * @param callback - function to call on each event. Will call with the event data as the only parameter.
  * @param startFromTimepoint - timepoint to start from. If omitted, then will start from the latest event.
+ * @deprecated - use stream() instead, due to better handling of errors and disconnecting.
  */
 export function listenToStream<EventType extends {
   resource_id: string
@@ -50,7 +51,7 @@ export function listenToStream<EventType extends {
 
 
 /**
- * Returns a readable stream of events.
+ * Returns a readable stream of events. The recommended way of listening to a stream in this application.
  */
 export function stream<EventType>(streamPath: StreamPath, startFromTimepoint?: number) {
   const logger = pino({ base: { streamPath } })
@@ -61,43 +62,37 @@ export function stream<EventType>(streamPath: StreamPath, startFromTimepoint?: n
     hostname: "stream.companieshouse.gov.uk", port: 443, path, auth: streamKey + ":"
   }
   const parser = new CustomJsonParse({}, true)
-  const handleError = (e: Error) => {
-    console.error(`Error on ${streamPath} stream Stream`, "\x1b[31m", e.message, "\x1b[0m")
-    parser.end()
+  const handleError = (message: string) => (e: Error) => {
+    if (e) {
+      logger.error(e, message)
+    }
+    streamKeyHolder.disuseKey(streamKey) // relinquish key when stream closes
+    logger.info("stream ended")
+    parser.end() // end the passthrough stream as well
   }
+  parser.on("error", handleError("Error on parser stream"))
   logger.info({ path }, "Requesting to connect to stream")
   request(options, (res) => {
     const { statusMessage, statusCode } = res
     logger.info({ path, res: { statusMessage, statusCode } }, "Response received from stream")
     switch (res.statusCode) {
       case 429:
-        logger.error("Exiting due to hitting rate limit")
+        logger.fatal("Exiting due to hitting rate limit")
         process.exit(res.statusCode)
         break
       case 200:
         logger.info("Stream started successfully, piping through json parser")
-        res.pipe(parser).on("error", handleError)
+        res.pipe(parser)
         break
       default:
         res.pipe(process.stdout)
+        handleError("Non 200 status code response received")
         break
     }
-    res.on("end", () => {
-      logger.info("Stream ended. 'end' event triggered")
-    }).on("error", (err) => {
-      logger.error(err, "Error on stream")
-    })
-    // res.on("close", () => {
-    //   streamKeyHolder.disuseKey(streamKey) // relinquish key when stream closes
-    //   console.log(streamPath, "stream ended", Date())
-    //   parser.end() // end the passthrough stream as well
-    // }).on('error', ()=>{
-    //   streamKeyHolder.disuseKey(streamKey)
-    //   console.log(streamPath, "stream errored", Date())
-    //   parser.end()
-    // })
+    res.on("end", handleError("Stream ended. 'end' event triggered"))
+      .on("error", handleError("error on response stream"))
   })
-    .on("error", handleError)
+    .on("error", handleError("Error on request"))
     .end()
   return parser
 }
@@ -118,10 +113,3 @@ async function runStream() {
     console.log("event received: ", s)
   }
 }
-
-// while(true){
-//   runStream();
-//   await new Promise(resolve => setTimeout(resolve, 60_000)) // 1min
-// }
-
-// would like to make my own Transform stream to parse the JSON, but it isn't working

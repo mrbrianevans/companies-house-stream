@@ -1,23 +1,28 @@
 companies.stream {
-    log
-	handle_path /api/* {
-		reverse_proxy rest-api:3000 {
-		}
-	}
+        log
+        handle_path /api/* {
+                reverse_proxy rest-api:3000 {
+                }
+        }
 
-	handle {
-		root * /client
-		try_files {path} /index.html
-		file_server
-	}
+        handle {
+                root * /client
+                try_files {path} /index.html
+                file_server
+        }
 
-    @websockets {
-    	header Connection *Upgrade*
-    	header Upgrade    websocket
-    	# protocol ws
-    }
+        @websockets {
+                header Connection *Upgrade*
+                header Upgrade websocket
+                # protocol ws
+        }
 
-    handle @websockets {
-        reverse_proxy event-subscriber:3000
-    }
+        handle @websockets {
+                reverse_proxy event-subscriber:3000
+        }
+
+        # for health checks
+        handle_path /events/* {
+                reverse_proxy event-subscriber:3000
+        }
 }

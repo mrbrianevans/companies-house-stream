@@ -19,6 +19,7 @@ export class CustomJsonParse extends Transform {
   }
 
   _transform(chunk: Buffer, encoding, callback) {
+    this.emit("heartbeat") // this will emit even if the chunk is just a newline (heartbeat on the stream).
     const received = performance.timeOrigin + performance.now() // collect timestamp that event was received
     this.data += chunk.toString("utf8")
     const objects = this.data.split(/\n+/)
@@ -41,14 +42,17 @@ export class CustomJsonParse extends Transform {
   }
 
   _flush(callback) {
-    console.log("Flush called")
+    // console.debug("Flush called. This.data=", this.data)
     try {
-      // Make sure is valid json.
-      const parsedJson = JSON.parse(this.data)
-      this.push(parsedJson)
-      callback()
+      // there may still be unparsed data remaining in this.data
+      if (this.data.trim().length > 0) {
+        const parsedJson = JSON.parse(this.data)
+        this.push(parsedJson)
+      }
     } catch (err) {
-      callback(err)
+      // console.debug("Error parsing last chunk when flush was called", err)
+    } finally {
+      callback()
     }
   }
 }

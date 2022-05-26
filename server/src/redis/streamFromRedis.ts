@@ -3,6 +3,7 @@ import { PassThrough } from "stream"
 import express from "express"
 import { WebSocketServer } from "ws"
 
+const streamPaths = new Set(["companies", "filings", "officers", "persons-with-significant-control", "charges", "insolvency-cases"])
 
 const redisClient = await getRedisClient()
 
@@ -22,11 +23,23 @@ str.addListener("data", event => {
 
 const app = express()
 
-app.get("/health", (req, res) => {
-  res.send("i am healthy")
+app.get("/health", async (req, res) => {
+  const commandClient = await getRedisClient()
+  const health = {}
+  for (const streamPath of streamPaths) {
+    const lastHeartbeat = await commandClient.get(streamPath + ":alive").then(t => new Date(parseInt(t || "0")))
+    console.debug({
+      lastHeartbeat,
+      streamPath
+    }, "Last heartbeat was", (Date.now() - lastHeartbeat.getTime()) / 1000, "seconds ago")
+    health[streamPath] = Date.now() - lastHeartbeat.getTime() < 60_000 // more than 60 seconds indicates stream offline
+  }
+  await commandClient.quit()
+  res.json(health)
 })
 
 const server = app.listen(3000, () => console.log("Listening on port 3000"))
+server.on("request", (req) => console.log("Request to server", req.url))
 
 
 // web socket server for sending events to client
@@ -39,7 +52,6 @@ wss.on("connection", function connection(ws, req) {
     console.log("Websocket disconnected.", clients.length, "clients")
   })
 })
-server.on("request", (req) => console.log("Request to web socket server", req.url))
 // handles websocket on /events path of server
 server.on("upgrade", function upgrade(request, socket, head) {
   const { pathname } = new URL(request.url, `wss://${request.headers.host}`)
