@@ -12,10 +12,5 @@
     ],
     "noEmit": true,
     "isolatedModules": true
-  },
-  "references": [
-    {
-      "path": "../types"
-    }
-  ]
+  }
 }

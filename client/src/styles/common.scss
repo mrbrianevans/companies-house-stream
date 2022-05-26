@@ -114,22 +114,26 @@ h1 {
 }
 
 .filing-card {
-    background-color: lightgrey;
+    background: rgb(159, 162, 170);
+    background: linear-gradient(144deg, rgba(159, 162, 170, 1) 0%, rgba(191, 205, 209, 1) 100%);
     border-color: darkgray;
 }
 
 .companies-card {
-    background-color: cornsilk;
+    background: rgb(255, 248, 220);
+    background: linear-gradient(144deg, rgba(255, 248, 220, 1) 0%, rgba(209, 206, 191, 1) 100%);
     border-color: bisque;
 }
 
 .insolvency-card {
-    background-color: lightpink;
+    background: rgb(255, 182, 193);
+    background: linear-gradient(144deg, rgba(255, 182, 193, 1) 0%, rgba(209, 191, 191, 1) 100%);
     border-color: firebrick;
 }
 
 .charges-card {
-    background-color: lightsteelblue;
+    background: rgb(176, 196, 222);
+    background: linear-gradient(63deg, rgba(176, 196, 222, 1) 0%, rgba(191, 199, 209, 1) 100%);
     border-color: steelblue;
 }
 
