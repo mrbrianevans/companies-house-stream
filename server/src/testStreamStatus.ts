@@ -30,7 +30,7 @@ function listenToStream(path = "companies", callback: (e) => void = console.log)
 
 
 // connects to the filing stream to test that its working, separate from the other application logic.
-listenToStream("filings", () => console.log("Event received", Date()))
+listenToStream("disqualified-officers", () => console.log("Event received", Date()))
 
 
 // const events = stream('filings')

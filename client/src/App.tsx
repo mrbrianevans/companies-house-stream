@@ -100,6 +100,11 @@ const App: Component = () => {
         <div><h3>Insolvency events <ConnectedIcon connected={health()?.["insolvency-cases"] ?? false} /></h3><For
           each={events.filter(e => e?.resource_kind === "company-insolvency")}>{event => event.resource_kind === "company-insolvency" ?
           <InsolvencyEventCard event={event} /> : ""}</For></div>
+        <div><h3>Disqualified officers <ConnectedIcon connected={health()?.["disqualified-officers"] ?? false} /></h3>
+          {/*<For*/}
+          {/*each={events.filter(e => e?.resource_kind === "disqualified-officer")}>{event => event.resource_kind === "disqualified-officer" ?*/}
+          {/*<DisqualifiedOfficerEventCard event={event} /> : ""}</For>*/}
+        </div>
       </div>
     </>
   )

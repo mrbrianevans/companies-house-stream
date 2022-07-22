@@ -17,7 +17,7 @@ for (const key of keys) streamKeyHolder.addKey(key)
 restKeyHolder.addKey(process.env.REST_KEY1)
 const logger = pino()
 // permanent streams that will reconnect if they get disconnected
-const streamPaths = new Set(["companies", "filings", "officers", "persons-with-significant-control", "charges", "insolvency-cases"])
+const streamPaths = new Set(["companies", "filings", "officers", "persons-with-significant-control", "charges", "insolvency-cases", "disqualified-officers"])
 const client = await getRedisClient()
 const sendEvent = streamPath => event => client.PUBLISH("event:" + streamPath, JSON.stringify(event))
 // const sendEvent = streamPath => event => logger.info("event:"+streamPath)

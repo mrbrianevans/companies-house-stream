@@ -3,7 +3,7 @@ import { PassThrough } from "stream"
 import express from "express"
 import { WebSocketServer } from "ws"
 
-const streamPaths = new Set(["companies", "filings", "officers", "persons-with-significant-control", "charges", "insolvency-cases"])
+const streamPaths = new Set(["companies", "filings", "officers", "persons-with-significant-control", "charges", "insolvency-cases", "disqualified-officers"])
 
 const redisClient = await getRedisClient()
 
