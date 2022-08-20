@@ -546,6 +546,65 @@ declare module OfficerEvent {
   }
 }
 
+declare module DisqualifiedOfficerEvent {
+
+  export interface Address {
+    address_line_1: string;
+    country: string;
+    locality: string;
+    postal_code: string;
+  }
+
+  export interface Reason {
+    act: string;
+    description_identifier: string;
+    section: string;
+  }
+
+  export interface Disqualification {
+    address: Address;
+    case_identifier: string;
+    company_names: string[];
+    disqualification_type: string;
+    disqualified_from: string;
+    disqualified_until: string;
+    reason: Reason;
+    undertaken_on: string;
+  }
+
+  export interface Links {
+    self: string;
+  }
+
+  export interface Data {
+    date_of_birth: string;
+    disqualifications: Disqualification[];
+    etag: string;
+    forename: string;
+    kind: string;
+    links: Links;
+    nationality: string;
+    other_forenames: string;
+    surname: string;
+    title: string;
+  }
+
+  export interface Event {
+    timepoint: number;
+    published_at: string;
+    type: string;
+  }
+
+  export interface DisqualifiedOfficerEvent {
+    resource_kind: "disqualified-officer-natural";
+    resource_uri: string;
+    resource_id: string;
+    data: Data;
+    event: Event;
+  }
+
+}
+
 type AnyEvent =
   CompanyProfileEvent.CompanyProfileEvent
   | FilingEvent.FilingEvent
@@ -553,5 +612,15 @@ type AnyEvent =
   | InsolvencyEvent.InsolvencyEvent
   | ChargesEvent.ChargesEvent
   | OfficerEvent.OfficerEvent
-export type { CompanyProfileEvent, FilingEvent, PscEvent, InsolvencyEvent, ChargesEvent, OfficerEvent, AnyEvent }
+  | DisqualifiedOfficerEvent.DisqualifiedOfficerEvent
+export type {
+  CompanyProfileEvent,
+  FilingEvent,
+  PscEvent,
+  InsolvencyEvent,
+  ChargesEvent,
+  OfficerEvent,
+  DisqualifiedOfficerEvent,
+  AnyEvent
+}
 const a: AnyEvent = null

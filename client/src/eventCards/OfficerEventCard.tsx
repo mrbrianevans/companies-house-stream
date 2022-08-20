@@ -15,13 +15,12 @@ export const OfficerEventCard: Component<OfficerEventCardProps> = ({ event }) =>
     <div class="officer-card">
       <div class="row">
         <h3>{companyNumber()}</h3>
-        <sub><code><a href={`https://filterfacility.co.uk/company/${companyNumber()}`}
-                      target="_blank">{companyNumber()}</a></code></sub>
+        <sub><code><a target="_blank">{companyNumber()}</a></code></sub>
       </div>
       <p>{event.data.name} appointed {event.data.officer_role} on {
         event.data.appointed_on
       }</p>
-      {event.data.resigned_on !== undefined ? <b>`Resigned on ${event.data.resigned_on}`</b> : ""}
+      {event.data.resigned_on !== undefined ? <b>Resigned on ${event.data.resigned_on}</b> : ""}
       <p>{event.resource_kind} published at {published.toPlainTime().toString()}</p>
     </div>
   </div>

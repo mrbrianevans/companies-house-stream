@@ -10,6 +10,7 @@ import { PscEventCard } from "./eventCards/PscEventCard"
 import { ChargesEventCard } from "./eventCards/ChargesEventCard"
 import { InsolvencyEventCard } from "./eventCards/InsolvencyEventCard"
 import { ConnectedIcon } from "./components/ConnectedIcon"
+import { DisqualifiedOfficerEventCard } from "./eventCards/DisqualifiedOfficerEventCard"
 
 interface Health {
   "companies": boolean,
@@ -52,7 +53,7 @@ const App: Component = () => {
       setEvents(e => [data, ...e])
       setTimeout(() => {
         //remove event from events store after 15 seconds
-        setEvents(ev => ev.filter(e => e?.resource_id !== data.resource_id))
+        setEvents(ev => ev.filter(e => e?.resource_id !== data.resource_id || e.resource_kind === "disqualified-officer-natural"))
       }, 15000)
     })
     return () => socket.close()
@@ -101,9 +102,9 @@ const App: Component = () => {
           each={events.filter(e => e?.resource_kind === "company-insolvency")}>{event => event.resource_kind === "company-insolvency" ?
           <InsolvencyEventCard event={event} /> : ""}</For></div>
         <div><h3>Disqualified officers <ConnectedIcon connected={health()?.["disqualified-officers"] ?? false} /></h3>
-          {/*<For*/}
-          {/*each={events.filter(e => e?.resource_kind === "disqualified-officer")}>{event => event.resource_kind === "disqualified-officer" ?*/}
-          {/*<DisqualifiedOfficerEventCard event={event} /> : ""}</For>*/}
+          <For
+            each={events.filter(e => e?.resource_kind === "disqualified-officer-natural")}>{event => event.resource_kind === "disqualified-officer-natural" ?
+            <DisqualifiedOfficerEventCard event={event} /> : ""}</For>
         </div>
       </div>
     </>

@@ -1,9 +1,10 @@
 import { Component, createMemo } from "solid-js"
 import type { InsolvencyEvent } from "../types/eventTypes"
 import { Temporal } from "temporal-polyfill"
+import { DeepReadonly } from "solid-js/store"
 
 interface InsolvencyEventCardProps {
-  event: InsolvencyEvent.InsolvencyEvent
+  event: DeepReadonly<InsolvencyEvent.InsolvencyEvent>
 }
 
 export const InsolvencyEventCard: Component<InsolvencyEventCardProps> = ({ event }) => {
@@ -13,7 +14,7 @@ export const InsolvencyEventCard: Component<InsolvencyEventCardProps> = ({ event
     <div class="insolvency-card">
       <div class="row">
         <h3>{companyNumber}</h3>
-        <sub><code><a href={`https://filterfacility.co.uk/company/${companyNumber}`} target="_blank">{companyNumber}</a></code></sub>
+        <sub><code><a target="_blank">{companyNumber}</a></code></sub>
       </div>
       <p>{event.data.cases[0].type}</p>
       <p>Insolvency published at {published.toPlainTime().toString()}</p>

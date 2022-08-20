@@ -1,9 +1,10 @@
 import { Component, createMemo } from "solid-js"
 import type { PscEvent } from "../types/eventTypes"
 import { Temporal } from "temporal-polyfill"
+import { DeepReadonly } from "solid-js/store"
 
 interface PscEventCardProps {
-  event: PscEvent.PscEvent
+  event: DeepReadonly<PscEvent.PscEvent>
 }
 
 export const PscEventCard: Component<PscEventCardProps> = ({ event }) => {
@@ -15,11 +16,10 @@ export const PscEventCard: Component<PscEventCardProps> = ({ event }) => {
     <div class="psc-card">
       <div class="row">
         <h3>{companyNumber()}</h3>
-        <sub><code><a href={`https://filterfacility.co.uk/company/${companyNumber()}`}
-                      target="_blank">{companyNumber()}</a></code></sub>
+        <sub><code><a target="_blank">{companyNumber()}</a></code></sub>
       </div>
       <p>{event.data.name} notified on {event.data.notified_on}</p>
-      {event.data.ceased_on !== undefined ? <b>`Resigned on ${event.data.ceased_on}`</b> : ""}
+      {event.data.ceased_on !== undefined ? <b>Resigned on ${event.data.ceased_on}</b> : ""}
       <p>{event.resource_kind} published at {published.toPlainTime().toString()}</p>
     </div>
   </div>

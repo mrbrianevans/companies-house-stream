@@ -1,9 +1,10 @@
 import { Component, createMemo } from "solid-js"
 import type { CompanyProfileEvent } from "../types/eventTypes"
 import { Temporal } from "temporal-polyfill"
+import { DeepReadonly } from "solid-js/store"
 
 interface CompanyProfileEventCardProps {
-  event: CompanyProfileEvent.CompanyProfileEvent
+  event: DeepReadonly<CompanyProfileEvent.CompanyProfileEvent>
 }
 
 export const CompanyProfileEventCard: Component<CompanyProfileEventCardProps> = ({ event }) => {
@@ -12,8 +13,7 @@ export const CompanyProfileEventCard: Component<CompanyProfileEventCardProps> = 
     <div class="companies-card">
       <div class="row">
         <h3>{event.data.company_number}</h3>
-        <sub><code><a href={`https://filterfacility.co.uk/company/${event.data.company_number}`}
-                      target="_blank">{event.data.company_number}</a></code></sub>
+        <sub><code><a target="_blank">{event.data.company_number}</a></code></sub>
       </div>
       <p>Changed {event.event.fields_changed?.join(", ")}</p>
       <p>{event.resource_kind} published at {published.toPlainTime().toString()}</p>
