@@ -9,7 +9,7 @@
     "start:watch": "nodemon dist",
     "status": "node --experimental-specifier-resolution=node dist/testStreamStatus.js",
     "stream-pub": "node --experimental-specifier-resolution=node dist/redis/streamToRedis.js",
-    "stream-sub": "node --experimental-specifier-resolution=node dist/redis/streamFromRedis.js",
+    "stream-sub": "node dist/redis/streamFromRedis.js",
     "api": "node --experimental-specifier-resolution=node dist/restApi/server.js"
   },
   "devDependencies": {
