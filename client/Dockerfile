@@ -1,12 +1,10 @@
 FROM node:18
-
-WORKDIR client
-
+RUN corepack enable && corepack prepare pnpm@7.9.3 --activate
+WORKDIR /client
 COPY package.json pnpm-lock.yaml ./
 
-RUN corepack enable && corepack prepare pnpm@7.1.2 --activate && pnpm install # installs pnpm
+RUN pnpm install
 
 COPY . .
-
 
 CMD ["pnpm", "run", "build"]

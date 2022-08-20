@@ -9,11 +9,13 @@ services:
   client: # builds the frontend into a volume to be served by caddy
     build: client
     volumes:
-      - client_dist:/client/dist
+      - client_dist:/client/dist # this MUST match the workdir set in the Dockerfile
 
   webserver:
     image: caddy
     restart: unless-stopped
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-companies.stream}
     ports:
       - "80:80"
       - "443:443"
