@@ -1,0 +1,46 @@
+name: 'build-typescript'
+on: # rebuild any PRs and any branch changes
+  pull_request:
+  push:
+
+jobs:
+  build-server:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2.2.2
+        with:
+          version: 7
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+          cache: pnpm
+          cache-dependency-path: 'server/pnpm-lock.yaml'
+      - name: Install dependencies
+        run: pnpm install
+        working-directory: server
+      - name: Build server typescript
+        run: pnpm run build
+        working-directory: server
+  build-client:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2.2.2
+        with:
+          version: 7
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+          cache: pnpm
+          cache-dependency-path: 'client/pnpm-lock.yaml'
+      - name: Install dependencies
+        run: pnpm install
+        working-directory: client
+      - name: Build client with Vite
+        run: pnpm run build
+        working-directory: client
