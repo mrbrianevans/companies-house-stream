@@ -8,13 +8,14 @@ import { performance } from "perf_hooks"
 import pino from "pino"
 import { CustomJsonParse } from "./jsonParseStream"
 
-type StreamPath =
+export type StreamPath =
   | "insolvency-cases"
   | "companies"
   | "filings"
   | "charges"
   | "persons-with-significant-control"
   | "officers"
+  | "disqualified-officers"
   | string
 
 /**

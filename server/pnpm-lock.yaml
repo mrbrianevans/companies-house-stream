@@ -13,6 +13,7 @@ specifiers:
   pg: ^8.7.3
   pino: ^8.4.2
   redis: ^4.2.0
+  split2: ^4.1.0
   typescript: ^4.7.4
   ws: ^8.8.1
 
@@ -24,6 +25,7 @@ dependencies:
   pg: 8.7.3
   pino: 8.4.2
   redis: 4.2.0
+  split2: 4.1.0
   ws: 8.8.1
 
 devDependencies:

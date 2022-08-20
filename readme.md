@@ -4,71 +4,73 @@ This project is a visualiser of changes made to the Companies House database of 
 shows events as they happen in realtime, such as a new company registering, or a company going
 insolvent.
 
+Companies House offers a streaming API, which sends events over a HTTPS connection.
+
 ## Technology
 
-- [NodeJS](https://nodejs.org) server with [express](https://www.npmjs.com/package/express)
-- [WebSockets](https://javascript.info/websocket)
-- HTML frontend with pure JavaScript and CSS
+- [NodeJS](https://nodejs.org) server with [express](https://www.npmjs.com/package/express) written
+  in [TypeScript](https://www.typescriptlang.org/) run in [Docker](https://www.docker.com/).
+- [Redis pub/sub](https://redis.com/redis-best-practices/communication-patterns/pub-sub/) database to transmit events.
+- [WebSockets](https://javascript.info/websocket) for client-server communication.
+- Frontend client using [Solid](https://www.solidjs.com/) and [Vite](https://vitejs.dev/).
 
 ## How it works
 
-The Node server makes requests to the companies house server, which sends a response each time there is an event.
+A [Docker compose](https://docs.docker.com/compose/) application with 3 main components for the backend:
 
-The frontend client connects to the server via a WebSocket, on which the server sends events when they are received.
-The client displays these events in HTML.
+1. A NodeJS container to listen on the Companies House streaming API and publish events to Redis (
+   see [streamToRedis.ts](server/src/redis/streamToRedis.ts)).
+2. A Redis instance, mostly for facilitating Pub/Sub communication of events, and also for storing most recent timepoint
+   to avoid missing any events.
+3. A NodeJS container which subscribes to events on the Redis instance and serves them as a WebSocket endpoint
+   on `/events`, where each event is sent as a WebSocket message.
 
+The frontend is Solid components written in TypeScript. The animations are done in CSS
+using [SASS](https://sass-lang.com/).
+It is built with Vite in a Docker container, and served with [Caddy](https://caddyserver.com/) (which is also a gateway
+to the backend endpoints and WebSocket).
+
+To start up the whole application, clone the repository and run `docker compose up -d --build` in the root.
+You will need an env file named `.api.env`containing streaming API key(s).
+To run any files without Docker, build the project by installing dependencies compiling
+TypeScript (`pnpm i && pnpm build` in `/server` and `/client`).
+[PNPM](https://pnpm.io/) is used as the package manager, but [NPM](https://docs.npmjs.com/cli/v8) will also work (but it
+won't recognise the lock files).
 
 ## Make your own
 
 If you are interested in using the companies house streaming API,
 visit [developer-specs.company-information.service.gov.uk](https://developer-specs.company-information.service.gov.uk/streaming-api/guides/overview "Companies house developer website")
 to create an account for a free API key. The API base url is https://stream.companieshouse.gov.uk
-with endpoints `/companies`, `/filings`, `/officers`, `persons-with-significant-control`, `/charges`
-and `/insolvency-cases`
+with paths `/companies`, `/filings`, `/officers`, `persons-with-significant-control`, `/charges`, `/insolvency-cases`
+and `disqualified-officers`.
 
-Here is a minimum working example using TypeScript:
+Here is a minimum working example in NodeJS using the [`split2`](https://www.npmjs.com/package/split2) package:
 
 ```typescript
-import { request, RequestOptions } from "https"
-import { parse } from "JSONStream" // requires npm i JSONStream to parse JSON events
+import split2 from 'split2' // requires `npm i split2`
+import { get } from "https"
 
-const streamKey = process.env.STREAM_KEY // API key from Companies House website
-const options: RequestOptions = {
-  hostname: "stream.companieshouse.gov.uk",
-  port: 443,
-  path: "/filings", // change this depending on which stream you want
-  method: "GET",
-  auth: streamKey + ":"
-}
-
-const handleError = (e: Error) => console.error(`Error on stream`, "\x1b[31m", e.message, "\x1b[0m")
-
-request(options, (res) => {
-  if (res.statusCode === 200) console.log("Stream opened at", Date())
-  else console.log('Stream could not open:', res.statusCode, res.statusMessage)
-  res.pipe(parse())
-    .on("data", event => console.log('Event received:', event))
-    .on("error", handleError)
-    .on("end", () => console.log('Stream ended at', Date()))
-})
-  .on("error", handleError)
-  .end() // this sends the request
-
+const auth = process.env.STREAM_KEY + ":"
+const path = "/filings"
+const options = { hostname: "stream.companieshouse.gov.uk", path, auth }
+get(options, (res) => {
+  if (res.statusCode === 200)
+    res.pipe(split2(JSON.parse)).on("data", console.log)
+  else res.pipe(process.stdout)
+  res.on("end", () => console.log("Stream ended."))
+}).end()
 ```
 
-For a more complete example of listening on a stream, as well as some more options of how to integrate it with
-NodeJS streams,
-see [server/src/streams/listenOnStream.ts](https://github.com/mrbrianevans/companies-house-stream/blob/master/server/src/streams/listenOnStream.ts)
-.
+For a more complete working example of listening on a stream in NodeJS,
+see [server/src/streams/splitStream.ts](server/src/streams/splitStream.ts) and
+then [server/src/redis/streamToRedis.ts](server/src/redis/streamToRedis.ts).
 
-# Connection limits
+To test the streaming API from the command line with CURL, you can use the cmdline utility (after compiling):
 
-Companies House currently only allows each API key to authorise 2 streams at a time, but there are 6 streams in total.
-
-To get around this limitation and connect to all 6 streams at the same time, I created the KeyHolder class
-in `server/src/utils`.
-This takes 3 API keys and assigns one to each stream to ensure that each key is only used to authorise 2 streams at a
-time.
+```bash
+curl --user APIKEY: -s https://stream.companieshouse.gov.uk/filings | node dist/streams/streamCmdLine.js
+```
 
 # Questions?
 
@@ -77,4 +79,4 @@ If you have any questions or suggestions please open an issue on the repository,
 ## Using this code
 
 You are welcome to use this open source code for your own projects.
-See the [LICENSE](https://github.com/mrbrianevans/companies-house-stream/blob/master/LICENSE) file for more information.
+See the [LICENSE](LICENSE) file for more information.
