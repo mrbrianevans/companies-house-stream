@@ -111,6 +111,7 @@ h1 {
     padding: 1em;
     overflow: hidden;
     white-space: nowrap;
+    box-shadow: 0 0 15px #0001;
 }
 
 .event > div p.wrap {
@@ -118,21 +119,21 @@ h1 {
 }
 
 .filing-card {
-    background: rgb(159, 162, 170);
-    background: linear-gradient(144deg, rgba(159, 162, 170, 1) 0%, rgba(191, 205, 209, 1) 100%);
-    border-color: darkgray;
+    background: rgb(189,200,210);
+    background: linear-gradient(63deg, rgba(189,200,210,1) 0%, rgba(209,218,227,1) 100%);
+    border-color: #8395a7;
 }
 
 .companies-card {
-    background: rgb(255, 248, 220);
-    background: linear-gradient(144deg, rgba(255, 248, 220, 1) 0%, rgba(209, 206, 191, 1) 100%);
-    border-color: bisque;
+    background: rgb(236,207,130);
+    background: linear-gradient(63deg, rgba(236,207,130,1) 0%, rgba(246,223,158,1) 100%);
+    border-color: #e1b12c;
 }
 
 .insolvency-card {
-    background: rgb(255, 182, 193);
-    background: linear-gradient(144deg, rgba(255, 182, 193, 1) 0%, rgba(209, 191, 191, 1) 100%);
-    border-color: firebrick;
+    background: rgb(237,116,117);
+    background: linear-gradient(63deg, rgba(237,116,117,1) 0%, rgba(255,157,157,1) 100%);
+    border-color: #ee5253;
 }
 
 .charges-card {
@@ -143,13 +144,13 @@ h1 {
 
 .psc-card {
     background-color: #85FFBD;
-    background-image: linear-gradient(45deg, #85FFBD 0%, #FFFB7D 100%);
+    background-image: linear-gradient(63deg, #85FFBD 0%, #FFFB7D 100%);
     border-color: #85FFBD;
 }
 
 .officer-card {
     background-color: #FBAB7E;
-    background-image: linear-gradient(62deg, #FBAB7E 0%, #F7CE68 100%);
+    background-image: linear-gradient(63deg, #FBAB7E 0%, #F7CE68 100%);
     border-color: #FBAB7E;
 }
 

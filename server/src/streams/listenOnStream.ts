@@ -81,6 +81,9 @@ export function stream<EventType>(streamPath: StreamPath, startFromTimepoint?: n
         logger.fatal("Exiting due to hitting rate limit")
         process.exit(res.statusCode)
         break
+      case 416:
+        logger.error("Timepoint out of range. Try without a timepoint.")
+        break
       case 200:
         logger.info("Stream started successfully, piping through json parser")
         res.pipe(parser)

@@ -19,7 +19,7 @@ export const PscEventCard: Component<PscEventCardProps> = ({ event }) => {
         <sub><code><a target="_blank">{companyNumber()}</a></code></sub>
       </div>
       <p>{event.data.name} notified on {event.data.notified_on}</p>
-      {event.data.ceased_on !== undefined ? <b>Resigned on ${event.data.ceased_on}</b> : ""}
+      {event.data.ceased_on !== undefined ? <b>Resigned on {event.data.ceased_on}</b> : ""}
       <p>{event.resource_kind} published at {published.toPlainTime().toString()}</p>
     </div>
   </div>

@@ -20,7 +20,7 @@ export const OfficerEventCard: Component<OfficerEventCardProps> = ({ event }) =>
       <p>{event.data.name} appointed {event.data.officer_role} on {
         event.data.appointed_on
       }</p>
-      {event.data.resigned_on !== undefined ? <b>Resigned on ${event.data.resigned_on}</b> : ""}
+      {event.data.resigned_on !== undefined ? <b>Resigned on {event.data.resigned_on}</b> : ""}
       <p>{event.resource_kind} published at {published.toPlainTime().toString()}</p>
     </div>
   </div>

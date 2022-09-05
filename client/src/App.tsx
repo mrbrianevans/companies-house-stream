@@ -3,7 +3,7 @@ import "./styles/column_layout.scss"
 import { Clock } from "./components/Clock"
 import { createStore } from "solid-js/store"
 import { FilingEventCard } from "./eventCards/FilingEventCard"
-import type { AnyEvent } from "./types/eventTypes"
+import type { AnyEvent, PscEvent } from "./types/eventTypes"
 import { CompanyProfileEventCard } from "./eventCards/CompanyProfileEventCard"
 import { OfficerEventCard } from "./eventCards/OfficerEventCard"
 import { PscEventCard } from "./eventCards/PscEventCard"
@@ -20,7 +20,7 @@ interface Health {
   "charges": boolean,
   "insolvency-cases": boolean
 }
-
+const pscKinds = new Set(["company-psc-corporate", "company-psc-individual", "company-psc-legal", "company-psc-supersecure", 'corporate-entity-beneficial-owner', 'individual-beneficial-owner', 'legal-person-beneficial-owner', 'super-secure-beneficial-owner'])
 const App: Component = () => {
   const [connected, setConnected] = createSignal(false)
   const [count, setCount] = createSignal(0)
@@ -36,7 +36,9 @@ const App: Component = () => {
   fetch("/events/health").then(r => r.json()).then(setHealth).catch()
 
   function openSocket() {
-    const socket = new WebSocket(`wss://${window.location.host}/events`)
+    const { host } = window.location
+    const protocol = host === 'localhost' ? 'ws' : 'wss'
+    const socket = new WebSocket(`${protocol}://${host}/events`)
 // Connection opened
     socket.addEventListener("open", function(event) {
       setConnected(true)
@@ -82,26 +84,38 @@ const App: Component = () => {
       {/*<div>Events on screen: {events.length}</div>*/}
       <pre>{JSON.stringify(health, null, 2)}</pre>
       <div id="events">
-        <div><h3>Company events <ConnectedIcon connected={health()?.companies ?? false} /></h3><For
+        <div><h3>Company events <ConnectedIcon connected={health()?.companies ?? false} /></h3>
+          <code>/companies</code>
+          <For
           each={events.filter(e => e?.resource_kind === "company-profile")}>{event => event.resource_kind === "company-profile" ?
           <CompanyProfileEventCard event={event} /> : ""}</For></div>
-        <div><h3>Filing events <ConnectedIcon connected={health()?.filings ?? false} /></h3><For
+        <div><h3>Filing events <ConnectedIcon connected={health()?.filings ?? false} /></h3>
+          <code>/filings</code>
+          <For
           each={events.filter(e => e?.resource_kind === "filing-history")}>{event => event.resource_kind === "filing-history" ?
           <FilingEventCard event={event} /> : ""}</For></div>
-        <div><h3>Officer events <ConnectedIcon connected={health()?.officers ?? false} /></h3><For
+        <div><h3>Officer events <ConnectedIcon connected={health()?.officers ?? false} /></h3>
+          <code>/officers</code>
+          <For
           each={events.filter(e => e?.resource_kind === "company-officers")}>{event => event.resource_kind === "company-officers" ?
           <OfficerEventCard event={event} /> : ""}</For></div>
         <div><h3>PSC events <ConnectedIcon connected={health()?.["persons-with-significant-control"] ?? false} /></h3>
+          <code>/persons-with-significant-control</code>
           <For
-            each={events.filter(e => e?.resource_kind.startsWith("company-psc"))}>{event => event.resource_kind === "company-psc-corporate" || event.resource_kind === "company-psc-individual" ?
-            <PscEventCard event={event} /> : ""}</For></div>
-        <div><h3>Charge events <ConnectedIcon connected={health()?.charges ?? false} /></h3><For
+            each={events.filter(e => pscKinds.has(e.resource_kind))}>{event => pscKinds.has(event.resource_kind) ?
+            <PscEventCard event={event as PscEvent.PscEvent} /> : ""}</For></div>
+        <div><h3>Charge events <ConnectedIcon connected={health()?.charges ?? false} /></h3>
+          <code>/charges</code>
+          <For
           each={events.filter(e => e?.resource_kind === "company-charges")}>{event => event.resource_kind === "company-charges" ?
           <ChargesEventCard event={event} /> : ""}</For></div>
-        <div><h3>Insolvency events <ConnectedIcon connected={health()?.["insolvency-cases"] ?? false} /></h3><For
+        <div><h3>Insolvency events <ConnectedIcon connected={health()?.["insolvency-cases"] ?? false} /></h3>
+          <code>/insolvency-cases</code>
+          <For
           each={events.filter(e => e?.resource_kind === "company-insolvency")}>{event => event.resource_kind === "company-insolvency" ?
           <InsolvencyEventCard event={event} /> : ""}</For></div>
         <div><h3>Disqualified officers <ConnectedIcon connected={health()?.["disqualified-officers"] ?? false} /></h3>
+          <code>/disqualified-officers</code>
           <For
             each={events.filter(e => e?.resource_kind === "disqualified-officer-natural")}>{event => event.resource_kind === "disqualified-officer-natural" ?
             <DisqualifiedOfficerEventCard event={event} /> : ""}</For>
