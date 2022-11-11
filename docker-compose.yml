@@ -7,7 +7,7 @@ services:
       - redisdata:/data
 
   client: # builds the frontend into a volume to be served by caddy
-    build: client
+    build: client-alpine
     volumes:
       - client_dist:/client/dist # this MUST match the workdir set in the Dockerfile
 

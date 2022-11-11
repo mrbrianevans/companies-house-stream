@@ -1,0 +1,68 @@
+
+#events{
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+}
+
+.events-container{
+    display: grid;
+    gap: 10px;
+    align-content: start;
+}
+
+.event-card{
+    border-radius: 2px;
+    padding: 1rem;
+    font-size: smaller;
+
+    h3{
+        margin-top: 0;
+    }
+    .published-at{
+        display: none;
+    }
+    code{
+        //cursor: copy;
+        margin-right: 5px;
+    }
+    button{
+        background-color: #0004;
+        font-family: 'JetBrains Mono', monospace;
+        cursor: copy;
+    }
+}
+
+.event-card.filings{
+    background-color: #c7c7c7;
+}
+
+.event-card.companies{
+    background-color: #e0c88a;
+}
+
+.event-card.officers{
+    background-color: #e9c069;
+}
+.event-card.persons-with-significant-control{
+    background-color: #c7ed8b;
+}
+.event-card.charges{
+    background-color: #b0cbe3;
+}
+.event-card.insolvency-cases{
+    background-color: pink;
+}
+
+.event-card.disqualified-officers{
+    background-color: #b15050;
+}
+
+
+.stream-title{
+
+}
+
+.stream-path{
+
+}

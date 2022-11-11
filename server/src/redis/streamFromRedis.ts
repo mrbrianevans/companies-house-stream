@@ -9,7 +9,8 @@ const eventEmitter = new EventEmitter({})
 eventEmitter.setMaxListeners(1_000_000) // increase max listeners (this is clients x num of streams)
 await redisClient.pSubscribe("event:*",
   (event, channel) => {
-    eventEmitter.emit(channel.split(":")[1], JSON.parse(event))
+  const streamPath = channel.split(":")[1]
+    eventEmitter.emit(streamPath, { streamPath, ...JSON.parse(event) })
   })
 
 const app = express()
