@@ -6,7 +6,13 @@
 }
 .event-column{
     display: grid;
-    justify-content: center;
+    justify-items: center;
+    align-content: start;
+}
+.event-column:nth-child(odd){
+    //.stream-title{
+    //    background: #0001;
+    //}
 }
 .events-container{
     display: flex;
@@ -29,12 +35,18 @@
     code{
         //cursor: copy;
         margin-right: 5px;
+        display: inline-flex;
+        gap: 4px;
+        align-items: center;
     }
     button{
         background-color: #0004;
         border: 2px solid black;
         font-family: 'JetBrains Mono', monospace;
         cursor: copy;
+        display: inline-flex;
+        gap: 4px;
+        align-items: center;
     }
 }
 
@@ -66,11 +78,17 @@
 
 
 .stream-title{
-
+    font-size: 1rem;
+    margin: 0;
+    padding: 0.5rem;
+    background: #0001;
+    border-radius: 2px;
+    justify-self: stretch;
 }
 
 .stream-path{
-
+    font-size: 0.8rem;
+    margin: 0.5rem;
 }
 
 // animation for appearing cards

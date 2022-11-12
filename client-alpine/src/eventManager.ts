@@ -12,7 +12,8 @@ for (const streamPath of streamPaths)
 {
   const container = document.createElement('div')
   container.id = `${streamPath}-container`
-  container.innerHTML = `<div class="event-column"><div class="stream-title"><h3>${sentenceCase(streamPath)}</h3></div><div class="stream-path"><code>/${streamPath}</code></div></div><div class="events-container"></div>`
+  container.className = "event-column"
+  container.innerHTML = `<div class="stream-title"><h3>${sentenceCase(streamPath)}</h3></div><div class="stream-path"><code>/${streamPath}</code></div></div><div class="events-container">`
   eventsContainer.appendChild(container)
   containers[streamPath] = container.lastElementChild
 }

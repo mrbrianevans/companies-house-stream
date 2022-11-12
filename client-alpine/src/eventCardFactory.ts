@@ -2,7 +2,9 @@ import copy from "copy-to-clipboard"
 import { sentenceCase } from "sentence-case"
 import { titleCase } from "title-case"
 import { formatFilingDescription } from "./formatFilingDescription"
-
+import ClipboardCopy from './assets/icons/ClipboardCopy.svg'
+import ExternalLink from './assets/icons/ExternalLink.svg'
+import formatString from 'string-template'
 
 export function createEventComponent(event){
   const eventCardContainer = document.createElement('div')
@@ -16,7 +18,7 @@ export function createEventComponent(event){
     <h3>${title}</h3>
     <p>${description}</p>
     <span class="published-at">${new Date(event.event.published_at).toLocaleTimeString()}</span>
-    <a target="_blank" href="https://find-and-update.company-information.service.gov.uk/company/${companyNumber}"><code>${companyNumber}</code></a>
+    <a target="_blank" href="https://find-and-update.company-information.service.gov.uk/company/${companyNumber}"><code>${companyNumber}<img alt="External link" src=${ExternalLink} width="20" height="20"/></code></a>
   `
     // A button which copys the company number on click rather than a link to companies house
     // const companyNumberButton = document.createElement("code")
@@ -27,7 +29,7 @@ export function createEventComponent(event){
     const { received, streamPath, ...originalEvent } = event
     const copyButton = document.createElement("button")
     copyButton.onclick = () => copy(JSON.stringify(originalEvent))
-    copyButton.innerText = "JSON"
+    copyButton.innerHTML = `<span><img alt="Copy to clipboard" src=${ClipboardCopy} width="20" height="20"/></span> <span>JSON</span>`
     element.appendChild(copyButton)
   }catch (e) {
     console.log("Error creating event card: ", e.message)
@@ -64,7 +66,11 @@ function getDescription(event){
     case 'insolvency-cases':
       return { companyNumber: event.resource_id, description: event.data.cases.map(c=>sentenceCase(c.type)).join(', '), title: 'Insolvency' }
     case 'disqualified-officers':
-      return { companyNumber: '', description: 'Disqualified from '+event.data.disqualifications?.flatMap(d=>d.company_names).join(', '), title: [event.data.forename, event.data.other_forenames, event.data.surname].join(' ') }
+      const descriptionFormat = 'Disqualified from {companies}'
+      const description = formatString(descriptionFormat, {companies: event.data.disqualifications?.flatMap(d=>d.company_names).join(', ')})
+      const titleFormat = '{forename} {other_forenames} {surname}'
+      const title = formatString(titleFormat, event.data)
+      return { companyNumber: '', description, title }
     default:
       return { companyNumber: '', description: `No description available`, title: titleCase(event.streamPath) }
   }

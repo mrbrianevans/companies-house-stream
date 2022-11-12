@@ -4,6 +4,7 @@ header{
 
   h1.title{
     text-align: center;
+    font-size: 2rem;
   }
 
   .badges{
@@ -18,3 +19,8 @@ header{
 }
 
 
+@media (max-width: 700px) {
+  header h1.title{
+    font-size: 1.4rem;
+  }
+}
