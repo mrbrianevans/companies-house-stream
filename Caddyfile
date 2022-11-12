@@ -1,9 +1,5 @@
 {$SITE_ADDRESS:companies.stream} {
         log
-        handle_path /api/* {
-                reverse_proxy rest-api:3000 {
-                }
-        }
 
         handle {
                 root * /client

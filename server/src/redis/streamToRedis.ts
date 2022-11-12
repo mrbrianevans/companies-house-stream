@@ -1,7 +1,7 @@
 import "dotenv/config"
-import { stream } from "../streams/listenOnStream"
-import { getRedisClient } from "../database/getRedisClient"
-import { restKeyHolder, streamKeyHolder } from "../utils/KeyHolder"
+import { stream } from "../streams/listenOnStream.js"
+import { getRedisClient } from "./getRedisClient.js"
+import { restKeyHolder, streamKeyHolder } from "../utils/KeyHolder.js"
 import { setTimeout } from "node:timers/promises"
 import pino from "pino"
 /*
@@ -19,7 +19,13 @@ const logger = pino()
 // permanent streams that will reconnect if they get disconnected
 const streamPaths = new Set(["companies", "filings", "officers", "persons-with-significant-control", "charges", "insolvency-cases", "disqualified-officers"])
 const client = await getRedisClient()
-const sendEvent = streamPath => event => client.xAdd("events:" + streamPath, event.event.timepoint + '-*', {'event': JSON.stringify(event)}, {TRIM: {strategy: 'MAXLEN', threshold: 1000, strategyModifier: "~"}})
+const sendEvent = streamPath => event => client.xAdd("events:" + streamPath, event.event.timepoint + "-*", { "event": JSON.stringify(event) }, {
+  TRIM: {
+    strategy: "MAXLEN",
+    threshold: 1000,
+    strategyModifier: "~"
+  }
+})
 // const sendEvent = streamPath => event => logger.info("event:"+streamPath)
 const updateTimepoint = streamPath => event => client.set(streamPath, JSON.stringify(event.event))
 const heartbeat = streamPath => () => client.set(streamPath + ":alive", Date.now()) // keeps track of which are alive

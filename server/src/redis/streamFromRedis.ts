@@ -1,4 +1,4 @@
-import { getRedisClient } from "../database/getRedisClient.js"
+import { getRedisClient } from "./getRedisClient.js"
 import express from "express"
 import { WebSocketServer } from "ws"
 import { EventEmitter } from "events"
@@ -62,7 +62,7 @@ server.on("upgrade", function upgrade(request, socket, head) {
   }
 })
 
-for await(const event of listenRedisStream([...streamPaths].map(streamPath=>"events:" + streamPath))){
+for await(const event of listenRedisStream([...streamPaths].map(streamPath => "events:" + streamPath))) {
   const streamPath = event.stream.split(":")[1]
   eventEmitter.emit(streamPath, { streamPath, ...JSON.parse(event.data.event) })
 }

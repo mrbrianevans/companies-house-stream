@@ -1,10 +1,12 @@
 version: '3'
 services:
-  pubsubdb:
-    image: redis
+  redis:
+    image: redis:7.0.5
     restart: unless-stopped
     volumes:
       - redisdata:/data
+    logging:
+      driver: local
 
   client: # builds the frontend into a volume to be served by caddy
     build: client-alpine
@@ -24,28 +26,26 @@ services:
       - client_dist:/client
       - caddy_data:/data
       - caddy_config:/config
+    logging:
+      driver: local
 
   event-publisher:
     build: server
-    command: npm run stream-pub
+    command: pnpm run stream-pub
     environment:
-      PUBSUB_REDIS_IP: pubsubdb
+      PUBSUB_REDIS_IP: redis
     env_file:
       - .api.env
+    logging:
+      driver: local
 
   event-subscriber:
     build: server
-    command: npm run stream-sub
+    command: pnpm run stream-sub
     environment:
-      PUBSUB_REDIS_IP: pubsubdb
-
-  rest-api:
-    build: server
-    command: npm run api
-    volumes:
-      - mongodata:/mongodata
-    env_file:
-      - .api.env
+      PUBSUB_REDIS_IP: redis
+    logging:
+      driver: local
 
 
 volumes:

@@ -1,9 +1,7 @@
-import { streamKeyHolder } from "./utils/KeyHolder"
+import { streamKeyHolder } from "./utils/KeyHolder.js"
 import { request, RequestOptions } from "https"
 import { parse } from "JSONStream"
 import "dotenv/config"
-import { stream } from "./streams/listenOnStream"
-import { performance } from "perf_hooks"
 
 streamKeyHolder.addKey(process.env.STREAM_KEY1)
 
@@ -30,7 +28,7 @@ function listenToStream(path = "companies", callback: (e) => void = console.log)
 
 
 // connects to the filing stream to test that its working, separate from the other application logic.
-listenToStream("disqualified-officers", () => console.log("Event received", Date()))
+listenToStream("filings", () => console.log("Event received", Date()))
 
 
 // const events = stream('filings')

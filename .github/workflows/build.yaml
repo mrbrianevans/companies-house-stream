@@ -15,7 +15,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: "18"
+          node-version: "19"
           cache: pnpm
           cache-dependency-path: 'server/pnpm-lock.yaml'
       - name: Install dependencies
@@ -35,12 +35,12 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: "18"
+          node-version: "19"
           cache: pnpm
-          cache-dependency-path: 'client/pnpm-lock.yaml'
+          cache-dependency-path: 'client-alpine/pnpm-lock.yaml'
       - name: Install dependencies
         run: pnpm install
-        working-directory: client
+        working-directory: client-alpine
       - name: Build client with Vite
         run: pnpm run build
-        working-directory: client
+        working-directory: client-alpine
