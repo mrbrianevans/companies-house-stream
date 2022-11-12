@@ -5,8 +5,11 @@ import { formatFilingDescription } from "./formatFilingDescription"
 
 
 export function createEventComponent(event){
+  const eventCardContainer = document.createElement('div')
+  eventCardContainer.className = `event-card-container`
   const element = document.createElement('div')
   element.className = `event-card ${event.streamPath}`
+  eventCardContainer.appendChild(element)
   try {
     const { companyNumber, title, description } = getDescription(event)
     element.innerHTML = `
@@ -30,7 +33,7 @@ export function createEventComponent(event){
     console.log("Error creating event card: ", e.message)
     element.innerHTML = e.message
   }
-  return element
+  return eventCardContainer
 }
 
 
@@ -61,7 +64,7 @@ function getDescription(event){
     case 'insolvency-cases':
       return { companyNumber: event.resource_id, description: event.data.cases.map(c=>sentenceCase(c.type)).join(', '), title: 'Insolvency' }
     case 'disqualified-officers':
-      return { companyNumber: '', description: '', title: '' }
+      return { companyNumber: '', description: 'Disqualified from '+event.data.disqualifications?.flatMap(d=>d.company_names).join(', '), title: [event.data.forename, event.data.other_forenames, event.data.surname].join(' ') }
     default:
       return { companyNumber: '', description: `No description available`, title: titleCase(event.streamPath) }
   }

@@ -4,9 +4,13 @@
     grid-template-columns: repeat(7, 1fr);
     gap: 10px;
 }
-
-.events-container{
+.event-column{
     display: grid;
+    justify-content: center;
+}
+.events-container{
+    display: flex;
+    flex-direction: column;
     gap: 10px;
     align-content: start;
 }
@@ -28,6 +32,7 @@
     }
     button{
         background-color: #0004;
+        border: 2px solid black;
         font-family: 'JetBrains Mono', monospace;
         cursor: copy;
     }
@@ -35,6 +40,7 @@
 
 .event-card.filings{
     background-color: #c7c7c7;
+    animation: none;
 }
 
 .event-card.companies{
@@ -65,4 +71,28 @@
 
 .stream-path{
 
+}
+
+// animation for appearing cards
+@keyframes appear {
+    from{
+        max-height: 0;
+    }
+    to{
+        max-height: 15rem;
+    }
+}
+@keyframes disappear {
+    from{
+        opacity: 1;
+    }
+    to{
+        opacity: 0;
+    }
+}
+.event-card-container{
+    overflow: hidden;
+    width: 100%;
+    animation: appear .4s ease-out, disappear 3s ease-in 12s;
+    position: relative;
 }
