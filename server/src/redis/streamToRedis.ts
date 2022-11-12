@@ -19,7 +19,7 @@ const logger = pino()
 // permanent streams that will reconnect if they get disconnected
 const streamPaths = new Set(["companies", "filings", "officers", "persons-with-significant-control", "charges", "insolvency-cases", "disqualified-officers"])
 const client = await getRedisClient()
-const sendEvent = streamPath => event => client.PUBLISH("event:" + streamPath, JSON.stringify(event))
+const sendEvent = streamPath => event => client.xAdd("events:" + streamPath, event.event.timepoint + '-*', {'event': JSON.stringify(event)}, {TRIM: {strategy: 'MAXLEN', threshold: 1000, strategyModifier: "~"}})
 // const sendEvent = streamPath => event => logger.info("event:"+streamPath)
 const updateTimepoint = streamPath => event => client.set(streamPath, JSON.stringify(event.event))
 const heartbeat = streamPath => () => client.set(streamPath + ":alive", Date.now()) // keeps track of which are alive
@@ -40,6 +40,3 @@ for (const streamPath of streamPaths) {
   await startStream(streamPath)
   await setTimeout(5000) // space them out 5 seconds
 }
-
-//todo: (i've made some changes which might fix this)
-// - this doesn't yet achieve perfect uptime. There are some circumstances which cause it to not reconnect on some streams

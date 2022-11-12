@@ -2,16 +2,11 @@ import { getRedisClient } from "../database/getRedisClient.js"
 import express from "express"
 import { WebSocketServer } from "ws"
 import { EventEmitter } from "events"
+import { listenRedisStream } from "./listenRedisStream.js"
 
 const streamPaths = new Set(["companies", "filings", "officers", "persons-with-significant-control", "charges", "insolvency-cases", "disqualified-officers"])
-const redisClient = await getRedisClient()
 const eventEmitter = new EventEmitter({})
 eventEmitter.setMaxListeners(1_000_000) // increase max listeners (this is clients x num of streams)
-await redisClient.pSubscribe("event:*",
-  (event, channel) => {
-  const streamPath = channel.split(":")[1]
-    eventEmitter.emit(streamPath, { streamPath, ...JSON.parse(event) })
-  })
 
 const app = express()
 
@@ -66,3 +61,8 @@ server.on("upgrade", function upgrade(request, socket, head) {
     socket.destroy()
   }
 })
+
+for await(const event of listenRedisStream([...streamPaths].map(streamPath=>"events:" + streamPath))){
+  const streamPath = event.stream.split(":")[1]
+  eventEmitter.emit(streamPath, { streamPath, ...JSON.parse(event.data.event) })
+}
