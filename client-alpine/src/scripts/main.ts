@@ -1,8 +1,8 @@
 /* import global styles */
-import './indicators.css'
-import './layout.css'
-import './header.scss'
-import './main.css'
+import '../styles/indicators.css'
+import '../styles/layout.css'
+import '../styles/header.scss'
+import '../styles/main.css'
 
 /* import scripts */
 import './eventManager'

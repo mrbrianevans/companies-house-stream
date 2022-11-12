@@ -3,7 +3,10 @@
 
         handle {
                 root * /client
-                try_files {path} /index.html
+	            encode gzip
+                try_files {path} {path}.html {path}index.html
+                #try_files {path} /index.html
+                header /assets/* Cache-Control max-age=31536000,immutable
                 file_server
         }
 

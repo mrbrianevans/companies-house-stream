@@ -1,4 +1,4 @@
-import './events.scss'
+import '../styles/events.scss'
 import { createEventEmitter } from "./workerWrapper"
 import { sentenceCase } from "sentence-case"
 import { createEventComponent } from "./eventCardFactory"

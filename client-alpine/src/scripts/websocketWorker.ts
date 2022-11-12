@@ -1,4 +1,4 @@
-import { websocketEmitter } from "./connectToWebsocket.js"
+import { websocketEmitter } from "./connectToWebsocket"
 
 
 let emitter

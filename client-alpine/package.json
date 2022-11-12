@@ -10,12 +10,12 @@
     "serve": "vite preview"
   },
   "devDependencies": {
+    "sass": "^1.56.1",
     "typescript": "^4.7.4",
     "vite": "^3.2.3"
   },
   "dependencies": {
     "copy-to-clipboard": "^3.3.2",
-    "sass": "^1.56.1",
     "sentence-case": "^3.0.4",
     "string-template": "^1.0.0",
     "title-case": "^3.0.3"

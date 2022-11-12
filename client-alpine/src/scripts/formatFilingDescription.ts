@@ -1,7 +1,7 @@
 import formatString from 'string-template'
 
 let filingDescriptions = {} // dynamically import massive JSON document
-import('./assets/filingDescriptions.json').then(f=>filingDescriptions = f.default)
+import('../assets/filingDescriptions.json').then(f=>filingDescriptions = f.default)
 
 export function formatFilingDescription(transaction){
   //todo: format dates properly and add currency to end for statement-of-capital

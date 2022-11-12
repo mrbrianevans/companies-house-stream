@@ -2,8 +2,8 @@ import copy from "copy-to-clipboard"
 import { sentenceCase } from "sentence-case"
 import { titleCase } from "title-case"
 import { formatFilingDescription } from "./formatFilingDescription"
-import ClipboardCopy from './assets/icons/ClipboardCopy.svg'
-import ExternalLink from './assets/icons/ExternalLink.svg'
+import ClipboardCopy from '../assets/icons/ClipboardCopy.svg'
+import ExternalLink from '../assets/icons/ExternalLink.svg'
 import formatString from 'string-template'
 
 export function createEventComponent(event){
