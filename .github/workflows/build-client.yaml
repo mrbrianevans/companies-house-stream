@@ -1,0 +1,28 @@
+name: 'build client'
+on: # rebuild any PRs and any branch changes for the client directory
+  pull_request:
+  push:
+    paths:
+      client-alpine/**
+
+jobs:
+  build-client:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2.2.2
+        with:
+          version: 7
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: "19"
+          cache: pnpm
+          cache-dependency-path: 'client-alpine/pnpm-lock.yaml'
+      - name: Install dependencies
+        run: pnpm install
+        working-directory: client-alpine
+      - name: Build client with Vite
+        run: pnpm run build
+        working-directory: client-alpine

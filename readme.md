@@ -9,10 +9,10 @@ Companies House offers a streaming API, which sends events over a HTTPS connecti
 ## Technology
 
 - [NodeJS](https://nodejs.org) server with [express](https://www.npmjs.com/package/express) written
-  in [TypeScript](https://www.typescriptlang.org/) run in [Docker](https://www.docker.com/).
-- [Redis pub/sub](https://redis.com/redis-best-practices/communication-patterns/pub-sub/) database to transmit events.
+  in [TypeScript](https://www.typescriptlang.org/) run in [Docker](https://www.docker.com/) container deployed on [Digital Ocean](https://www.digitalocean.com/).
+- [Redis Streams](https://redis.io/docs/data-types/streams/).
 - [WebSockets](https://javascript.info/websocket) for client-server communication.
-- Frontend client using [Solid](https://www.solidjs.com/) and [Vite](https://vitejs.dev/).
+- Frontend client using Typescript and [Vite](https://vitejs.dev/) (no frameworks, 10kb bundle).
 
 ## How it works
 
@@ -20,13 +20,13 @@ A [Docker compose](https://docs.docker.com/compose/) application with 3 main com
 
 1. A NodeJS container to listen on the Companies House streaming API and publish events to Redis (
    see [streamToRedis.ts](server/src/redis/streamToRedis.ts)).
-2. A Redis instance, mostly for facilitating Pub/Sub communication of events, and also for storing most recent timepoint
+2. A Redis instance, mostly for facilitating Pub/Sub communication of events using Streams, and also for storing most recent timepoint
    to avoid missing any events.
-3. A NodeJS container which subscribes to events on the Redis instance and serves them as a WebSocket endpoint
+3. A NodeJS container which reads events from the Redis Stream and serves them as a WebSocket endpoint
    on `/events`, where each event is sent as a WebSocket message.
 
-The frontend is Solid components written in TypeScript. The animations are done in CSS
-using [SASS](https://sass-lang.com/).
+The frontend is "pure" in that it doesn't use a framework like React, which keeps the JS bundle really tiny and high performance.
+The animations are done in CSS using [SASS](https://sass-lang.com/).
 It is built with Vite in a Docker container, and served with [Caddy](https://caddyserver.com/) (which is also a gateway
 to the backend endpoints and WebSocket).
 
