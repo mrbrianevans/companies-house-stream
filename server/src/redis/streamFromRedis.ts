@@ -3,6 +3,8 @@ import express from "express"
 import { WebSocketServer } from "ws"
 import { EventEmitter } from "events"
 import { listenRedisStream } from "./listenRedisStream.js"
+import {streamFromRedisLogger as logger} from '../utils/loggers.js'
+import {setTimeout} from "node:timers/promises"
 
 const streamPaths = new Set(["companies", "filings", "officers", "persons-with-significant-control", "charges", "insolvency-cases", "disqualified-officers"])
 const eventEmitter = new EventEmitter({})
@@ -50,8 +52,9 @@ wss.on("connection", async function connection(ws, req) {
       eventEmitter.removeListener(streamPath, send)
     clients--
     const redisCount = await counterClient.decr('currentWsConnections')
-    console.log("Websocket disconnected.", totalListeners(), "event listeners", { clients, redisCount })
+    console.log("Websocket disconnected with code.",code, totalListeners(), "event listeners", { clients, redisCount })
   })
+  eventEmitter.on('close', () => ws.terminate()) // ws.close() doesn't seem to work. Code should be 1112
 })
 // handles websocket on /events path of server
 server.on("upgrade", function upgrade(request, socket, head) {
@@ -64,10 +67,28 @@ server.on("upgrade", function upgrade(request, socket, head) {
     socket.destroy()
   }
 })
+const ac = new AbortController()
+const {signal} = ac
+async function shutdown(){
+  try{
+    logger.flush()
+    console.log("Graceful shutdown", new Date())
+    eventEmitter.emit("close")
+    eventEmitter.removeAllListeners()
+    ac.abort()
+    await setTimeout(250) // wait for websockets to be closed gracefully before quiting the Redis client
+    await counterClient.quit()
+    logger.flush()
+    wss.close()
+  }finally {
+    process.exit()
+  }
+}
+process.on('SIGINT', shutdown) // quit on ctrl-c when running docker in terminal
+process.on('SIGTERM', shutdown)// quit properly on docker stop
 
-for await(const event of listenRedisStream([...streamPaths].map(streamPath => "events:" + streamPath))) {
+for await(const event of listenRedisStream({streamKeys: [...streamPaths].map(stream=>({stream})), signal})) {
   const streamPath = event.stream.split(":")[1]
   eventEmitter.emit(streamPath, { streamPath, ...JSON.parse(event.data.event) })
 }
 
-await counterClient.quit()

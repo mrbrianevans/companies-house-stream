@@ -41,7 +41,7 @@ services:
 
   event-subscriber:
     build: server
-    command: pnpm run stream-sub
+    command: node dist/redis/streamFromRedis.js
     environment:
       PUBSUB_REDIS_IP: redis
     logging:
