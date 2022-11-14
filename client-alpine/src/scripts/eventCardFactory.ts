@@ -5,6 +5,7 @@ import { formatFilingDescription } from "./formatFilingDescription"
 import ClipboardCopy from '../assets/icons/ClipboardCopy.svg'
 import ExternalLink from '../assets/icons/ExternalLink.svg'
 import formatString from 'string-template'
+import { setDelay, setLatency } from "./latencyIndicator"
 
 export function createEventComponent(event){
   const eventCardContainer = document.createElement('div')
@@ -27,6 +28,10 @@ export function createEventComponent(event){
     // element.appendChild(companyNumberButton)
 
     const { received, streamPath, ...originalEvent } = event
+    const latencyMs = performance.timeOrigin + performance.now() - received
+    setLatency(latencyMs)
+    const delay = (Date.now() - new Date(event.event.published_at).getTime()) / 60_000
+    setDelay(streamPath, delay)
     const copyButton = document.createElement("button")
     copyButton.onclick = () => copy(JSON.stringify(originalEvent))
     copyButton.innerHTML = `<span><img alt="Copy to clipboard" src=${ClipboardCopy} width="20" height="20"/></span> <span>JSON</span>`

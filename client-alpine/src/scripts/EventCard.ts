@@ -1,5 +1,0 @@
-
-
-window.Alpine
-
-export {}
