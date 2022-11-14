@@ -22,11 +22,11 @@ const client = await getRedisClient()
 const sendEvent = streamPath => event => client.xAdd("events:" + streamPath, event.event.timepoint + "-*", { "event": JSON.stringify(event) }, {
   TRIM: {
     strategy: "MAXLEN",
-    threshold: 1000,
+    threshold: 10000,
     strategyModifier: "~"
   }
 })
-// const sendEvent = streamPath => event => logger.info("event:"+streamPath)
+const incrEventCount = streamPath => event => client.hIncrBy(`counts:${streamPath}:daily`, new Date().toISOString().split('T')[0], 1)
 const updateTimepoint = streamPath => event => client.set(streamPath, JSON.stringify(event.event))
 const heartbeat = streamPath => () => client.set(streamPath + ":alive", Date.now()) // keeps track of which are alive
 const getMostRecentTimepoint = streamPath => client.get(streamPath).then(r => r ? JSON.parse(r)?.timepoint : undefined)
@@ -34,6 +34,7 @@ const startStream = streamPath => getMostRecentTimepoint(streamPath)
   .then((timepoint) => stream(streamPath, timepoint)
     .on("data", sendEvent(streamPath))
     .on("data", updateTimepoint(streamPath))
+    .on("data", incrEventCount(streamPath))
     .on("end", () => logger.info({ streamPath }, "StreamToRedis end event fired"))
     .on("close", () => logger.info({ streamPath }, "StreamToRedis close event fired"))
     .on("error", () => logger.info({ streamPath }, "StreamToRedis error event fired"))
