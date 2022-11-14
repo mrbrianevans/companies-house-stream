@@ -23,17 +23,17 @@
   </div>
   <div class="row">
     <button class="disconnected" id="connection-button">Connect</button>
-    <span id="visibility-indicator" class="visible indicator" aria-label="Document visible"></span>
     <span id="connection-indicator" class="disconnected indicator" aria-label="Connection status"></span>
     <div id="counter-container">
       <div class="bubble">Events: <span id="notification-counter">0</span></div>
     </div>
-    <span>Latency: <span id="latency"></span></span>
+    <span>Latency: <span id="latency">?</span></span>
+    <span>Users connected: <span id="open-websockets">?</span></span>
   </div>
 </header>
 
 <div id="events"></div>
 
-<script src="../scripts/main.ts" type="module"></script>
+<script src="scripts/main.ts" type="module"></script>
 </body>
 </html>

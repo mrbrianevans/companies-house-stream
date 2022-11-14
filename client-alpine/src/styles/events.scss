@@ -8,6 +8,7 @@
     display: grid;
     justify-items: center;
     align-content: start;
+    gap: 10px;
 }
 .event-column:nth-child(odd){
     //.stream-title{
@@ -85,12 +86,22 @@
     background: #0001;
     border-radius: 2px;
     justify-self: stretch;
+
+    h3{
+
+        margin: 0;
+    }
+
+    code{
+        font-size: 0.8rem;
+
+    }
+    .delay{
+        font-size: 0.8rem;
+    }
+
 }
 
-.stream-path{
-    font-size: 0.8rem;
-    margin: 0.5rem;
-}
 
 // animation for appearing cards
 @keyframes appear {

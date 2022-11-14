@@ -13,8 +13,13 @@ for (const streamPath of streamPaths)
   const container = document.createElement('div')
   container.id = `${streamPath}-container`
   container.className = "event-column"
-  container.innerHTML = `<div class="stream-title"><h3>${sentenceCase(streamPath)}</h3><span id="delay-${streamPath}"></span></div>
-    <div class="stream-path"><code>/${streamPath}</code></div></div><div class="events-container">`
+  container.innerHTML = `
+  <div class="stream-title">
+    <h3>${sentenceCase(streamPath)} <span class="upstream-status indicator" id="${streamPath}-upstream"></span></h3>
+    <span id="delay-${streamPath}" class="delay"></span>
+    <code>/${streamPath}</code>
+  </div>
+  <div class="events-container"></div>`
   eventsContainer.appendChild(container)
   containers[streamPath] = container.lastElementChild
 }

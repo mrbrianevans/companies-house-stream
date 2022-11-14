@@ -5,6 +5,9 @@
     width: 10px;
     height: 10px;
     border-radius: 5px;
+
+    --red: #bc5454;
+    --green: #5fbf5f;
 }
 
 #visibility-indicator{
@@ -19,8 +22,15 @@
 #connection-status{
 }
 #connection-indicator.disconnected{
-    background-color: red;
+    background-color: VAR(--red);
 }
 #connection-indicator.connected{
-    background-color: green;
+    background-color: VAR(--green);
+}
+
+.upstream-status.indicator.good{
+    background-color: VAR(--green);
+}
+.upstream-status.indicator.bad{
+    background-color: VAR(--red);
 }
