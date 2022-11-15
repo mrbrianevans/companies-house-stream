@@ -15,7 +15,9 @@ for (const streamPath of streamPaths)
   container.className = "event-column"
   container.innerHTML = `
   <div class="stream-title">
-    <h3>${sentenceCase(streamPath)} <span class="upstream-status indicator" id="${streamPath}-upstream"></span></h3>
+    <h2>${sentenceCase(streamPath)} 
+      <span class="upstream-status indicator" id="${streamPath}-upstream" aria-label="${sentenceCase(streamPath)} upstream status" role="status"></span>
+    </h2>
     <span id="delay-${streamPath}" class="delay"></span>
     <code>/${streamPath}</code>
   </div>

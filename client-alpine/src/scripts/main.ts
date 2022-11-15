@@ -7,5 +7,7 @@ import '../styles/main.css'
 /* import scripts */
 import './eventManager'
 import { startStatusManager } from "./statusManager"
+import { registerServiceWorker } from "./registerServiceWorker"
 
+registerServiceWorker()
 startStatusManager()

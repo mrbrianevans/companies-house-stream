@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json.schemastore.org/web-manifest-combined.json",
+  "name": "Companies Stream",
+  "short_name": "Companies Stream",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#e0f4f4",
+  "theme_color": "#e9c069",
+  "description": "Stream live events from Companies House such as new accounts filings and insolvencies. Built with the Companies House Streaming API, and shows the statuses of those endpoints.",
+  "orientation": "landscape-primary",
+  "categories": [
+    "companies house"
+  ],
+  "icons": [
+    {
+      "src": "icon/icon512.svg",
+      "type": "image/xml+svg",
+      "sizes": "512x512"
+    },
+    {
+      "src": "icon/icon512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icon/icon192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
