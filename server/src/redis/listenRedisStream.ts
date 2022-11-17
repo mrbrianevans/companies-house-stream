@@ -13,14 +13,14 @@ interface ListenRedisStreamProps {
  */
 export async function* listenRedisStream<EventType extends Record<string, string>>(props: ListenRedisStreamProps) {
   const redis = await getRedisClient()
+  const options = commandOptions({ signal: props.signal })
+  const streams = props.streamKeys.map(({ stream, timepoint }) => ({
+    key: "events:" + stream,
+    id: timepoint ?? "$"
+  }))
+  const readOptions = { COUNT: 1, BLOCK: 0 }
   while (true) {
     try {
-      const options = commandOptions({ signal: props.signal })
-      const streams = props.streamKeys.map(({ stream, timepoint }) => ({
-        key: "events:" + stream,
-        id: timepoint ?? "$"
-      }))
-      const readOptions = { COUNT: 1, BLOCK: 0 }
       const event = await redis.xRead(options, streams, readOptions)
       if (event) {
         const { name: stream, messages: items } = event[0]

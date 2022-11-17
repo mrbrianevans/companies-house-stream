@@ -16,8 +16,8 @@ export function createEventComponent(event){
   try {
     const { companyNumber, title, description } = getDescription(event)
     element.innerHTML = `
-    <h3>${title}</h3>
-    <p>${description}</p>
+    <h3>${title??(sentenceCase(event.streamPath)+'event')}</h3>
+    <p>${description??''}</p>
     <span class="published-at">${new Date(event.event.published_at).toLocaleTimeString()}</span>
     <a target="_blank" href="https://find-and-update.company-information.service.gov.uk/company/${companyNumber}"><code>${companyNumber}<img alt="External link" src=${ExternalLink} width="20" height="20"/></code></a>
   `
@@ -66,7 +66,7 @@ function getDescription(event){
     }
     case 'charges': {
       const [, companyNumber] = event.resource_uri.match(/^\/company\/([A-Z0-9]{8})\/charges/)
-      return { companyNumber, description: event.data.particulars.description, title: event.data.classification.description }
+      return { companyNumber, description: event.data.particulars?.description, title: event.data.classification.description }
     }
     case 'insolvency-cases':
       return { companyNumber: event.resource_id, description: event.data.cases.map(c=>sentenceCase(c.type)).join(', '), title: 'Insolvency' }
