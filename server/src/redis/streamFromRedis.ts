@@ -87,7 +87,9 @@ async function shutdown(){
 process.on('SIGINT', shutdown) // quit on ctrl-c when running docker in terminal
 process.on('SIGTERM', shutdown)// quit properly on docker stop
 
-for await(const event of listenRedisStream({streamKeys: [...streamPaths].map(stream=>({stream})), signal})) {
+const eventStream = listenRedisStream({streamKeys: [...streamPaths].map(stream=>({stream})), signal})
+
+for await(const event of eventStream) {
   const streamPath = event.stream.split(":")[1]
   eventEmitter.emit(streamPath, { streamPath, ...JSON.parse(event.data.event) })
 }
