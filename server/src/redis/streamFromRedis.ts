@@ -25,9 +25,16 @@ app.get("/health", async (req, res) => {
   res.json(health)
 })
 
+app.options('/randomCompanyNumbers', (req, res)=>{
+  res.setHeader('Access-Control-Allow-Origin', 'https://companiesdb.co.uk')
+  res.setHeader('Access-Control-Allow-Methods', 'GET')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  res.end()
+})
 app.get("/randomCompanyNumbers", async (req, res) => {
   const qty = 1 // this could be a search query param
   const companyNumbers = await counterClient.sRandMemberCount('companyNumbers', qty)
+  res.setHeader('Access-Control-Allow-Origin', 'https://companiesdb.co.uk')
   res.json(companyNumbers)
 })
 
