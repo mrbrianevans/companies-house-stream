@@ -5,6 +5,7 @@ import { EventEmitter } from "events"
 import { listenRedisStream } from "./listenRedisStream.js"
 import {streamFromRedisLogger as logger} from '../utils/loggers.js'
 import {setTimeout} from "node:timers/promises"
+import { saveCompanyNumber } from "./saveCompanyNumber.js"
 
 const streamPaths = new Set(["companies", "filings", "officers", "persons-with-significant-control", "charges", "insolvency-cases", "disqualified-officers"])
 const eventEmitter = new EventEmitter({})
@@ -22,6 +23,12 @@ app.get("/health", async (req, res) => {
   health.currentWsConnections = await commandClient.get('currentWsConnections').then(value => value ? parseInt(value) : 0)
   await commandClient.quit()
   res.json(health)
+})
+
+app.get("/randomCompanyNumbers", async (req, res) => {
+  const qty = 1 // this could be a search query param
+  const companyNumbers = await counterClient.sRandMemberCount('companyNumbers', qty)
+  res.json(companyNumbers)
 })
 
 const server = app.listen(3000, () => console.log("Listening on port 3000"))
@@ -91,6 +98,10 @@ const eventStream = listenRedisStream({streamKeys: [...streamPaths].map(stream=>
 
 for await(const event of eventStream) {
   const streamPath = event.stream.split(":")[1]
-  eventEmitter.emit(streamPath, { streamPath, ...JSON.parse(event.data.event) })
+  let parsedEvent = JSON.parse(event.data.event)
+  eventEmitter.emit(streamPath, { streamPath, ...parsedEvent })
+  if(streamPath === 'companies')
+    await saveCompanyNumber(counterClient, parsedEvent, streamPath)
+      .catch(e=>logger.error(e, 'Error saving company number'))
 }
 

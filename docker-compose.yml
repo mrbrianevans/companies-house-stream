@@ -9,7 +9,7 @@ services:
       driver: local
 
   client: # builds the frontend into a volume to be served by caddy
-    build: client-alpine
+    build: client-pure
     volumes:
       - client_dist:/client/dist # this MUST match the workdir set in the Dockerfile
 
@@ -26,6 +26,8 @@ services:
       - caddy_config:/config
     logging:
       driver: local
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS}
 
   event-publisher:
     build: server
