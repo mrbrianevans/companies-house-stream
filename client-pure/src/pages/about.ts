@@ -6,4 +6,4 @@ async function initAboutPage(){
 }
 
 
-await initAboutPage()
+initAboutPage()
