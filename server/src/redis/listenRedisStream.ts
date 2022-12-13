@@ -20,18 +20,21 @@ export async function* listenRedisStream<EventType extends Record<string, string
   const readOptions = { COUNT: 1, BLOCK: 0 }
   while (true) {
     try {
-      if(props.signal.aborted) break;
+      if(props.signal?.aborted) break;
       const ac = new AbortController() // new AC for every iteration to prevent memory leak, build up of listeners
       const {signal} = ac
       const options = commandOptions({ signal })
       const triggerAbort = () => ac.abort()
-      props.signal.addEventListener('abort', triggerAbort)
+      props.signal?.addEventListener('abort', triggerAbort)
       const event = await redis.xRead(options, streams, readOptions)
-      props.signal.removeEventListener('abort', triggerAbort)
-      if (event) {
+      props.signal?.removeEventListener('abort', triggerAbort)
+      if (event && event.length) {
         const { name: stream, messages: items } = event[0]
         const { id: eventId, message: data } = items[0]
         yield { stream, eventId, data: data as EventType }
+      }else{
+        console.log('Empty event in stream, breaking', {event})
+        break // empty event means end of stream
       }
     } catch (e) {
       if(!(e instanceof AbortError))

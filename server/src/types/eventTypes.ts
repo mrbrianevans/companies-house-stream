@@ -554,4 +554,4 @@ type AnyEvent =
   | ChargesEvent.ChargesEvent
   | OfficerEvent.OfficerEvent
 export type { CompanyProfileEvent, FilingEvent, PscEvent, InsolvencyEvent, ChargesEvent, OfficerEvent, AnyEvent }
-const a: AnyEvent = null
+

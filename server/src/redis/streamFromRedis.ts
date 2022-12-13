@@ -31,11 +31,31 @@ app.options('/randomCompanyNumbers', (req, res)=>{
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
   res.end()
 })
+/** Returns an array of random company numbers */
 app.get("/randomCompanyNumbers", async (req, res) => {
   const qty = 1 // this could be a search query param
   const companyNumbers = await counterClient.sRandMemberCount('companyNumbers', qty)
   res.setHeader('Access-Control-Allow-Origin', 'https://companiesdb.co.uk')
   res.json(companyNumbers)
+})
+/** Returns the `qty` most recent events in the `streamPath` stream. Eg last 100 filing events. */
+app.get("/downloadHistory/:streamPath", async (req, res) => {
+  const {streamPath} = req.params
+  const { qty } = req.query
+  const COUNT = parseInt(String(qty)) || 100 // default to send 100 events, unless specified
+  if(COUNT > 10_000){
+    res.status(400).json({statusCode:400, message: 'Qty exceeds maximum. Must be less than 10,000. Received: '+COUNT})
+    return
+  }
+  if(streamPaths.has(streamPath)){
+    const historyClient = await getRedisClient()
+    const history = await historyClient.xRevRange('events:'+streamPath, '+', '-', {COUNT})
+    res.json(history.map(h=>JSON.parse(h.message.event)))
+    await historyClient.quit()
+  }else{
+    res.status(400).json({statusCode:400, message: 'Invalid stream path: '+streamPath, possibleOptions: [...streamPaths]})
+    return
+  }
 })
 
 const server = app.listen(3000, () => console.log("Listening on port 3000"))
@@ -53,7 +73,7 @@ let clients = 0
 // web socket server for sending events to client
 const wss = new WebSocketServer({ noServer: true })
 wss.on("connection", async function connection(ws, req) {
-  const stream = new URL(req.url, `wss://${req.headers.host}`).searchParams.get("stream")
+  const stream = new URL(req.url??'/events', `wss://${req.headers.host}`).searchParams.get("stream")
   const send = event => ws.send(JSON.stringify(event))
   const requestedStreams = [...streamPaths].filter(streamPath => stream === streamPath || stream === null || stream === "all")
   for (const streamPath of requestedStreams)
@@ -72,7 +92,7 @@ wss.on("connection", async function connection(ws, req) {
 })
 // handles websocket on /events path of server
 server.on("upgrade", function upgrade(request, socket, head) {
-  const url = new URL(request.url, `wss://${request.headers.host}`)
+  const url = new URL(request.url??'/events', `wss://${request.headers.host}`)
   if (url.pathname === "/events") {
     wss.handleUpgrade(request, socket, head, function done(ws) {
       wss.emit("connection", ws, request)
