@@ -5,7 +5,7 @@ main{
   margin: 0 auto;
 }
 
-#streams-container{
+.streams-container{
   display: grid;
   gap: 1rem;
   justify-content: center;
@@ -14,5 +14,12 @@ main{
     border: 1px solid black;
     border-radius: 2px;
     padding: 2px 1rem;
+  }
+}
+
+
+section.view-online{
+  pre{
+    overflow: clip;
   }
 }
