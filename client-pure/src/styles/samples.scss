@@ -1,0 +1,18 @@
+
+
+main{
+  max-width: 60rem;
+  margin: 0 auto;
+}
+
+#streams-container{
+  display: grid;
+  gap: 1rem;
+  justify-content: center;
+  grid-template-columns: repeat(auto-fill, 20rem);
+  button{
+    border: 1px solid black;
+    border-radius: 2px;
+    padding: 2px 1rem;
+  }
+}

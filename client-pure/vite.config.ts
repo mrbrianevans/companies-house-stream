@@ -19,7 +19,8 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      "/events/health": "http://localhost" ,
+      "/events/health": "http://localhost/events/health" ,
+      "/events/downloadHistory": "http://localhost/events/downloadHistory" ,
       "/events": { ws: true, target: "ws://localhost:80/events" }
     }
   },

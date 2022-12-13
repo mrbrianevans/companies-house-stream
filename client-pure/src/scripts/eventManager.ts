@@ -2,12 +2,12 @@ import '../styles/events.scss'
 import { createEventEmitter } from "./workerWrapper"
 import { sentenceCase } from "sentence-case"
 import { createEventComponent } from "./eventCardFactory"
+import { streamPaths } from "./streamPaths"
 
 
 /* Create a column for each stream */
 const eventsContainer = document.getElementById('events')
 const containers = {}
-const streamPaths = new Set(["companies", "filings", "officers", "persons-with-significant-control", "charges", "insolvency-cases", "disqualified-officers"])
 for (const streamPath of streamPaths)
 {
   const container = document.createElement('div')

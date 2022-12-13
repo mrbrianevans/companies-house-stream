@@ -29,7 +29,8 @@ export function createEventComponent(event){
 
     const { received, streamPath, ...originalEvent } = event
     const latencyMs = performance.timeOrigin + performance.now() - received
-    setLatency(latencyMs)
+    // this has been disabled due to the difference in system clocks causing inaccurate latencies (including negative).
+    // setLatency(latencyMs)
     const delay = (Date.now() - new Date(event.event.published_at).getTime()) / 60_000
     setDelay(streamPath, delay)
     const copyButton = document.createElement("button")

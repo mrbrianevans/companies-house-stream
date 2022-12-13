@@ -6,6 +6,12 @@ body{
     background-color: rgba(224, 244, 244, 0.13);
 }
 
+button,input,select,textarea{
+    font-family: 'Inter', sans-serif;
+}
+button{
+    cursor: pointer;
+}
 code,pre{
     font-family: 'JetBrains Mono', monospace;
     background-color: rgba(44, 137, 137, 0.13);
