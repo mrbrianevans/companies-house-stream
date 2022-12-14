@@ -6,8 +6,9 @@ import { listenRedisStream } from "./listenRedisStream.js"
 import {streamFromRedisLogger as logger} from '../utils/loggers.js'
 import {setTimeout} from "node:timers/promises"
 import { saveCompanyNumber } from "./saveCompanyNumber.js"
+import { streamPaths } from "../streams/streamPaths.js"
+import { updateSchemaForEvent } from "../schemas/maintainSchemas.js"
 
-const streamPaths = new Set(["companies", "filings", "officers", "persons-with-significant-control", "charges", "insolvency-cases", "disqualified-officers"])
 const eventEmitter = new EventEmitter({})
 eventEmitter.setMaxListeners(1_000_000) // increase max listeners (this is clients x num of streams)
 
@@ -130,5 +131,6 @@ for await(const event of eventStream) {
   if(streamPath === 'companies')
     await saveCompanyNumber(counterClient, parsedEvent, streamPath)
       .catch(e=>logger.error(e, 'Error saving company number'))
+  await updateSchemaForEvent(parsedEvent, counterClient)
 }
 
