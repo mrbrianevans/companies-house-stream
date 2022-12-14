@@ -18,7 +18,7 @@ app.get("/health", async (req, res) => {
   const commandClient = await getRedisClient()
   const health = {    currentWsConnections: 0  }
   for (const streamPath of streamPaths) {
-    const lastHeartbeat = await commandClient.get(streamPath + ":alive").then(t => new Date(parseInt(t || "0")))
+    const lastHeartbeat = await commandClient.hGet('heartbeats', streamPath).then(t => new Date(parseInt(t || "0")))
     health[streamPath] = Date.now() - lastHeartbeat.getTime() < 60_000 // more than 60 seconds indicates stream offline
   }
   health.currentWsConnections = await commandClient.get('currentWsConnections').then(value => value ? parseInt(value) : 0)
