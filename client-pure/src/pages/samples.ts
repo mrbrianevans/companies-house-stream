@@ -42,6 +42,23 @@ function initSamplesPage(){
       container.appendChild(viewButton)
     }
   }
+
+  { // schemas
+    const container = document.getElementById("schemas-container")
+    const viewer = document.getElementById("view-schema")
+    const description = document.getElementById("schema-description")
+    fetch('/events/schemas').then(r=>r.json()).then(schemas => {
+      for (const schema in schemas) {
+        const viewButton = document.createElement("button")
+        viewButton.innerText = "View " + schema + " schema"
+        viewButton.addEventListener("click", () => {
+          viewer.innerText = JSON.stringify(schemas[schema], null, 2)
+          description.innerText = 'Schema for ' + schema
+        })
+        container.appendChild(viewButton)
+      }
+    })
+  }
 }
 
 initSamplesPage()

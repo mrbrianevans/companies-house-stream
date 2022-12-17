@@ -32,6 +32,19 @@
     <p id="sample-description"></p>
     <pre id="view-samples"></pre>
   </section>
+
+  <section class="schemas">
+    <h2>Schemas</h2>
+    <p>
+      These are <a href="https://json-schema.org/" target="_blank">JSON schemas</a> generated from events sent on the streams.
+      They are categorised by <code>resource_kind</code> rather than stream,
+      because some streams (such as persons with significant control) send multiple resource kinds.
+    </p>
+    <p>You can convert these schemas to a language structure using <a href="https://app.quicktype.io/">quicktype</a>.</p>
+    <div id="schemas-container" class="streams-container"></div>
+    <p id="schema-description"></p>
+    <pre id="view-schema"></pre>
+  </section>
 </main>
 
 <script src="pages/samples.ts" type="module"></script>

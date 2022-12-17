@@ -59,6 +59,12 @@ app.get("/downloadHistory/:streamPath", async (req, res) => {
   }
 })
 
+app.get('/schemas', async (req, res) => {
+  const schemasRaw = await counterClient.hGetAll('schemas')
+  const schemas = Object.fromEntries(Object.entries(schemasRaw).map(([schemaName, schemaString])=>[schemaName, JSON.parse(schemaString)]))
+  res.json(schemas)
+})
+
 const server = app.listen(3000, () => console.log("Listening on port 3000"))
 server.on("request", (req) => console.log("Request to server", req.url))
 
