@@ -5,6 +5,7 @@ import '../styles/events.scss'
 
 import { streamPaths } from "../scripts/streamPaths"
 import { downloadSampleEvents, getSampleEvents } from "../scripts/downloadSampleEvents"
+import { convertJsonSchemas } from "../scripts/getResourceSchema"
 
 // run when samples page is loaded
 function initSamplesPage(){
@@ -57,6 +58,15 @@ function initSamplesPage(){
         })
         container.appendChild(viewButton)
       }
+      const convertButton = document.createElement("button")
+      convertButton.innerText = "Convert schemas to language"
+      convertButton.addEventListener("click", async () => {
+        const output = await convertJsonSchemas(schemas, 'go')
+        viewer.innerText = JSON.stringify(output, null, 2)
+        description.innerText = 'Language output'
+      })
+      // container.appendChild(convertButton) // this is currently disabled because of a bug in quicktype causing an error
+
     })
   }
 }

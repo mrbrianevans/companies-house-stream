@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "copy-to-clipboard": "^3.3.2",
+    "quicktype-core": "^6.1.0",
     "sentence-case": "^3.0.4",
     "string-template": "^1.0.0",
     "title-case": "^3.0.3"
