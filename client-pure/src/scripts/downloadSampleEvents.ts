@@ -11,12 +11,21 @@ export async function downloadSampleEvents(streamPath: string, qty = 100){
   const blob = new Blob([fileContent],{type: 'application/x-ndjson', endings: 'transparent'})
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
-  link.download = 'sample-'+streamPath+'-events.json';
-  link.click();
-  URL.revokeObjectURL(link.href);
+  link.download = "sample-" + streamPath + "-events.json"
+  link.click()
+  URL.revokeObjectURL(link.href)
 }
 
 
-function getNdjson(array: any[]){
-  return array.map(({ received, ...i })=>JSON.stringify(i)).join('\n')
+function getNdjson(array: any[]) {
+  return array.map(({ received, ...i }) => JSON.stringify(i)).join("\n")
+}
+
+export async function downloadStringAsFile(fileContent: string, filename: string, fileType: string) {
+  const blob = new Blob([fileContent], { type: fileType, endings: "transparent" })
+  const link = document.createElement("a")
+  link.href = URL.createObjectURL(blob)
+  link.download = filename
+  link.click()
+  URL.revokeObjectURL(link.href)
 }

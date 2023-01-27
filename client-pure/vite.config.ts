@@ -28,7 +28,7 @@ export default defineConfig({
   },
   plugins: [],
   worker: {
-    format: "iife"
+    format: "es"
   },
   optimizeDeps: {
     esbuildOptions : {

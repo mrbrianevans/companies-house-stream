@@ -3,9 +3,9 @@ import '../styles/theme.scss'
 import '../styles/samples.scss'
 import '../styles/events.scss'
 
-import { streamPaths } from "../scripts/streamPaths"
+import { languages, streamPaths } from "../scripts/streamPaths"
 import { downloadSampleEvents, getSampleEvents } from "../scripts/downloadSampleEvents"
-import { convertJsonSchemas } from "../scripts/getResourceSchema"
+import { generateLanguageSchemaInWorker } from "../scripts/schemaWorkerWrapper"
 
 // run when samples page is loaded
 function initSamplesPage(){
@@ -58,18 +58,27 @@ function initSamplesPage(){
         viewButton.innerText = "View " + schema + " schema"
         viewButton.addEventListener("click", () => {
           viewer.innerText = JSON.stringify(schemas[schema], null, 2)
-          description.innerText = 'Schema for ' + schema
+          description.innerText = "Schema for " + schema
         })
         container.appendChild(viewButton)
       }
+
+      const languagePicker = document.createElement("select")
+      for (const language of languages) {
+        const languageOption = document.createElement("option")
+        languageOption.innerText = language
+        languagePicker.appendChild(languageOption)
+      }
+      container.appendChild(languagePicker)
+
       const convertButton = document.createElement("button")
       convertButton.innerText = "Convert schemas to language"
       convertButton.addEventListener("click", async () => {
-        const output = await convertJsonSchemas(schemas, 'go')
-        viewer.innerText = JSON.stringify(output, null, 2)
-        description.innerText = 'Language output'
+        const output = await generateLanguageSchemaInWorker(schemas, languagePicker.value as typeof languages[number])
+        viewer.innerText = String(output)
+        description.innerText = languagePicker.value + "schemas"
       })
-      // container.appendChild(convertButton) // this is currently disabled because of a bug in quicktype causing an error
+      container.appendChild(convertButton) // this is currently disabled because of a bug in quicktype causing an error
 
     })
   }

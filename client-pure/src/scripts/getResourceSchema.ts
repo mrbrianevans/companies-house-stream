@@ -1,22 +1,17 @@
-const languages = ['go', 'typescript'] as const
+import { FetchingJSONSchemaStore, InputData, JSONSchemaInput, quicktype } from "quicktype-core"
+import { languages } from "./streamPaths"
 
-export async function convertJsonSchemas(schemas, outputLanguage: typeof languages[number]){
-  const {
-    FetchingJSONSchemaStore,
-    InputData,
-    JSONSchemaInput,
-    quicktype
-  } = await import('quicktype-core')
-  const schemaInput = new JSONSchemaInput(new FetchingJSONSchemaStore());
+export async function convertJsonSchemas(schemas, outputLanguage: typeof languages[number]) {
+  const schemaInput = new JSONSchemaInput(new FetchingJSONSchemaStore())
   for (const resourceKind in schemas) {
-    const schema = schemas[resourceKind]
-    await schemaInput.addSource({ name: resourceKind, schema });
+    const schema = JSON.stringify(schemas[resourceKind])
+    await schemaInput.addSource({ name: resourceKind, schema })
   }
-  const inputData = new InputData();
-  inputData.addInput(schemaInput);
+  const inputData = new InputData()
+  inputData.addInput(schemaInput)
   const output = await quicktype({
     inputData,
-    lang: outputLanguage,
+    lang: outputLanguage, debugPrintTimes: true
   });
   return output.lines.join('\n')
 }
