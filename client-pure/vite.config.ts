@@ -15,9 +15,11 @@ export default defineConfig({
     sourcemap: true,
     rollupOptions: {
       input: pages.map(p=>'src/'+p)
-    }
+    },
+    target: 'es2020'
   },
   server: {
+
     proxy: {
       "/events/health": "http://localhost/events/health" ,
       "/events/downloadHistory": "http://localhost/events/downloadHistory" ,
@@ -27,5 +29,10 @@ export default defineConfig({
   plugins: [],
   worker: {
     format: "iife"
+  },
+  optimizeDeps: {
+    esbuildOptions : {
+      target: "es2020"
+    }
   }
 })
