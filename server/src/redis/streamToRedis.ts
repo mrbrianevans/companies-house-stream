@@ -4,6 +4,7 @@ import { getRedisClient } from "./getRedisClient.js"
 import { restKeyHolder, streamKeyHolder } from "../utils/KeyHolder.js"
 import { setTimeout } from "node:timers/promises"
 import pino from "pino"
+import { streamPaths } from "../streams/streamPaths.js"
 /*
 
   This file listens to the Companies House long polling streaming API, and when events are received, they are posted
@@ -16,8 +17,6 @@ const keys = [process.env.STREAM_KEY1, process.env.STREAM_KEY2, process.env.STRE
 for (const key of keys) streamKeyHolder.addKey(key)
 restKeyHolder.addKey(process.env.REST_KEY1)
 const logger = pino()
-// permanent streams that will reconnect if they get disconnected
-const streamPaths = new Set(["companies", "filings", "officers", "persons-with-significant-control", "charges", "insolvency-cases", "disqualified-officers"])
 const client = await getRedisClient()
 const sendEvent = streamPath => event => client.xAdd("events:" + streamPath, event.event.timepoint + "-*", { "event": JSON.stringify(event) }, {
   TRIM: {
