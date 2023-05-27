@@ -45,17 +45,25 @@ export function createEventComponent(event){
 }
 
 
-function getDescription(event){
+export function getDescription(event) {
   switch (event.streamPath) {
-    case 'companies':
-      return { companyNumber: event.data.company_number, description: '', title: `${titleCase(event.data.company_name.toLowerCase())}` }
-    case 'filings': {
-      const [,companyNumber] = event.resource_uri.match(/^\/company\/([A-Z0-9]{8})\/filing-history/)
-      return { companyNumber, description: formatFilingDescription(event.data), title: sentenceCase(event.data.category)+" filing" }
+    case "companies":
+      return {
+        companyNumber: event.data.company_number,
+        description: "",
+        title: `${titleCase(event.data.company_name.toLowerCase())}`
+      }
+    case "filings": {
+      const [, companyNumber] = event.resource_uri.match(/^\/company\/([A-Z0-9]{8})\/filing-history/)
+      return {
+        companyNumber,
+        description: formatFilingDescription(event.data),
+        title: sentenceCase(event.data.category) + " filing"
+      }
     }
-    case 'officers': {
+    case "officers": {
       const [, companyNumber] = event.resource_uri.match(/^\/company\/([A-Z0-9]{8})\/appointments/)
-      const description = 'resigned_on' in event.data ? `Resigned on ${event.data.resigned_on}` : `Appointed on ${event.data.appointed_on}`
+      const description = "resigned_on" in event.data ? `Resigned on ${event.data.resigned_on}` : `Appointed on ${event.data.appointed_on}`
       return { companyNumber, description, title: titleCase(event.data.name.toLowerCase()) }
     }
     case 'persons-with-significant-control': {

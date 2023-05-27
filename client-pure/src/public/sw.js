@@ -17,7 +17,7 @@ self.addEventListener('activate', () => {
 self.addEventListener('fetch', (e) => {
   e.respondWith((async () => {
     try{
-      console.log(`[Service Worker] Fetching resource: ${e.request.url}`)
+      console.debug(`[Service Worker] Fetching resource: ${e.request.url}`)
       const response = await fetch(e.request)
       return response
     }catch (e) {

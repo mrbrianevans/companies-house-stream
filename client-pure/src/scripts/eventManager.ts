@@ -1,16 +1,22 @@
-import '../styles/events.scss'
+import "../styles/events.scss"
 import { createEventEmitter } from "./workerWrapper"
 import { sentenceCase } from "sentence-case"
-import { createEventComponent } from "./eventCardFactory"
+import { createEventComponent, getDescription } from "./eventCardFactory"
 import { streamPaths } from "./streamPaths"
 
+let filter = ""
+const filterTextBox = document.getElementById("filter-text") as HTMLInputElement
+filterTextBox?.addEventListener("keyup", e => {
+  // if(filterTextBox?.value.length === 8) // must be 8 character company number
+  filter = filterTextBox?.value ?? ""
+  // else filter = ''
+})
 
 /* Create a column for each stream */
-const eventsContainer = document.getElementById('events')
+const eventsContainer = document.getElementById("events")
 const containers = {}
-for (const streamPath of streamPaths)
-{
-  const container = document.createElement('div')
+for (const streamPath of streamPaths) {
+  const container = document.createElement("div")
   container.id = `${streamPath}-container`
   container.className = "event-column"
   container.innerHTML = `
@@ -31,14 +37,19 @@ for (const streamPath of streamPaths)
 let eventCount = 0
 const eventsEmitter = createEventEmitter()
 eventsEmitter.on('event',event => {
-  document.getElementById('notification-counter').innerText = (++eventCount).toString()
-  // only draw event cards if the document is visible
-  if(document.visibilityState === 'visible') {
-    const eventCard = createEventComponent(event)
-    containers[event.streamPath].insertAdjacentElement('afterbegin', eventCard)
-    setTimeout(() => { // remove after 15 seconds
-      containers[event.streamPath].removeChild(eventCard)
-    }, 15000)
+  document.getElementById("notification-counter").innerText = (++eventCount).toString()
+  const { companyNumber } = getDescription(event)
+  // add events if browser is not visible only if the filter is set to a company number
+  if (document.visibilityState === "visible" || filter.length === 8) {
+    if (companyNumber.includes(filter)) {
+      const eventCard = createEventComponent(event)
+      containers[event.streamPath].insertAdjacentElement("afterbegin", eventCard)
+      const timeout = (filter.length + 0.5) * 30_000
+      setTimeout(() => {
+        // remove after some time depending on how specific the filter is
+        containers[event.streamPath].removeChild(eventCard)
+      }, timeout)
+    }
   }
 })
 
