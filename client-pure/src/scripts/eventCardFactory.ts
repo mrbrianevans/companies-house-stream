@@ -58,7 +58,7 @@ export function getDescription(event) {
       return {
         companyNumber,
         description: formatFilingDescription(event.data),
-        title: sentenceCase(event.data.category) + " filing"
+        title: sentenceCase(event.data.category ?? "New") + " filing"
       }
     }
     case "officers": {
@@ -75,18 +75,44 @@ export function getDescription(event) {
     }
     case 'charges': {
       const [, companyNumber] = event.resource_uri.match(/^\/company\/([A-Z0-9]{8})\/charges/)
-      return { companyNumber, description: event.data.particulars?.description, title: event.data.classification.description }
+      return {
+        companyNumber,
+        description: event.data.particulars?.description,
+        title: event.data.classification.description
+      }
     }
-    case 'insolvency-cases':
-      return { companyNumber: event.resource_id, description: event.data.cases.map(c=>sentenceCase(c.type)).join(', '), title: 'Insolvency' }
-    case 'disqualified-officers':
-      const descriptionFormat = 'Disqualified from {companies}'
-      const description = formatString(descriptionFormat, {companies: event.data.disqualifications?.flatMap(d=>d.company_names).join(', ')})
-      const titleFormat = '{forename} {other_forenames} {surname}'
+    case "insolvency-cases":
+      return {
+        companyNumber: event.resource_id,
+        description: event.data.cases.map(c => sentenceCase(c.type)).join(", "),
+        title: "Insolvency"
+      }
+    case "disqualified-officers":
+      const descriptionFormat = "Disqualified from {companies}"
+      const description = formatString(descriptionFormat, { companies: event.data.disqualifications?.flatMap(d => d.company_names).join(", ") })
+      const titleFormat = "{forename} {other_forenames} {surname}"
       const title = formatString(titleFormat, event.data)
-      return { companyNumber: '', description, title }
+      return { companyNumber: "", description, title }
+    case "persons-with-significant-control-statements": {
+      //TODO: write actual description for PSC statement using pscDescriptions.json file
+      const [, companyNumber] = event.resource_uri.match(/^\/company\/([A-Z0-9]{8})\//)
+      return {
+        companyNumber,
+        description: `PSC statement descriptions not yet developed`,
+        title: titleCase(event.data.linked_psc_name)
+      }
+    }
+    case "company-exemptions": {
+      //TODO: write actual description for exemptions using https://github.com/companieshouse/api-enumerations/blob/master/exemption_descriptions.yml
+      const [, companyNumber] = event.resource_uri.match(/^\/company\/([A-Z0-9]{8})\/exemptions/)
+      return {
+        companyNumber,
+        description: `Company exemptions descriptions not yet developed`,
+        title: titleCase(event.data.linked_psc_name)
+      }
+    }
     default:
-      return { companyNumber: '', description: `No description available`, title: titleCase(event.streamPath) }
+      return { companyNumber: "", description: `No description available`, title: titleCase(event.streamPath) }
   }
 }
 

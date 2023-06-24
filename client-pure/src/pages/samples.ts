@@ -36,11 +36,11 @@ function initSamplesPage(){
       viewButton.innerText = "View " + streamPath + " sample"
       viewButton.className = streamPath
       viewButton.addEventListener("click", () => getSampleEvents(streamPath, 1).then(r=> {
-        if(r) {
+        if (r.length) {
           const { received, ...event } = r[0]
           viewer.innerText = JSON.stringify(event, null, 2)
           description.innerText = "Event received on " + streamPath + " stream at " + new Date(received).toISOString() + "."
-        }else{
+        } else {
           description.innerText = `This server hasn't received any events on the ${streamPath} stream yet.`
         }
       }))

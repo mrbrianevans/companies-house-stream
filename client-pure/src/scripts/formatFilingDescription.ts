@@ -12,7 +12,7 @@ export function formatFilingDescription(transaction){
     return formatString(filingDescriptions[transaction.description], transaction.description_values)
   else if(transaction.description === 'legacy') return transaction.description_values?.description ?? transaction.description
   else{
-    console.warn({transaction},'Filing description not found for '+transaction.description)
+    if (filingDescriptions) console.warn({ transaction }, "Filing description not found for " + transaction.description)
     return transaction.description
   }
 }

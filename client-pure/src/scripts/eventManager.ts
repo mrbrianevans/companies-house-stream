@@ -16,6 +16,7 @@ filterTextBox?.addEventListener("keyup", e => {
 const eventsContainer = document.getElementById("events")
 const containers = {}
 for (const streamPath of streamPaths) {
+  //TODO: add an option for the user to combine some columns: [officers, disqualified officers] [psc, psc statements, exemptions]
   const container = document.createElement("div")
   container.id = `${streamPath}-container`
   container.className = "event-column"
