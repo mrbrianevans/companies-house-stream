@@ -48,20 +48,58 @@ app.get("/downloadHistory/:streamPath", async (req, res) => {
     res.status(400).json({statusCode:400, message: 'Qty exceeds maximum. Must be less than 10,000. Received: '+COUNT})
     return
   }
-  if(streamPaths.has(streamPath)){
+  if (streamPaths.has(streamPath)) {
     const historyClient = await getRedisClient()
-    const history = await historyClient.xRevRange('events:'+streamPath, '+', '-', {COUNT})
-    res.json(history.map(h=>JSON.parse(h.message.event)))
+    const history = await historyClient.xRevRange("events:" + streamPath, "+", "-", { COUNT })
+    res.json(history.map(h => JSON.parse(h.message.event)))
     await historyClient.quit()
-  }else{
-    res.status(400).json({statusCode:400, message: 'Invalid stream path: '+streamPath, possibleOptions: [...streamPaths]})
+  } else {
+    res.status(400).json({
+      statusCode: 400,
+      message: "Invalid stream path: " + streamPath,
+      possibleOptions: [...streamPaths]
+    })
+    return
+  }
+})
+app.get("/stats/:streamPath", async (req, res) => {
+  const { streamPath } = req.params
+  if (streamPaths.has(streamPath)) {
+    const client = await getRedisClient()
+    const rawCounts = await client.hGetAll(`counts:${streamPath}:daily`)
+    const counts = Object.fromEntries(Object.entries(rawCounts).map(([date, count]) => [date, parseInt(count)]))
+    res.json(counts)
+    await client.quit()
+  } else {
+    res.status(400).json({
+      statusCode: 400,
+      message: "Invalid stream path: " + streamPath,
+      possibleOptions: [...streamPaths]
+    })
+    return
+  }
+})
+app.get("/resourceKinds/:streamPath", async (req, res) => {
+  const { streamPath } = req.params
+  if (streamPaths.has(streamPath)) {
+    const client = await getRedisClient()
+    const rawCounts = await client.hGetAll(`resourceKinds:${streamPath}`)
+    const counts = Object.fromEntries(Object.entries(rawCounts).map(([date, count]) => [date, parseInt(count)]))
+    res.json(counts)
+    await client.quit()
+  } else {
+    res.status(400).json({
+      statusCode: 400,
+      message: "Invalid stream path: " + streamPath,
+      possibleOptions: [...streamPaths]
+    })
     return
   }
 })
 
-app.get('/schemas', async (req, res) => {
-  const schemasRaw = await counterClient.hGetAll('schemas')
-  const schemas = Object.fromEntries(Object.entries(schemasRaw).map(([schemaName, schemaString])=>[schemaName, JSON.parse(schemaString)]))
+app.get("/schemas", async (req, res) => {
+  const schemasRaw = await counterClient.hGetAll("schemas")
+  const schemas = Object.fromEntries(Object.entries(schemasRaw).map(([schemaName, schemaString]) => [schemaName, JSON.parse(schemaString)]))
   res.json(schemas)
 })
 
