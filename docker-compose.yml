@@ -38,6 +38,7 @@ services:
       - .api.env
     logging:
       driver: local
+    depends_on: [ redis ]
 
   event-subscriber:
     build: server
@@ -46,6 +47,7 @@ services:
       PUBSUB_REDIS_IP: redis
     logging:
       driver: local
+    depends_on: [ redis ]
 
 
 volumes:

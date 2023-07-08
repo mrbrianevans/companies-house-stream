@@ -104,7 +104,7 @@ export function getDescription(event) {
     }
     case "company-exemptions": {
       //TODO: write actual description for exemptions using https://github.com/companieshouse/api-enumerations/blob/master/exemption_descriptions.yml
-      const [, companyNumber] = event.resource_uri.match(/^\/company\/([A-Z0-9]{8})\/exemptions/)
+      const [, companyNumber] = event.resource_uri.match(/company\/([A-Z0-9]{8})\/exemptions/)
       return {
         companyNumber,
         description: `Company exemptions descriptions not yet developed`,
