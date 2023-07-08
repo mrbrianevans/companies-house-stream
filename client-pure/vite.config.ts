@@ -27,13 +27,14 @@ export default defineConfig({
     rollupOptions: {
       input: pages.map(p=>'src/'+p)
     },
-    target: 'es2020'
+    target: "es2022"
   },
   server: {
 
     proxy: {
       "/events/health": "http://localhost",
       "/events/downloadHistory": "http://localhost",
+      "/events/stats": "https://companies.stream",
       "/events": { ws: true, target: "ws://localhost:80/events" }
     }
   },

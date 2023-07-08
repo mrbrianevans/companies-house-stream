@@ -29,3 +29,13 @@ export async function downloadStringAsFile(fileContent: string, filename: string
   link.click()
   URL.revokeObjectURL(link.href)
 }
+
+
+export async function getCountData(streamPath: string) {
+  return await fetch("/events/stats/" + streamPath).then(r => r.json())
+}
+
+export async function downloadEventCountJson(streamPath: string) {
+  const eventCount = await getCountData(streamPath)
+  await downloadStringAsFile(JSON.stringify(eventCount), `${streamPath}-statistics.json`, "application/x-ndjson")
+}

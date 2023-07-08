@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Statistics of Companies House Streaming API</title>
+  <meta name="description"
+        content="Statistics of the events that come through on the Companies House streaming API. This is to help design better systems for consuming the Streaming APIs.">
+</head>
+
+<body>
+<main>
+  <header>
+    <h1 class="title">Statistics</h1>
+    <div class="badges">
+      <a href="/">Home</a>
+    </div>
+    <p>Statistics of the events that come through on the Companies House streaming API. This is to help design better
+      systems for consuming the Streaming APIs.</p>
+  </header>
+
+  <section>
+    <div id="event-count-chart" style="width: 100%;height:600px;"></div>
+  </section>
+
+  <section>
+    <h2>Download data</h2>
+    <div id="download-stats-container" class="streams-container"></div>
+  </section>
+</main>
+
+<script src="pages/stats.ts" type="module"></script>
+</body>
+</html>
