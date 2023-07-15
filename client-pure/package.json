@@ -10,14 +10,14 @@
     "serve": "vite preview"
   },
   "devDependencies": {
-    "sass": "^1.56.1",
-    "typescript": "^4.7.4",
-    "vite": "^3.2.3"
+    "sass": "^1.63.6",
+    "typescript": "^5.1.6",
+    "vite": "^4.4.4"
   },
   "dependencies": {
-    "copy-to-clipboard": "^3.3.2",
+    "copy-to-clipboard": "^3.3.3",
     "echarts": "^5.4.2",
-    "quicktype-core": "^21.0.4",
+    "quicktype-core": "^23.0.59",
     "sentence-case": "^3.0.4",
     "string-template": "^1.0.0",
     "title-case": "^3.0.3"

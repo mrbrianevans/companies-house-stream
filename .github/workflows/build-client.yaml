@@ -3,7 +3,7 @@ on: # rebuild any PRs and any branch changes for the client directory
   pull_request:
   push:
     paths:
-      client-alpine/**
+      - client-pure/**
 
 jobs:
   build-client:
@@ -19,10 +19,10 @@ jobs:
         with:
           node-version: "19"
           cache: pnpm
-          cache-dependency-path: 'client-alpine/pnpm-lock.yaml'
+          cache-dependency-path: 'client-pure/pnpm-lock.yaml'
       - name: Install dependencies
         run: pnpm install
-        working-directory: client-alpine
+        working-directory: client-pure
       - name: Build client with Vite
         run: pnpm run build
-        working-directory: client-alpine
+        working-directory: client-pure
