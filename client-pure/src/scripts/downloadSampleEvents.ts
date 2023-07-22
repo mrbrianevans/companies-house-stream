@@ -1,5 +1,4 @@
 export async function getSampleEvents(streamPath: string, qty = 100){
-  // return [{naem:'event',received:Date.now()}]
   const query = new URLSearchParams({qty: qty.toFixed(0)})
   const events = await fetch('/events/downloadHistory/'+streamPath+'?'+query.toString()).then(r=>r.json())
   return events
