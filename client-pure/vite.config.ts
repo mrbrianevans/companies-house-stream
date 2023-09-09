@@ -19,7 +19,7 @@ const pages = await readdir("src").then(ps => ps.filter(p => p.endsWith(".html")
 const sitemap = pages.map(p => p.replace("index.html", "")).map(p => `https://companies.stream/${p.slice(0, -5)}`).join("\n")
 await writeFile("src/public/sitemap.txt", sitemap)
 
-const useLocalBackend = false
+const useLocalBackend = true
 const backendHttpUrl = useLocalBackend ? "http://localhost" : "https://companies.stream"
 
 export default defineConfig({
@@ -38,6 +38,7 @@ export default defineConfig({
       "/events/health": backendHttpUrl,
       "/events/downloadHistory": backendHttpUrl,
       "/events/stats": backendHttpUrl,
+      "/events/visitors": backendHttpUrl,
       "/events": { ws: true, target: "ws://localhost/events" } // can't be proxied to companies.stream
     }
   },
@@ -46,7 +47,7 @@ export default defineConfig({
     format: "es"
   },
   optimizeDeps: {
-    esbuildOptions : {
+    esbuildOptions: {
       target: "es2020"
     }
   }

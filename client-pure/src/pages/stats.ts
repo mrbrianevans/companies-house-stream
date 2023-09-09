@@ -1,6 +1,7 @@
 import "../styles/theme.scss"
 import "../styles/events.scss"
 import "../styles/samples.scss"
+import "../styles/layout.css"
 import * as echarts from "echarts/core"
 
 // Import bar charts, all suffixed with Chart
@@ -52,7 +53,7 @@ type ECOption = ComposeOption<
   | DatasetComponentOption
 >;
 
-const streamPaths = new Set(["filings", "companies", "persons-with-significant-control", "officers"])
+const streamPaths = new Set(["filings", "companies", "persons-with-significant-control", "officers", "insolvency-cases"])
 
 { // downloads
   const container = document.getElementById("download-stats-container")
@@ -110,4 +111,24 @@ const streamPaths = new Set(["filings", "companies", "persons-with-significant-c
   }
 
   loadChartData()
+}
+
+{
+  async function getVisitorStats() {
+    const { total, today } = await fetch("/events/visitors").then(r => r.json())
+    return { total, today }
+  }
+
+  async function updateVisitorStatsOnPage() {
+    try {
+      const { total, today } = await getVisitorStats()
+      document.getElementById("visitors-total").innerText = total
+      document.getElementById("visitors-today").innerText = today
+    } catch (e) {
+      console.error("Failed to update usage stats:", e)
+    }
+
+  }
+
+  updateVisitorStatsOnPage()
 }
