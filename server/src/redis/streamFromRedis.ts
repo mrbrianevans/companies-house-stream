@@ -9,6 +9,7 @@ import { saveCompanyNumber } from "./saveCompanyNumber.js"
 import { streamPaths } from "../streams/streamPaths.js"
 import { updateSchemaForEvent } from "../schemas/maintainSchemas.js"
 import { VisitorCounterService } from "./visitorCounter.js"
+import { request } from "https"
 
 const eventEmitter = new EventEmitter({})
 eventEmitter.setMaxListeners(1_000_000) // increase max listeners (this is clients x num of streams)
@@ -150,7 +151,9 @@ wss.on("connection", async function connection(ws, req) {
   for (const streamPath of requestedStreams) {
     eventEmitter.addListener(streamPath, send)
   }
-  await visitorCounter.count(req.socket.remoteAddress ?? "unknown")
+  const ipAddress = String(req.headers["x-forwarded-for"])
+  if (ipAddress) await visitorCounter.count(ipAddress)
+  else logger.info("No IP Address forwarded, skipping update to visitor statistics")
   clients++
   const redisCount = await counterClient.incr("currentWsConnections")
   console.log("Websocket connected.", totalListeners(), "event listeners", { clients, redisCount })
