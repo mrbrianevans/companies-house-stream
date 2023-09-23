@@ -24,11 +24,11 @@ const sendEvent = streamPath => event => client.xAdd("events:" + streamPath, eve
     strategyModifier: "~"
   }
 })
-const incrEventCount = streamPath => event => client.hIncrBy(`counts:${streamPath}:daily`, new Date().toISOString().split('T')[0], 1)
+const incrEventCount = streamPath => event => client.hIncrBy(`counts:${streamPath}:daily`, new Date().toISOString().split("T")[0], 1)
 const incrResourceKindCount = streamPath => event => client.hIncrBy(`resourceKinds:${streamPath}`, event.resource_kind, 1)
-const updateTimepoint = streamPath => event => client.hSet('timepoints', streamPath, JSON.stringify(event.event))
+const updateTimepoint = streamPath => event => client.hSet("timepoints", streamPath, JSON.stringify(event.event))
 const heartbeat = streamPath => () => client.hSet("heartbeats", streamPath, Date.now()) // keeps track of which are alive
-const getMostRecentTimepoint = streamPath => client.hGet('timepoints', streamPath).then(r => r ? JSON.parse(r)?.timepoint : undefined)
+const getMostRecentTimepoint = streamPath => client.hGet("timepoints", streamPath).then(r => r ? JSON.parse(r)?.timepoint : undefined)
 const startStream = streamPath => getMostRecentTimepoint(streamPath)
   .then((timepoint) => stream(streamPath, timepoint)
     .on("data", sendEvent(streamPath))

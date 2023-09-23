@@ -1,5 +1,4 @@
 import { getRedisClient } from "./getRedisClient.js"
-import { EventEmitter } from "events"
 import { listenRedisStream } from "./listenRedisStream.js"
 import { streamFromRedisLogger as logger } from "../utils/loggers.js"
 import { setTimeout } from "node:timers/promises"
@@ -9,17 +8,10 @@ import { updateSchemaForEvent } from "../schemas/maintainSchemas.js"
 import { VisitorCounterService } from "./visitorCounter.js"
 import { Elysia } from "elysia"
 
-console.log("Running API server", process.version)
-
-const eventEmitter = new EventEmitter({})
-eventEmitter.setMaxListeners(1_000_000) // increase max listeners (this is clients x num of streams)
-
 const app = new Elysia()
-let clients = 0
-
 app.get("/health", async ({ request }) => {
   const commandClient = await getRedisClient()
-  const health = { currentWsConnections: 0, connections: clients }
+  const health = { currentWsConnections: 0, connections: app.server?.pendingWebSockets }
   for (const streamPath of streamPaths) {
     const lastHeartbeat = await commandClient.hGet("heartbeats", streamPath).then(t => new Date(parseInt(t || "0")))
     health[streamPath] = Date.now() - lastHeartbeat.getTime() < 60_000 // more than 60 seconds indicates stream offline
@@ -128,62 +120,56 @@ app.get("/visitors/:date", async ({ params, set }) => {
   }
 })
 
-function getListenerCounts() {
-  const counts: Record<string, number> = {}
-  for (const streamPath of streamPaths)
-    counts[streamPath] = eventEmitter.listenerCount(streamPath)
-  return counts
-}
-
-const totalListeners = () => Object.values(getListenerCounts()).reduce((p, c) => p + c)
-
+const ac = new AbortController()
+const { signal } = ac
+let unclosedWsCount = 0
 // web socket server for sending events to client
 app.ws("/events", {
   async open(ws) {
-    // console.log("Open data", ws.data)
-    // subscribe to all events
+    unclosedWsCount++
+    // subscribe to all streams and increment counter of connections
     for (const streamPath of streamPaths) {
-      eventEmitter.addListener(streamPath, ws.send)
+      ws.subscribe(streamPath)
     }
     const ipAddress = String(ws.data.headers["x-forwarded-for"])
-    console.log({ ipAddress })
     if (ipAddress) await visitorCounter.count(ipAddress)
     else logger.info("No IP Address forwarded, skipping update to visitor statistics")
-    clients++
     const redisCount = await counterClient.incr("currentWsConnections")
-    console.log("Websocket connected.", totalListeners(), "event listeners", { clients, redisCount })
-    eventEmitter.on("close", () => ws.terminate())
+    console.log("Websocket connected.", { clients: app.server?.pendingWebSockets, redisCount })
+    signal.addEventListener("abort", () => ws.close())
   },
   async close(ws, code, reason) {
-    console.log("Close data", ws.data)
-    // decrement counter
+    // decrement connections counter and unsubscribe from all streams
     for (const streamPath of streamPaths)
-      eventEmitter.removeListener(streamPath, ws.send)
-    clients--
+      ws.unsubscribe(streamPath) // don't think this is necessary, surely its done automatically when a socket terminates
     const redisCount = await counterClient.decr("currentWsConnections")
-    console.log("Websocket disconnected with code.", code, totalListeners(), "event listeners", { clients, redisCount })
+    console.log("Websocket disconnected with code.", code, { clients: app.server?.pendingWebSockets, redisCount })
+    unclosedWsCount--
   }
 })
 
 app.on("request", ({ request }) => console.log("Request to server", request.url))
-const server = app.listen(3000, () => console.log("Elysia Listening on port 3000"))
+app.listen(3000, () => console.log("Elysia Listening on port 3000"))
 
-
-const ac = new AbortController()
-const { signal } = ac
 
 async function shutdown() {
+  const requestTime = Bun.nanoseconds()
   try {
     logger.flush()
-    console.log("Graceful shutdown", new Date())
-    eventEmitter.emit("close") // this will terminate all websockets
-    eventEmitter.removeAllListeners()
+    console.log("Graceful shutdown commenced", new Date())
     ac.abort()
-    await setTimeout(250) // wait for websockets to be closed gracefully before quiting the Redis client
+    while (unclosedWsCount) {
+      if (Bun.nanoseconds() - requestTime > 2 * 1_000_000_000) break // don't keep trying if its not working after 2 sec
+      await setTimeout(5) // wait for websockets to be closed gracefully before quiting the Redis client
+    }
+    const waitingNs = Bun.nanoseconds() - requestTime
+    console.log("Closed all client connections after", waitingNs / 1000 / 1000, "ms")
+    await app.stop()
     await counterClient.quit()
     logger.flush()
-    await app.stop()
   } finally {
+    const waitingNs = Bun.nanoseconds() - requestTime
+    console.log("Graceful shutdown finished", new Date(), "in", waitingNs / 1000 / 1000, "ms")
     process.exit()
   }
 }
@@ -196,7 +182,7 @@ const eventStream = listenRedisStream({ streamKeys: [...streamPaths].map(stream 
 for await(const event of eventStream) {
   const streamPath = event.stream.split(":")[1]
   let parsedEvent = JSON.parse(event.data.event)
-  eventEmitter.emit(streamPath, { streamPath, ...parsedEvent })
+  app.server?.publish(streamPath, { streamPath, ...parsedEvent })
   if (streamPath === "companies")
     await saveCompanyNumber(counterClient, parsedEvent, streamPath)
       .catch(e => logger.error(e, "Error saving company number"))

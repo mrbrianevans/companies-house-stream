@@ -31,7 +31,7 @@ services:
 
   event-publisher:
     build: server
-    command: bun run stream-pub
+    command: bun run src/redis/streamToRedis.ts
     environment:
       PUBSUB_REDIS_IP: redis
     env_file:
@@ -42,7 +42,7 @@ services:
 
   event-subscriber:
     build: server
-    command: bun run stream-sub
+    command: bun run src/redis/streamFromRedis.ts
     environment:
       PUBSUB_REDIS_IP: redis
     logging:
