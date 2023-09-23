@@ -8,34 +8,34 @@ Companies House offers a streaming API, which sends events over a HTTPS connecti
 
 ## Technology
 
-- [NodeJS](https://nodejs.org) server with [express](https://www.npmjs.com/package/express) written
-  in [TypeScript](https://www.typescriptlang.org/) run in [Docker](https://www.docker.com/) container deployed on [Digital Ocean](https://www.digitalocean.com/).
+- server written in [TypeScript](https://www.typescriptlang.org/) with [Elysia](https://elysiajs.com) framework
+  and [Bun](https://bun.sh)
+  runtime run
+  in [Docker](https://www.docker.com/) container deployed on [Digital Ocean](https://www.digitalocean.com/).
 - [Redis Streams](https://redis.io/docs/data-types/streams/).
 - [WebSockets](https://javascript.info/websocket) for client-server communication.
-- Frontend client using Typescript and [Vite](https://vitejs.dev/) (no frameworks, 10kb bundle).
+- Frontend client written in Typescript and built with [Vite](https://vitejs.dev/) (no frameworks, 10kb bundle).
+- Served by [Caddy](https://caddyserver.com/)
 
 ## How it works
 
 A [Docker compose](https://docs.docker.com/compose/) application with 3 main components for the backend:
 
-1. A NodeJS container to listen on the Companies House streaming API and publish events to Redis (
+1. A container to listen on the Companies House streaming API and publish events to Redis (
    see [streamToRedis.ts](server/src/redis/streamToRedis.ts)).
-2. A Redis instance, mostly for facilitating Pub/Sub communication of events using Streams, and also for storing most recent timepoint
+2. A Redis instance, mostly for facilitating Pub/Sub communication of events using Streams, and also for storing most
+   recent timepoint
    to avoid missing any events.
-3. A NodeJS container which reads events from the Redis Stream and serves them as a WebSocket endpoint
+3. A container which reads events from the Redis Stream and serves them as a WebSocket endpoint
    on `/events`, where each event is sent as a WebSocket message.
 
-The frontend is "pure" in that it doesn't use a framework like React, which keeps the JS bundle really tiny and high performance.
+The frontend is "pure" in that it doesn't use a framework like React, which keeps the JS bundle really tiny and high
+performance.
 The animations are done in CSS using [SASS](https://sass-lang.com/).
-It is built with Vite in a Docker container, and served with [Caddy](https://caddyserver.com/) (which is also a gateway
-to the backend endpoints and WebSocket).
 
 To start up the whole application, clone the repository and run `docker compose up -d --build` in the root.
 You will need an env file named `.api.env`containing streaming API key(s).
-To run any files without Docker, build the project by installing dependencies compiling
-TypeScript (`pnpm i && pnpm build` in `/server` and `/client`).
-[PNPM](https://pnpm.io/) is used as the package manager, but [NPM](https://docs.npmjs.com/cli/v8) will also work (but it
-won't recognise the lock files).
+To run any files without Docker, install Bun (`bun install` in `/server` and `/client`).
 
 ## Make your own
 
@@ -62,14 +62,14 @@ get(options, (res) => {
 }).end()
 ```
 
-For a more complete working example of listening on a stream in NodeJS,
+For a more complete working example of listening on a stream in Javascript,
 see [server/src/streams/splitStream.ts](server/src/streams/splitStream.ts) and
 then [server/src/redis/streamToRedis.ts](server/src/redis/streamToRedis.ts).
 
 To test the streaming API from the command line with CURL, you can use the cmdline utility (after compiling):
 
 ```bash
-curl --user APIKEY: -s https://stream.companieshouse.gov.uk/filings | node dist/streams/streamCmdLine.js
+curl --user APIKEY: -s https://stream.companieshouse.gov.uk/filings | bun src/streams/streamCmdLine.ts
 ```
 
 # Questions?

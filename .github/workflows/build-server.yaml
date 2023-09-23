@@ -11,18 +11,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - uses: pnpm/action-setup@v2.2.2
-        with:
-          version: 7
-      - name: Setup Node
-        uses: actions/setup-node@v3
-        with:
-          node-version: "19"
-          cache: pnpm
-          cache-dependency-path: 'server/pnpm-lock.yaml'
+      - uses: oven-sh/setup-bun@v1
       - name: Install dependencies
-        run: pnpm install
+        run: bun install --frozen-lockfile
         working-directory: server
       - name: Build server typescript
-        run: pnpm run build
+        run: bun run build
         working-directory: server

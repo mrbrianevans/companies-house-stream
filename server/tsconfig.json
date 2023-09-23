@@ -1,26 +1,26 @@
 {
-  "compileOnSave": true,
   "compilerOptions": {
-    "skipLibCheck": true,
-    "outDir": "dist",
-    "target": "ES2022",
-    "moduleResolution": "node",
-    "strictNullChecks": true,
-    "module": "ES2022",
-    "allowSyntheticDefaultImports": true,
-    "lib": [
-      "ESNext"
-    ],
-    "inlineSourceMap": true,
-    "inlineSources": true,
     "types": [
       "bun-types"
-    ]
-  },
-  "include": [
-    "src"
-  ],
-  "exclude": [
-    "../node_modules"
-  ]
+    ],
+    "lib": [
+      "esnext"
+    ],
+    "module": "esnext",
+    "target": "esnext",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "moduleDetection": "force",
+    "allowJs": true,
+    "esModuleInterop": true,
+    // best practices
+    "strict": false,
+    // TODO: put to true, fix errors
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "composite": true,
+    "downlevelIteration": true,
+    "allowSyntheticDefaultImports": true
+  }
 }
