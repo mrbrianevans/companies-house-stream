@@ -1,4 +1,5 @@
 import assert, { equal } from "node:assert/strict"
+import { describe, it } from "bun:test"
 
 // sends a request to each REST endpoint and checks the response code and the basic structure of the body
 const url = "http://localhost:3000"

@@ -1,5 +1,4 @@
 import { getRedisClient } from "./getRedisClient.js"
-import express from "express"
 import { WebSocketServer } from "ws"
 import { EventEmitter } from "events"
 import { listenRedisStream } from "./listenRedisStream.js"
@@ -9,14 +8,15 @@ import { saveCompanyNumber } from "./saveCompanyNumber.js"
 import { streamPaths } from "../streams/streamPaths.js"
 import { updateSchemaForEvent } from "../schemas/maintainSchemas.js"
 import { VisitorCounterService } from "./visitorCounter.js"
-import { request } from "https"
+import { Elysia } from "elysia"
 
 const eventEmitter = new EventEmitter({})
 eventEmitter.setMaxListeners(1_000_000) // increase max listeners (this is clients x num of streams)
 
-const app = express()
+const app = new Elysia()
 let clients = 0
-app.get("/health", async (req, res) => {
+
+app.get("/health", async ({ request }) => {
   const commandClient = await getRedisClient()
   const health = { currentWsConnections: 0, connections: clients }
   for (const streamPath of streamPaths) {
@@ -25,113 +25,109 @@ app.get("/health", async (req, res) => {
   }
   health.currentWsConnections = await commandClient.get("currentWsConnections").then(value => value ? parseInt(value) : 0)
   await commandClient.quit()
-  res.json(health)
+  return health
 })
 
-app.options("/randomCompanyNumbers", (req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", "https://companiesdb.co.uk")
-  res.setHeader("Access-Control-Allow-Methods", "GET")
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type")
-  res.end()
-})
 /** Returns an array of random company numbers */
-app.get("/randomCompanyNumbers", async (req, res) => {
+app.get("/randomCompanyNumbers", async () => {
   const qty = 1 // this could be a search query param
   const companyNumbers = await counterClient.sRandMemberCount("companyNumbers", qty)
-  res.setHeader("Access-Control-Allow-Origin", "https://companiesdb.co.uk")
-  res.json(companyNumbers)
+  return companyNumbers
 })
 /** Returns the `qty` most recent events in the `streamPath` stream. Eg last 100 filing events. */
-app.get("/downloadHistory/:streamPath", async (req, res) => {
-  const { streamPath } = req.params
-  const { qty } = req.query
+app.get("/downloadHistory/:streamPath", async ({ query, params, set }) => {
+  const { streamPath } = params
+  const { qty } = query
   const COUNT = parseInt(String(qty)) || 100 // default to send 100 events, unless specified
   if (COUNT > 10_000) {
-    res.status(400).json({
+    set.status = 400
+    return {
       statusCode: 400,
       message: "Qty exceeds maximum. Must be less than 10,000. Received: " + COUNT
-    })
-    return
+    }
   }
   if (streamPaths.has(streamPath)) {
     const historyClient = await getRedisClient()
     const history = await historyClient.xRevRange("events:" + streamPath, "+", "-", { COUNT })
-    res.json(history.map(h => JSON.parse(h.message.event)))
     await historyClient.quit()
+    return history.map(h => JSON.parse(h.message.event))
   } else {
-    res.status(400).json({
+    set.status = 400
+    return {
       statusCode: 400,
       message: "Invalid stream path: " + streamPath,
       possibleOptions: [...streamPaths]
-    })
-    return
+    }
   }
 })
-app.get("/stats/:streamPath", async (req, res) => {
-  const { streamPath } = req.params
+app.get("/stats/:streamPath", async ({ params, set }) => {
+  const { streamPath } = params
   if (streamPaths.has(streamPath)) {
     const client = await getRedisClient()
     const rawCounts = await client.hGetAll(`counts:${streamPath}:daily`)
     const counts = Object.fromEntries(Object.entries(rawCounts).map(([date, count]) => [date, parseInt(count)]))
-    res.json(counts)
     await client.quit()
+    return counts
   } else {
-    res.status(400).json({
+    set.status = (400)
+    return ({
       statusCode: 400,
       message: "Invalid stream path: " + streamPath,
       possibleOptions: [...streamPaths]
     })
-    return
   }
 })
-app.get("/resourceKinds/:streamPath", async (req, res) => {
-  const { streamPath } = req.params
+app.get("/resourceKinds/:streamPath", async ({ params, set }) => {
+  const { streamPath } = params
   if (streamPaths.has(streamPath)) {
     const client = await getRedisClient()
     const rawCounts = await client.hGetAll(`resourceKinds:${streamPath}`)
     const counts = Object.fromEntries(Object.entries(rawCounts).map(([date, count]) => [date, parseInt(count)]))
-    res.json(counts)
     await client.quit()
+    return counts
   } else {
-    res.status(400).json({
+    set.status = (400)
+    return ({
       statusCode: 400,
       message: "Invalid stream path: " + streamPath,
       possibleOptions: [...streamPaths]
     })
-    return
   }
 })
 
-app.get("/schemas", async (req, res) => {
+app.get("/schemas", async () => {
   const schemasRaw = await counterClient.hGetAll("schemas")
   const schemas = Object.fromEntries(Object.entries(schemasRaw).map(([schemaName, schemaString]) => [schemaName, JSON.parse(schemaString)]))
-  res.json(schemas)
+  return schemas
 })
 
 const counterClient = await getRedisClient()
 const visitorCounter = new VisitorCounterService(counterClient)
-app.get("/visitors", async (req, res) => {
+app.get("/visitors", async () => {
   const total = await visitorCounter.getTotalCount()
   const today = await visitorCounter.getCount(new Date().toISOString().split("T")[0])
-  res.json({ total, today })
+  return { total, today }
 })
-app.get("/visitors/:date", async (req, res) => {
-  const { date } = req.params
-  if (!/[0-9-]{10}/.test(date)) res.status(400).json({ statusCode: 400, message: "Bad date format" })
-  else {
-    if (new Date(date) < new Date("2023-09-09")) res.status(416).json({
-      statusCode: 416,
-      message: "Records only began on 2023-09-09. Request a date after that"
-    })
-    else {
+app.get("/visitors/:date", async ({ params, set }) => {
+  const { date } = params
+  if (!/[0-9-]{10}/.test(date)) {
+    set.status = (416)
+    return ({ statusCode: 400, message: "Bad date format" })
+  } else {
+    if (new Date(date) < new Date("2023-09-12")) {
+      set.status = (416)
+      return ({
+        statusCode: 416,
+        message: "Records only began on 2023-09-12. Request a date after that"
+      })
+    } else {
       const count = await visitorCounter.getCount(date)
-      res.json({ [date]: count })
+      return ({ [date]: count })
     }
   }
 })
-
+app.on("request", ({ request }) => console.log("Request to server", request.url))
 const server = app.listen(3000, () => console.log("Listening on port 3000"))
-server.on("request", (req) => console.log("Request to server", req.url))
 
 function getListenerCounts() {
   const counts: Record<string, number> = {}

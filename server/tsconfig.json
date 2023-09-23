@@ -12,7 +12,10 @@
       "ESNext"
     ],
     "inlineSourceMap": true,
-    "inlineSources": true
+    "inlineSources": true,
+    "types": [
+      "bun-types"
+    ]
   },
   "include": [
     "src"
