@@ -1,16 +1,12 @@
-FROM node:19
-RUN corepack enable && corepack prepare pnpm@7.18.1 --activate
+FROM oven/bun
 
 WORKDIR /companies-stream/server
 
-COPY package.json pnpm-lock.yaml ./
-
-RUN pnpm i
+COPY package.json bun.lockb ./
+RUN bun install --omit=dev
 
 COPY . .
 
-RUN pnpm run build
-
 EXPOSE 3000
 
-CMD ["pnpm", "start"]
+CMD ["bun", "start"]

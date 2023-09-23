@@ -1,6 +1,5 @@
 import { JSONParser } from "@streamparser/json-node"
 import { Client } from "undici"
-import "dotenv/config"
 
 /** Get an environment variable, or throw if its not set */
 export function getEnv(name: string): string {

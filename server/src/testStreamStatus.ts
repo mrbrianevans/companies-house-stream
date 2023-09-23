@@ -1,7 +1,6 @@
 import { streamKeyHolder } from "./utils/KeyHolder.js"
 import { request, RequestOptions } from "https"
 import { parse } from "JSONStream"
-import "dotenv/config"
 
 streamKeyHolder.addKey(process.env.STREAM_KEY1)
 

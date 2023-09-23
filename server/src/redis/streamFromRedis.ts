@@ -1,5 +1,4 @@
 import { getRedisClient } from "./getRedisClient.js"
-import { WebSocketServer } from "ws"
 import { EventEmitter } from "events"
 import { listenRedisStream } from "./listenRedisStream.js"
 import { streamFromRedisLogger as logger } from "../utils/loggers.js"
@@ -9,6 +8,8 @@ import { streamPaths } from "../streams/streamPaths.js"
 import { updateSchemaForEvent } from "../schemas/maintainSchemas.js"
 import { VisitorCounterService } from "./visitorCounter.js"
 import { Elysia } from "elysia"
+
+console.log("Running API server", process.version)
 
 const eventEmitter = new EventEmitter({})
 eventEmitter.setMaxListeners(1_000_000) // increase max listeners (this is clients x num of streams)
@@ -126,8 +127,6 @@ app.get("/visitors/:date", async ({ params, set }) => {
     }
   }
 })
-app.on("request", ({ request }) => console.log("Request to server", request.url))
-const server = app.listen(3000, () => console.log("Listening on port 3000"))
 
 function getListenerCounts() {
   const counts: Record<string, number> = {}
@@ -139,40 +138,37 @@ function getListenerCounts() {
 const totalListeners = () => Object.values(getListenerCounts()).reduce((p, c) => p + c)
 
 // web socket server for sending events to client
-const wss = new WebSocketServer({ noServer: true })
-wss.on("connection", async function connection(ws, req) {
-  const stream = new URL(req.url ?? "/events", `wss://${req.headers.host}`).searchParams.get("stream")
-  const send = event => ws.send(JSON.stringify(event))
-  const requestedStreams = [...streamPaths].filter(streamPath => stream === streamPath || stream === null || stream === "all")
-  for (const streamPath of requestedStreams) {
-    eventEmitter.addListener(streamPath, send)
-  }
-  const ipAddress = String(req.headers["x-forwarded-for"])
-  if (ipAddress) await visitorCounter.count(ipAddress)
-  else logger.info("No IP Address forwarded, skipping update to visitor statistics")
-  clients++
-  const redisCount = await counterClient.incr("currentWsConnections")
-  console.log("Websocket connected.", totalListeners(), "event listeners", { clients, redisCount })
-  ws.on("close", async (code, reason) => {
-    for (const streamPath of requestedStreams)
-      eventEmitter.removeListener(streamPath, send)
+app.ws("/events", {
+  async open(ws) {
+    // console.log("Open data", ws.data)
+    // subscribe to all events
+    for (const streamPath of streamPaths) {
+      eventEmitter.addListener(streamPath, ws.send)
+    }
+    const ipAddress = String(ws.data.headers["x-forwarded-for"])
+    console.log({ ipAddress })
+    if (ipAddress) await visitorCounter.count(ipAddress)
+    else logger.info("No IP Address forwarded, skipping update to visitor statistics")
+    clients++
+    const redisCount = await counterClient.incr("currentWsConnections")
+    console.log("Websocket connected.", totalListeners(), "event listeners", { clients, redisCount })
+    eventEmitter.on("close", () => ws.terminate())
+  },
+  async close(ws, code, reason) {
+    console.log("Close data", ws.data)
+    // decrement counter
+    for (const streamPath of streamPaths)
+      eventEmitter.removeListener(streamPath, ws.send)
     clients--
     const redisCount = await counterClient.decr("currentWsConnections")
     console.log("Websocket disconnected with code.", code, totalListeners(), "event listeners", { clients, redisCount })
-  })
-  eventEmitter.on("close", () => ws.terminate()) // ws.close() doesn't seem to work. Code should be 1112
-})
-// handles websocket on /events path of server
-server.on("upgrade", function upgrade(request, socket, head) {
-  const url = new URL(request.url ?? "/events", `wss://${request.headers.host}`)
-  if (url.pathname === "/events") {
-    wss.handleUpgrade(request, socket, head, function done(ws) {
-      wss.emit("connection", ws, request)
-    })
-  } else {
-    socket.destroy()
   }
 })
+
+app.on("request", ({ request }) => console.log("Request to server", request.url))
+const server = app.listen(3000, () => console.log("Elysia Listening on port 3000"))
+
+
 const ac = new AbortController()
 const { signal } = ac
 
@@ -180,13 +176,13 @@ async function shutdown() {
   try {
     logger.flush()
     console.log("Graceful shutdown", new Date())
-    eventEmitter.emit("close")
+    eventEmitter.emit("close") // this will terminate all websockets
     eventEmitter.removeAllListeners()
     ac.abort()
     await setTimeout(250) // wait for websockets to be closed gracefully before quiting the Redis client
     await counterClient.quit()
     logger.flush()
-    wss.close()
+    await app.stop()
   } finally {
     process.exit()
   }

@@ -1,4 +1,3 @@
-import "dotenv/config"
 import { stream } from "../streams/listenOnStream.js"
 import { getRedisClient } from "./getRedisClient.js"
 import { restKeyHolder, streamKeyHolder } from "../utils/KeyHolder.js"

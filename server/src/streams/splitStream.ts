@@ -1,5 +1,4 @@
 import split2 from "split2"
-import "dotenv/config"
 import { get, RequestOptions } from "https"
 import { StreamPath } from "./listenOnStream.js"
 
