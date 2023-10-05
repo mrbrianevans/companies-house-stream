@@ -182,7 +182,7 @@ const eventStream = listenRedisStream({ streamKeys: [...streamPaths].map(stream 
 for await(const event of eventStream) {
   const streamPath = event.stream.split(":")[1]
   let parsedEvent = JSON.parse(event.data.event)
-  app.server?.publish(streamPath, { streamPath, ...parsedEvent })
+  app.server?.publish(streamPath, JSON.stringify({ streamPath, ...parsedEvent }))
   if (streamPath === "companies")
     await saveCompanyNumber(counterClient, parsedEvent, streamPath)
       .catch(e => logger.error(e, "Error saving company number"))
