@@ -17,11 +17,11 @@
         }
 
         handle @websockets {
-                reverse_proxy event-subscriber:3000
+                reverse_proxy api:3000
         }
 
         # for health checks
         handle_path /events/* {
-                reverse_proxy event-subscriber:3000
+                reverse_proxy api:3000
         }
 }

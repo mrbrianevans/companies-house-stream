@@ -8,11 +8,6 @@ services:
     logging:
       driver: local
 
-  client: # builds the frontend into a volume to be served by caddy
-    build: client-pure
-    volumes:
-      - client_dist:/client/dist # this MUST match the workdir set in the Dockerfile
-
   webserver:
     image: caddy
     restart: unless-stopped
@@ -30,8 +25,9 @@ services:
       SITE_ADDRESS: ${SITE_ADDRESS}
 
   event-publisher:
-    build: server
-    command: bun run src/redis/streamToRedis.ts
+    build:
+      context: server
+      dockerfile: Publisher.Dockerfile
     environment:
       PUBSUB_REDIS_IP: redis
     env_file:
@@ -39,15 +35,18 @@ services:
     logging:
       driver: local
     depends_on: [ redis ]
+    restart: on-failure
 
-  event-subscriber:
-    build: server
-    command: bun run src/redis/streamFromRedis.ts
+  api:
+    build:
+      context: server
+      dockerfile: Api.Dockerfile
     environment:
       PUBSUB_REDIS_IP: redis
     logging:
       driver: local
     depends_on: [ redis ]
+    restart: on-failure
 
 
 volumes:

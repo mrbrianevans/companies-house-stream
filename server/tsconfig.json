@@ -9,8 +9,9 @@
     "module": "esnext",
     "target": "esnext",
     "moduleResolution": "bundler",
-    "noEmit": true,
-    "allowImportingTsExtensions": true,
+    "outDir": "dist",
+    "noEmit": false,
+    "allowImportingTsExtensions": false,
     "moduleDetection": "force",
     "allowJs": true,
     "esModuleInterop": true,
@@ -22,5 +23,8 @@
     "composite": true,
     "downlevelIteration": true,
     "allowSyntheticDefaultImports": true
-  }
+  },
+  "include": [
+    "src"
+  ]
 }

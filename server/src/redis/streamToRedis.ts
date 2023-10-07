@@ -4,6 +4,7 @@ import { restKeyHolder, streamKeyHolder } from "../utils/KeyHolder.js"
 import { setTimeout } from "node:timers/promises"
 import pino from "pino"
 import { streamPaths } from "../streams/streamPaths.js"
+import { Transform } from "stream"
 /*
 
   This file listens to the Companies House long polling streaming API, and when events are received, they are posted
@@ -43,7 +44,29 @@ const startStream = streamPath => getMostRecentTimepoint(streamPath)
       .then(() => logger.info({ streamPath }, "Restarting stream, after waiting 60 seconds since disconnected."))
       .then(() => startStream(streamPath))))// restart on end
 
+const streams = new Set<Transform>()
 for (const streamPath of streamPaths) {
-  await startStream(streamPath)
+  streams.add(await startStream(streamPath))
   await setTimeout(5000) // space them out 5 seconds
 }
+
+
+async function shutdown() {
+  const requestTime = performance.now()
+  try {
+    logger.flush()
+    console.log("Graceful shutdown commenced", new Date())
+    for (const stream of streams) {
+      stream.destroy()
+    }
+    await client.quit()
+    logger.flush()
+  } finally {
+    const waitingNs = performance.now() - requestTime
+    console.log("Graceful shutdown finished", new Date(), "in", waitingNs / 1000 / 1000, "ms")
+    process.exit()
+  }
+}
+
+process.on("SIGINT", shutdown) // quit on ctrl-c when running docker in terminal
+process.on("SIGTERM", shutdown)// quit properly on docker stop
