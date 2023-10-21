@@ -7,7 +7,7 @@ RUN bun install --frozen-lockfile
 
 COPY . .
 
-RUN bun build src/redis/streamToRedis.ts --outdir dist --target=node
+RUN bun build src/chStreamToRedis/streamToRedis.ts --outdir dist --target=node
 # hack to fix Bun bundler https://github.com/oven-sh/bun/issues/6168
 RUN echo 'import { createRequire as createImportMetaRequire } from "module"; import.meta.require ||= (id) => createImportMetaRequire(import.meta.url)(id);' | cat - dist/streamToRedis.js > temp && mv temp dist/streamToRedis.js
 

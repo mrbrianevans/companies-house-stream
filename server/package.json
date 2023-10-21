@@ -7,8 +7,8 @@
     "watch": "tsc --build --watch",
     "clean": "tsc --build --clean",
     "status": "bun src/testStreamStatus.ts",
-    "stream-pub": "bun src/redis/streamToRedis.ts",
-    "stream-sub": "bun src/redis/streamFromRedis.ts"
+    "stream-pub": "bun src/chStreamToRedis/streamToRedis.ts",
+    "stream-sub": "bun src/api/streamFromRedis.ts"
   },
   "devDependencies": {
     "@types/node": "^18.11.9",

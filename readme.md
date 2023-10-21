@@ -22,7 +22,7 @@ Companies House offers a streaming API, which sends events over a HTTPS connecti
 A [Docker compose](https://docs.docker.com/compose/) application with 3 main components for the backend:
 
 1. A container to listen on the Companies House streaming API and publish events to Redis (
-   see [streamToRedis.ts](server/src/redis/streamToRedis.ts)).
+   see [streamToRedis.ts](server/src/chStreamToRedis/streamToRedis.ts)).
 2. A Redis instance, mostly for facilitating Pub/Sub communication of events using Streams, and also for storing most
    recent timepoint
    to avoid missing any events.
@@ -64,7 +64,7 @@ get(options, (res) => {
 
 For a more complete working example of listening on a stream in Javascript,
 see [server/src/streams/splitStream.ts](server/src/streams/splitStream.ts) and
-then [server/src/redis/streamToRedis.ts](server/src/redis/streamToRedis.ts).
+then [server/src/redis/streamToRedis.ts](server/src/chStreamToRedis/streamToRedis.ts).
 
 To test the streaming API from the command line with CURL, you can use the cmdline utility (after compiling):
 

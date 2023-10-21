@@ -1,4 +1,4 @@
-import type { RedisClient } from "./getRedisClient"
+import type { RedisClient } from "../utils/getRedisClient"
 
 
 /**

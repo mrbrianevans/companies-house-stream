@@ -1,5 +1,5 @@
 import { stream } from "../streams/listenOnStream.js"
-import { getRedisClient } from "./getRedisClient.js"
+import { redisClient } from "../utils/getRedisClient.js"
 import { restKeyHolder, streamKeyHolder } from "../utils/KeyHolder.js"
 import { setTimeout } from "node:timers/promises"
 import pino from "pino"
@@ -17,19 +17,19 @@ const keys = [process.env.STREAM_KEY1, process.env.STREAM_KEY2, process.env.STRE
 for (const key of keys) streamKeyHolder.addKey(key)
 restKeyHolder.addKey(process.env.REST_KEY1)
 const logger = pino()
-const client = await getRedisClient()
-const sendEvent = streamPath => event => client.xAdd("events:" + streamPath, event.event.timepoint + "-*", { "event": JSON.stringify(event) }, {
+
+const sendEvent = streamPath => event => redisClient.xAdd("events:" + streamPath, event.event.timepoint + "-*", { "event": JSON.stringify(event) }, {
   TRIM: {
     strategy: "MAXLEN",
     threshold: 10000,
     strategyModifier: "~"
   }
 })
-const incrEventCount = streamPath => event => client.hIncrBy(`counts:${streamPath}:daily`, new Date().toISOString().split("T")[0], 1)
-const incrResourceKindCount = streamPath => event => client.hIncrBy(`resourceKinds:${streamPath}`, event.resource_kind, 1)
-const updateTimepoint = streamPath => event => client.hSet("timepoints", streamPath, JSON.stringify(event.event))
-const heartbeat = streamPath => () => client.hSet("heartbeats", streamPath, Date.now()) // keeps track of which are alive
-const getMostRecentTimepoint = streamPath => client.hGet("timepoints", streamPath).then(r => r ? JSON.parse(r)?.timepoint : undefined)
+const incrEventCount = streamPath => event => redisClient.hIncrBy(`counts:${streamPath}:daily`, new Date().toISOString().split("T")[0], 1)
+const incrResourceKindCount = streamPath => event => redisClient.hIncrBy(`resourceKinds:${streamPath}`, event.resource_kind, 1)
+const updateTimepoint = streamPath => event => redisClient.hSet("timepoints", streamPath, JSON.stringify(event.event))
+const heartbeat = streamPath => () => redisClient.hSet("heartbeats", streamPath, Date.now()) // keeps track of which are alive
+const getMostRecentTimepoint = streamPath => redisClient.hGet("timepoints", streamPath).then(r => r ? JSON.parse(r)?.timepoint : undefined)
 const startStream = streamPath => getMostRecentTimepoint(streamPath)
   .then((timepoint) => stream(streamPath, timepoint)
     .on("data", sendEvent(streamPath))
@@ -59,7 +59,7 @@ async function shutdown() {
     for (const stream of streams) {
       stream.destroy()
     }
-    await client.quit()
+    await redisClient.quit()
     logger.flush()
   } finally {
     const waitingNs = performance.now() - requestTime
