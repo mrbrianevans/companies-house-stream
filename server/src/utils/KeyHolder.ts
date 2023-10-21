@@ -3,7 +3,7 @@
  */
 class KeyHolder {
   keys: Record<string, number>
-  maxUsages = 2
+  maxUsages: number
 
   constructor(maxUsages = 7) {
     this.maxUsages = maxUsages

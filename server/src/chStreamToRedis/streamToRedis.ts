@@ -13,7 +13,8 @@ import { Transform } from "stream"
   Streams reconnect when ended.
 
  */
-streamKeyHolder.addKey(process.env.STREAM_KEY)
+streamKeyHolder.addKey(process.env.STREAM_KEY1)
+streamKeyHolder.addKey(process.env.STREAM_KEY2)
 
 const logger = pino()
 
