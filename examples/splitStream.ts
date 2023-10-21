@@ -1,6 +1,5 @@
 import split2 from "split2"
 import { get, RequestOptions } from "https"
-import { StreamPath } from "./listenOnStream.js"
 
 /*
 
@@ -14,7 +13,7 @@ Minimal working example of connecting to a stream, and printing out the events.
  * @param callback - function to be called with each event as the argument.
  * @param startFromTimepoint - (optional) a timepoint to begin from. If omitted then streams starts at latest event.
  */
-export async function splitStream<EventType>(streamPath: StreamPath = "filings", callback: (e: EventType) => void = console.log, startFromTimepoint?: number) {
+export async function splitStream<EventType>(streamPath = "filings", callback: (e: EventType) => void = console.log, startFromTimepoint?: number) {
   const auth = process.env.STREAM_KEY1 + ":"
   const path = "/" + streamPath + (typeof startFromTimepoint === "number" ? `?timepoint=${startFromTimepoint}` : "")
   const options: RequestOptions = { hostname: "stream.companieshouse.gov.uk", path, auth }

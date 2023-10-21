@@ -56,5 +56,4 @@ volumes:
   caddy_data:
     external: true
   caddy_config:
-  mongodata:
   client_dist:

@@ -6,7 +6,7 @@
     "build": "tsc --build",
     "watch": "tsc --build --watch",
     "clean": "tsc --build --clean",
-    "status": "bun src/testStreamStatus.ts",
+    "status": "bun ../examples/testStreamStatus.ts",
     "stream-pub": "bun src/chStreamToRedis/streamToRedis.ts",
     "stream-sub": "bun src/api/streamFromRedis.ts"
   },
@@ -17,13 +17,9 @@
     "typescript": "latest"
   },
   "dependencies": {
-    "@streamparser/json-node": "^0.0.15",
-    "JSONStream": "^1.3.5",
     "elysia": "^0.7.12",
     "genson-js": "^0.0.8",
     "pino": "^8.7.0",
-    "redis": "^4.5.0",
-    "split2": "^4.1.0",
-    "undici": "^5.22.1"
+    "redis": "^4.5.0"
   }
 }

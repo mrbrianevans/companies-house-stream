@@ -1,13 +1,11 @@
 /**
- * Almost like reference counting, or semaphores: this is to use 3 streaming API
- * keys to connect to all 6 streams at the same time, but each key can only be
- * used for 2 at a time. This class keeps track of how many are in use.
+ * This class is used to hold keys (usually from environment variables) and keep track of how many times each one is used.
  */
 class KeyHolder {
   keys: Record<string, number>
   maxUsages = 2
 
-  constructor(maxUsages = 2) {
+  constructor(maxUsages = 7) {
     this.maxUsages = maxUsages
     this.keys = {}
   }
@@ -59,4 +57,3 @@ class KeyHolder {
 
 // singleton KeyHolder to be accessed by different files in application
 export const streamKeyHolder = new KeyHolder()
-export const restKeyHolder = new KeyHolder()

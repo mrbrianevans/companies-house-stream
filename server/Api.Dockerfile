@@ -9,4 +9,4 @@ COPY . .
 
 EXPOSE 3000
 
-CMD ["bun", "--smol", "run", "src/api/streamFromRedis.ts"]
+CMD ["bun", "--smol", "run", "src/api/server.ts"]

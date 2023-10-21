@@ -63,13 +63,13 @@ get(options, (res) => {
 ```
 
 For a more complete working example of listening on a stream in Javascript,
-see [server/src/streams/splitStream.ts](server/src/streams/splitStream.ts) and
-then [server/src/redis/streamToRedis.ts](server/src/chStreamToRedis/streamToRedis.ts).
+see [examples/splitStream.ts](examples/splitStream.ts) and
+then [server/src/chStreamToRedis/streamToRedis.ts](server/src/chStreamToRedis/streamToRedis.ts).
 
 To test the streaming API from the command line with CURL, you can use the cmdline utility (after compiling):
 
 ```bash
-curl --user APIKEY: -s https://stream.companieshouse.gov.uk/filings | bun src/streams/streamCmdLine.ts
+curl --user APIKEY: -s https://stream.companieshouse.gov.uk/filings | bun examples/streamCmdLine.ts
 ```
 
 # Questions?
@@ -80,3 +80,33 @@ If you have any questions or suggestions please open an issue on the repository,
 
 You are welcome to use this open source code for your own projects.
 See the [LICENSE](LICENSE) file for more information.
+
+### Running the project with Docker
+
+- create `.env` file
+    ```
+     SITE_ADDRESS=http://localhost:80
+    ```
+- create `.api.env` file with Streaming API key
+    ```
+    STREAM_KEY=dd559b99-7870-4792-8a38-054f203eb818
+    ```
+- create docker volume for webserver certificates
+    ```
+    docker volume create caddy_data
+    ```
+- build and run docker containers
+
+    ```
+    docker compose up -d --build
+    ```
+
+- build frontend client (and copy dist files into caddy container volume)
+
+    ```
+    cd client-pure
+    pnpm install
+    pnpm run build
+    ```
+
+- try go to `http://localhost` in a web browser!

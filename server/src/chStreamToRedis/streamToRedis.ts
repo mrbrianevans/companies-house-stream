@@ -1,6 +1,6 @@
 import { stream } from "../streams/listenOnStream.js"
 import { redisClient } from "../utils/getRedisClient.js"
-import { restKeyHolder, streamKeyHolder } from "../utils/KeyHolder.js"
+import { streamKeyHolder } from "../utils/KeyHolder.js"
 import { setTimeout } from "node:timers/promises"
 import pino from "pino"
 import { streamPaths } from "../streams/streamPaths.js"
@@ -13,9 +13,8 @@ import { Transform } from "stream"
   Streams reconnect when ended.
 
  */
-const keys = [process.env.STREAM_KEY1, process.env.STREAM_KEY2, process.env.STREAM_KEY3]
-for (const key of keys) streamKeyHolder.addKey(key)
-restKeyHolder.addKey(process.env.REST_KEY1)
+streamKeyHolder.addKey(process.env.STREAM_KEY)
+
 const logger = pino()
 
 const sendEvent = streamPath => event => redisClient.xAdd("events:" + streamPath, event.event.timepoint + "-*", { "event": JSON.stringify(event) }, {

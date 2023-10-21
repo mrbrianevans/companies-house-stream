@@ -1,11 +1,9 @@
-import { streamKeyHolder } from "./utils/KeyHolder.js"
 import { request, RequestOptions } from "https"
 import { parse } from "JSONStream"
 
-streamKeyHolder.addKey(process.env.STREAM_KEY1)
 
 function listenToStream(path = "companies", callback: (e) => void = console.log) {
-  const streamKey = streamKeyHolder.useKey()
+  const streamKey = process.env.STREAM_KEY1
   const options: RequestOptions = {
     hostname: "stream.companieshouse.gov.uk",
     port: 443,
@@ -19,7 +17,7 @@ function listenToStream(path = "companies", callback: (e) => void = console.log)
   request(options, (res) => {
     console.timeLog("Request " + path, "responded with STATUS", res.statusCode, res.statusMessage)
     console.timeEnd("Request " + path)
-    res.pipe(parse()).on("data", callback).on("error", handleError).on("end", () => streamKeyHolder.disuseKey(streamKey))
+    res.pipe(parse()).on("data", callback).on("error", handleError)
   })
     .on("error", handleError)
     .end()
