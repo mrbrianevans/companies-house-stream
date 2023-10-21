@@ -4,10 +4,8 @@ import "../styles/samples.scss"
 import "../styles/layout.css"
 import * as echarts from "echarts/core"
 
-// Import bar charts, all suffixed with Chart
 import { LineChart } from "echarts/charts"
 
-// Import the tooltip, title, rectangular coordinate system, dataset and transform components
 import {
   DatasetComponent,
   GridComponent,
@@ -16,14 +14,8 @@ import {
   TooltipComponent
 } from "echarts/components"
 
-// Features like Universal Transition and Label Layout
-import { LabelLayout, UniversalTransition } from "echarts/features"
-
-// Import the Canvas renderer
-// Note that including the CanvasRenderer or SVGRenderer is a required step
 import { SVGRenderer } from "echarts/renderers"
 import type {
-  BarSeriesOption,
   ComposeOption,
   DatasetComponentOption,
   GridComponentOption,
@@ -40,12 +32,9 @@ echarts.use([
   TooltipComponent,
   GridComponent,
   DatasetComponent,
-  LabelLayout,
-  UniversalTransition,
   SVGRenderer, LegendComponent
 ])
 type ECOption = ComposeOption<
-  | BarSeriesOption
   | LineSeriesOption
   | TitleComponentOption
   | TooltipComponentOption

@@ -1,6 +1,6 @@
 import "../styles/events.scss"
 import { createEventEmitter } from "./workerWrapper"
-import { sentenceCase } from "sentence-case"
+import { sentenceCase } from "change-case"
 import { createEventComponent, getDescription } from "./eventCardFactory"
 import { streamPaths } from "./streamPaths"
 
@@ -37,7 +37,7 @@ for (const streamPath of streamPaths) {
 /* Get events from web worker that listens to websocket */
 let eventCount = 0
 const eventsEmitter = createEventEmitter()
-eventsEmitter.on('event',event => {
+eventsEmitter.on("event", event => {
   document.getElementById("notification-counter").innerText = (++eventCount).toString()
   const { companyNumber } = getDescription(event)
   // add events if browser is not visible only if the filter is set to a company number
@@ -54,17 +54,17 @@ eventsEmitter.on('event',event => {
   }
 })
 
-eventsEmitter.on('connected', () => {
-  document.getElementById('connection-indicator').className = 'connected indicator'
-  document.getElementById('connection-button').onclick = ()=>eventsEmitter.close()
-  document.getElementById('connection-button').innerText = 'Disconnect'
+eventsEmitter.on("connected", () => {
+  document.getElementById("connection-indicator").className = "connected indicator"
+  document.getElementById("connection-button").onclick = () => eventsEmitter.close()
+  document.getElementById("connection-button").innerText = "Disconnect"
 })
-eventsEmitter.on('disconnected', () => {
-  document.getElementById('connection-indicator').className = 'disconnected indicator'
-  document.getElementById('connection-button').onclick = ()=>eventsEmitter.start()
-  document.getElementById('connection-button').innerText = 'Connect'
+eventsEmitter.on("disconnected", () => {
+  document.getElementById("connection-indicator").className = "disconnected indicator"
+  document.getElementById("connection-button").onclick = () => eventsEmitter.start()
+  document.getElementById("connection-button").innerText = "Connect"
 })
 
 // start the first connection
-document.getElementById('connection-button').onclick = () => eventsEmitter.start()
+document.getElementById("connection-button").onclick = () => eventsEmitter.start()
 eventsEmitter.start()

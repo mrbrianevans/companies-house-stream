@@ -1,17 +1,15 @@
 version: '3'
 services:
   redis:
-    image: redis:7.0.5
+    image: redis:7.2.2
     restart: unless-stopped
     volumes:
       - redisdata:/data
     logging:
       driver: local
-    ports:
-      - "6379:6379"
 
   webserver:
-    image: caddy
+    image: caddy:2.7.5
     restart: unless-stopped
     ports:
       - "80:80"

@@ -12,7 +12,7 @@ RUN bun build src/chStreamToRedis/streamToRedis.ts --outdir dist --target=node
 RUN echo 'import { createRequire as createImportMetaRequire } from "module"; import.meta.require ||= (id) => createImportMetaRequire(import.meta.url)(id);' | cat - dist/streamToRedis.js > temp && mv temp dist/streamToRedis.js
 
 
-FROM node:lts
+FROM node:20
 
 WORKDIR /companies-stream/server
 

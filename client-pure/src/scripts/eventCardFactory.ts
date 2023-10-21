@@ -1,23 +1,23 @@
 import copy from "copy-to-clipboard"
-import { sentenceCase } from "sentence-case"
+import { sentenceCase } from "change-case"
 import { titleCase } from "title-case"
 import { formatFilingDescription } from "./formatFilingDescription"
-import ClipboardCopy from '../assets/icons/ClipboardCopy.svg'
-import ExternalLink from '../assets/icons/ExternalLink.svg'
-import formatString from 'string-template'
+import ClipboardCopy from "../assets/icons/ClipboardCopy.svg"
+import ExternalLink from "../assets/icons/ExternalLink.svg"
+import formatString from "string-template"
 import { setDelay, setLatency } from "./latencyIndicator"
 
-export function createEventComponent(event){
-  const eventCardContainer = document.createElement('div')
+export function createEventComponent(event) {
+  const eventCardContainer = document.createElement("div")
   eventCardContainer.className = `event-card-container`
-  const element = document.createElement('div')
+  const element = document.createElement("div")
   element.className = `event-card ${event.streamPath}`
   eventCardContainer.appendChild(element)
   try {
     const { companyNumber, title, description } = getDescription(event)
     element.innerHTML = `
-    <h3>${title??(sentenceCase(event.streamPath)+'event')}</h3>
-    <p>${description??''}</p>
+    <h3>${title ?? (sentenceCase(event.streamPath) + "event")}</h3>
+    <p>${description ?? ""}</p>
     <span class="published-at">${new Date(event.event.published_at).toLocaleTimeString()}</span>
     <a target="_blank" href="https://find-and-update.company-information.service.gov.uk/company/${companyNumber}"><code>${companyNumber}<img alt="External link" src=${ExternalLink} width="20" height="20"/></code></a>
   `
@@ -37,7 +37,7 @@ export function createEventComponent(event){
     copyButton.onclick = () => copy(JSON.stringify(originalEvent))
     copyButton.innerHTML = `<span><img alt="Copy to clipboard" src=${ClipboardCopy} width="20" height="20"/></span> <span>JSON</span>`
     element.appendChild(copyButton)
-  }catch (e) {
+  } catch (e) {
     console.log("Error creating event card: ", e.message)
     element.innerHTML = e.message
   }
@@ -66,14 +66,14 @@ export function getDescription(event) {
       const description = "resigned_on" in event.data ? `Resigned on ${event.data.resigned_on}` : `Appointed on ${event.data.appointed_on}`
       return { companyNumber, description, title: titleCase(event.data.name.toLowerCase()) }
     }
-    case 'persons-with-significant-control': {
+    case "persons-with-significant-control": {
       const [, companyNumber] = event.resource_uri.match(
         /^\/company\/([A-Z0-9]{6,8})\/persons-with-significant-control/
       )
-      const description = 'ceased_on' in event.data ? `Ceased on ${event.data.ceased_on}` : `Notified on ${event.data.notified_on}`
+      const description = "ceased_on" in event.data ? `Ceased on ${event.data.ceased_on}` : `Notified on ${event.data.notified_on}`
       return { companyNumber, description, title: event.data.name }
     }
-    case 'charges': {
+    case "charges": {
       const [, companyNumber] = event.resource_uri.match(/^\/company\/([A-Z0-9]{8})\/charges/)
       return {
         companyNumber,
