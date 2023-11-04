@@ -24,7 +24,7 @@ export async function saveCompanyNumber(redis: RedisClient, event, streamPath) {
 
 
 /** Gets the company number from an event, based on which stream the event was sent on */
-function getCompanyNumber(event, streamPath: string) {
+export function getCompanyNumber(event, streamPath: string) {
   switch (streamPath) {
     case "companies":
       return event.data.company_number
@@ -48,6 +48,14 @@ function getCompanyNumber(event, streamPath: string) {
     }
     case "insolvency-cases":
       return event.resource_id
+    case "persons-with-significant-control-statements": {
+      const [, companyNumber] = event.resource_uri.match(/^\/company\/([A-Z0-9]{8})\//)
+      return companyNumber
+    }
+    case "company-exemptions": {
+      const [, companyNumber] = event.resource_uri.match(/company\/([A-Z0-9]{8})\/exemptions/)
+      return companyNumber
+    }
     default:
       return ""
   }
