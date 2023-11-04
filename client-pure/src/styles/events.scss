@@ -1,128 +1,135 @@
 
-#events{
-    display: grid;
-    grid-template-columns: repeat(9, 1fr);
-    gap: 10px;
-}
-.event-column{
-    display: grid;
-    justify-items: center;
-    align-content: start;
-    gap: 10px;
-}
-.event-column:nth-child(odd){
-    //.stream-title{
-    //    background: #0001;
-    //}
-}
-.events-container{
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    align-content: start;
-    justify-self: stretch;
+#events {
+  display: grid;
+  // this is to reduce wasted space on columns that don't get (m)any events
+  grid-template-columns: 1fr 1fr 1fr 1fr 0.7fr 0.5fr 0.4fr 0.4fr 0.2fr;
+  gap: 10px;
 }
 
-.event-card{
-    border-radius: 2px;
-    padding: 1rem;
-    font-size: smaller;
-
-    h3{
-        margin-top: 0;
-    }
-    .published-at{
-        display: none;
-    }
-    code{
-        //cursor: copy;
-        margin-right: 5px;
-        display: inline-flex;
-        gap: 4px;
-        align-items: center;
-    }
-    button{
-        background-color: #0004;
-        border: 2px solid black;
-        font-family: 'JetBrains Mono', monospace;
-        cursor: copy;
-        display: inline-flex;
-        gap: 4px;
-        align-items: center;
-    }
+.event-column {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 10px;
 }
 
-.filings{
-    background-color: #c7c7c7;
-    animation: none;
+.events-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-content: start;
+  justify-self: stretch;
 }
 
-.companies{
-    background-color: #e0c88a;
+.event-card {
+  border-radius: 2px;
+  padding: 1rem;
+  font-size: smaller;
+
+  h3 {
+    margin-top: 0;
+  }
+
+  .published-at {
+    display: none;
+  }
+
+  code {
+    //cursor: copy;
+    margin-right: 5px;
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+  }
+
+  button {
+    background-color: #0004;
+    border: 2px solid black;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: copy;
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+  }
 }
 
-.officers{
-    background-color: #e9c069;
-}
-.persons-with-significant-control{
-    background-color: #c7ed8b;
-}
-.charges{
-    background-color: #b0cbe3;
-}
-.insolvency-cases{
-    background-color: #e0acb5;
+.filings {
+  background-color: #c7c7c7;
+  animation: none;
 }
 
-.disqualified-officers{
-    background-color: #b15050;
+.companies {
+  background-color: #e0c88a;
+}
+
+.officers {
+  background-color: #e9c069;
+}
+
+.persons-with-significant-control {
+  background-color: #c7ed8b;
+}
+
+.charges {
+  background-color: #b0cbe3;
+}
+
+.insolvency-cases {
+  background-color: #e0acb5;
+}
+
+.disqualified-officers {
+  background-color: #b15050;
 }
 
 
-.stream-title{
-    font-size: 1rem;
+.stream-title {
+  font-size: 1rem;
+  margin: 0;
+  padding: 0.5rem;
+  background: #0001;
+  border-radius: 2px;
+  justify-self: stretch;
+
+  h2 {
+    font-size: 1.1rem;
     margin: 0;
-    padding: 0.5rem;
-    background: #0001;
-    border-radius: 2px;
-    justify-self: stretch;
+  }
 
-    h2{
-        font-size: 1.1rem;
-        margin: 0;
-    }
+  code {
+    font-size: 0.8rem;
 
-    code{
-        font-size: 0.8rem;
+  }
 
-    }
-    .delay{
-        font-size: 0.8rem;
-    }
+  .delay {
+    font-size: 0.8rem;
+  }
 
 }
 
 
 // animation for appearing cards
 @keyframes appear {
-    from{
-        max-height: 0;
-    }
-    to{
-        max-height: 15rem;
-    }
+  from {
+    max-height: 0;
+  }
+  to {
+    max-height: 15rem;
+  }
 }
+
 @keyframes disappear {
-    from{
-        opacity: 1;
-    }
-    to{
-        opacity: 0;
-    }
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
-.event-card-container{
-    overflow: hidden;
-    width: 100%;
-    animation: appear .4s ease-out, disappear 3s ease-in 12s;
-    position: relative;
+
+.event-card-container {
+  overflow: hidden;
+  width: 100%;
+  animation: appear .4s ease-out, disappear 3s ease-in 12s;
+  position: relative;
 }
