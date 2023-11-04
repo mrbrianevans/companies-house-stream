@@ -1,11 +1,22 @@
 import { RedisClient } from "../utils/getRedisClient.js"
 
+// number of random company numbers kept in redis
+const MAX_RANDOM_SIZE = 50_000
+
 /** returns true if a company number was added, false if it already existed or couldn't be parsed */
 export async function saveCompanyNumber(redis: RedisClient, event, streamPath) {
   const companyNumber = getCompanyNumber(event, streamPath)
   if (companyNumber) {
     const existed = await redis.sAdd("companyNumbers", companyNumber).then(res => res === 1)
-    //TODO: check the size of the set and if its greater than a threshold (eg 5000) then delete a random item
+    //check the size of the set and if its greater than a threshold (eg 5000) then delete a random item
+    // if (!existed)
+    {
+      const size = await redis.sCard("companyNumbers")
+      if (size > MAX_RANDOM_SIZE) {
+        const remove = await redis.sRandMember("companyNumbers")
+        await redis.sRem("companyNumbers", remove)
+      }
+    }
     return existed
   }
   return false
