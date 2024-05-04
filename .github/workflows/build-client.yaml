@@ -4,25 +4,17 @@ on: # rebuild any PRs and any branch changes for the client directory
   push:
     paths:
       - client-pure/**
+      - .github/workflows/build-client.yaml
 
 jobs:
   build-client:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - uses: pnpm/action-setup@v2.2.2
-        with:
-          version: 7
-      - name: Setup Node
-        uses: actions/setup-node@v3
-        with:
-          node-version: "19"
-          cache: pnpm
-          cache-dependency-path: 'client-pure/pnpm-lock.yaml'
+      - uses: actions/checkout@v3
+      - uses: oven-sh/setup-bun@v1
       - name: Install dependencies
-        run: pnpm install
+        run: bun install --frozen-lockfile
         working-directory: client-pure
       - name: Build client with Vite
-        run: pnpm run build
+        run: bun run build
         working-directory: client-pure
