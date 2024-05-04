@@ -7,12 +7,14 @@ RUN bun install --frozen-lockfile
 
 COPY . .
 
+# disconnect event doesn't work on bun the same way as node. needs debugging and reporting to Bun or changing implementation.
+# from some cursory debugging, it seems the "end" event isn't being emmited when running in bun when a stream is closed by CH.
+# RUN bun build --compile --minify --sourcemap --target=bun-linux-x64-modern ./src/chStreamToRedis/streamToRedis.ts --outfile streamToRedis
+#CMD ./streamToRedis
+
 RUN bun build src/chStreamToRedis/streamToRedis.ts --outdir dist --target=node
-# hack to fix Bun bundler https://github.com/oven-sh/bun/issues/6168
-RUN echo 'import { createRequire as createImportMetaRequire } from "module"; import.meta.require ||= (id) => createImportMetaRequire(import.meta.url)(id);' | cat - dist/streamToRedis.js > temp && mv temp dist/streamToRedis.js
 
-
-FROM node:20
+FROM node:22
 
 WORKDIR /companies-stream/server
 

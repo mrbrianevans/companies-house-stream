@@ -1,18 +1,19 @@
 
-
-body{
+body {
     font-family: 'Inter', sans-serif;
     color: #242424;
     background-color: rgba(224, 244, 244, 0.13);
 }
 
-button,input,select,textarea{
+button, input, select, textarea {
     font-family: 'Inter', sans-serif;
 }
-button{
+
+button {
     cursor: pointer;
 }
-code,pre{
+
+code, pre {
     font-family: 'JetBrains Mono', monospace;
     background-color: rgba(44, 137, 137, 0.13);
     border-radius: 3px;
@@ -20,10 +21,11 @@ code,pre{
     line-height: 1.5;
 }
 
-code{
-    white-space: nowrap;
+code {
+    /*temporarily disabled until "more info" button implemented to hide endpoint url to prevent forcing column widths*/
+    /*white-space: nowrap;*/
 }
 
-a{
+a {
     color: #427baa;
 }

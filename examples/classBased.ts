@@ -30,6 +30,7 @@ class ChStream extends EventEmitter {
     this.streamPath = streamPath
     this.parseStream = split2(JSON.parse)
     this.parseStream.on("data", (data) => this.emit("event", data))
+    this.parseStream.on("error", (error) => console.log(new Date(), "Parse stream error", error))
   }
 
   // can be called the first time to connect, as well as to reconnect when disconnected
@@ -45,11 +46,17 @@ class ChStream extends EventEmitter {
     if (res.statusCode === 200) {
       this.connected = true
       this.emit("connected")
-      res.pipe(this.parseStream, { end: false })
+      res.on("data", () => this.emit("heartbeat")).pipe(this.parseStream, { end: false })
       // assuming 'end' is the right event to listen on. What's the difference between this and close?
       res.on("end", () => {
         res.unpipe(this.parseStream)
-        console.log("ended")
+        console.log(new Date(), "ended")
+        this.connected = false
+        this.emit("disconnected")
+      })
+      res.on("close", () => {
+        res.unpipe(this.parseStream)
+        console.log(new Date(), "closed")
         this.connected = false
         this.emit("disconnected")
       })
@@ -58,8 +65,13 @@ class ChStream extends EventEmitter {
   }
 }
 
-const testStream = new ChStream("filings")
-testStream.on("event", (d) => console.log("event emitted", d))
+const testStream = new ChStream("officers")
+// testStream.on("event", (d) => console.log("event emitted", d))
+testStream.on("heartbeat", () => console.log(new Date(), "heartbeat emitted"))
 const { statusCode } = await testStream.connect()
-console.log("Received response", { statusCode })
-testStream.on("disconnect", () => testStream.connect())
+console.log(new Date(), "Received response", { statusCode })
+testStream.on("disconnected", () => {
+  console.log(new Date(), "Disconnected from stream. Reconnecting")
+  testStream.connect()
+})
+testStream.on("connected", () => console.log(new Date(), "Connected to stream"))

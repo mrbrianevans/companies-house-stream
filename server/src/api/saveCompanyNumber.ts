@@ -1,7 +1,7 @@
 import { RedisClient } from "../utils/getRedisClient.js"
 
 // number of random company numbers kept in redis
-const MAX_RANDOM_SIZE = 50_000
+const MAX_RANDOM_SIZE = 5_000
 
 /** returns true if a company number was added, false if it already existed or couldn't be parsed */
 export async function saveCompanyNumber(redis: RedisClient, event, streamPath) {

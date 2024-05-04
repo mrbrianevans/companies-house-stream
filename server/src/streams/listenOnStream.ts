@@ -49,7 +49,7 @@ export function stream<EventType>(streamPath: StreamPath, startFromTimepoint?: n
         break
       case 200:
         logger.info("Stream started successfully, piping through json parser")
-        res.pipe(parser)
+        res.pipe(parser, { end: true })
         break
       default:
         res.pipe(process.stdout)
