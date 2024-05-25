@@ -13,6 +13,7 @@ import { redisClient } from "../utils/getRedisClient"
 import { setTimeout } from "node:timers/promises"
 
 const app = new Elysia()
+  .on('error', (err)=>console.error('Error', err.request.url, err.error.message))
   .use(healthCheckRouter)
   .use(miscRouter)
   .use(eventHistoryRouter)
@@ -46,6 +47,7 @@ async function shutdown() {
   }
 }
 
+//TODO: this doesn't work at present. taking 11 seconds to restart docker container
 process.on("SIGINT", shutdown) // quit on ctrl-c when running docker in terminal
 process.on("SIGTERM", shutdown)// quit properly on docker stop
 
