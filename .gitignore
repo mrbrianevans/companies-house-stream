@@ -4,3 +4,6 @@ server/**/*.js
 **/*.env*
 .idea
 **/*.tfvars
+terraform/.terraform*
+terraform/terraform.*
+todo.md

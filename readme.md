@@ -105,8 +105,11 @@ See the [LICENSE](LICENSE) file for more information.
 
     ```
     cd client-pure
-    pnpm install
-    pnpm run build
+    bun install
+    bun run build
+    cd .. 
+    ./copyDist.sh
+    ./reloadCaddy.sh
     ```
 
 - try go to `http://localhost` in a web browser!
