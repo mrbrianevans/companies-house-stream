@@ -546,6 +546,29 @@ declare module OfficerEvent {
   }
 }
 
+declare module ExemptionsEvent {
+  //TODO: fill out this interface with an auto-generated one based on recent events on the stream
+  interface ExemptionsEvent {
+    data: IExemptionsData
+    event: IExemptionsEvent
+    resource_id: string
+    resource_kind: "company-exemptions"
+    resource_uri: string
+  }
+
+  interface IExemptionsEvent {
+    timepoint: number
+    published_at: string
+    type: string
+  }
+
+  interface IExemptionsData {
+    kind: "exemptions"
+
+    [key: string]: unknown
+  }
+}
+
 type AnyEvent =
   CompanyProfileEvent.CompanyProfileEvent
   | FilingEvent.FilingEvent
@@ -553,5 +576,7 @@ type AnyEvent =
   | InsolvencyEvent.InsolvencyEvent
   | ChargesEvent.ChargesEvent
   | OfficerEvent.OfficerEvent
+  | ExemptionsEvent.ExemptionsEvent;
+//TODO: add interfaces for other streams that have since been added. eg PSC statements.
 export type { CompanyProfileEvent, FilingEvent, PscEvent, InsolvencyEvent, ChargesEvent, OfficerEvent, AnyEvent }
 

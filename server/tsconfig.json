@@ -16,7 +16,7 @@
     "allowJs": true,
     "esModuleInterop": true,
     // best practices
-    "strict": false,
+    "strict": true,
     // TODO: put to true, fix errors
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,

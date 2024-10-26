@@ -1,5 +1,6 @@
 import { getCompanyNumber } from "./saveCompanyNumber"
 import { expect, describe, it } from "bun:test"
+import { AnyEvent } from "../types/eventTypes"
 
 describe("get company number from events", () => {
   it("should get company number from filing event", () => {
@@ -16,7 +17,7 @@ describe("get company number from events", () => {
   })
 })
 
-const sampleEvents = {
+const sampleEvents: Record<string, AnyEvent> = {
   filings: {
     "resource_kind": "filing-history",
     "resource_uri": "/company/10620794/filing-history/MzM5ODkyOTYzNmFkaXF6a2N4",
@@ -133,4 +134,4 @@ const sampleEvents = {
       "type": "changed"
     }
   }
-}
+} as const

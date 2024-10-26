@@ -1,4 +1,4 @@
-import { Transform } from "stream"
+import { Transform, TransformCallback, TransformOptions } from "stream"
 import { performance } from "perf_hooks"
 
 /**
@@ -8,7 +8,7 @@ export class CustomJsonParse extends Transform {
   private data: string
   private readonly addTimestamp: boolean
 
-  constructor(options, addTimestamp: boolean = false) {
+  constructor(options: TransformOptions, addTimestamp: boolean = false) {
     super({
       ...options,
       decodeStrings: false, // stops the strings being converted to buffers
@@ -18,7 +18,7 @@ export class CustomJsonParse extends Transform {
     this.addTimestamp = addTimestamp
   }
 
-  _transform(chunk: Buffer, encoding, callback) {
+  _transform(chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback) {
     this.emit("heartbeat") // this will emit even if the chunk is just a newline (heartbeat on the stream).
     const received = performance.timeOrigin + performance.now() // collect timestamp that event was received
     this.data += chunk.toString("utf8")
@@ -41,7 +41,7 @@ export class CustomJsonParse extends Transform {
     callback()
   }
 
-  _flush(callback) {
+  _flush(callback: TransformCallback) {
     // console.debug("Flush called. This.data=", this.data)
     try {
       // there may still be unparsed data remaining in this.data

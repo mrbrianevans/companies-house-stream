@@ -3,14 +3,15 @@ Listen on the Redis stream for events, and generate JSON schemas for each event 
 Keeps updating the schema based on each event, so they stay up to date.
  */
 
-import { redisClient } from "../utils/getRedisClient.js"
+import { type RedisClient, redisClient } from "../utils/getRedisClient.js"
 import { listenRedisStream } from "./listenRedisStream.js"
 import { streamPaths } from "../streams/streamPaths.js"
 import { extendSchema, createSchema } from "genson-js"
 import { streamFromRedisLogger } from "../utils/loggers.js"
+import { AnyEvent } from "../types/eventTypes"
 
 /** When an event arrives, merge it with the existing schema in redis (IF EXISTS) and save new schema. */
-export async function updateSchemaForEvent(event, commandClient) {
+export async function updateSchemaForEvent(event: AnyEvent, commandClient: RedisClient) {
   // schemas are specific to each resource kind
   const { resource_kind, data } = event
   // schemas are stored as stringified JSON in the `schemas` hash in redis

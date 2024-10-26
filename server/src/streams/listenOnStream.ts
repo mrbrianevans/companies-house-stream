@@ -3,6 +3,7 @@ import { request } from "https"
 import { streamKeyHolder } from "../utils/KeyHolder.js"
 import pino from "pino"
 import { CustomJsonParse } from "./jsonParseStream.js"
+import { Readable } from "node:stream"
 
 export type StreamPath =
   | "insolvency-cases"
@@ -17,7 +18,7 @@ export type StreamPath =
 /**
  * Returns a readable stream of events. The recommended way of listening to a stream in this application.
  */
-export function stream<EventType>(streamPath: StreamPath, startFromTimepoint?: number) {
+export function stream<EventType>(streamPath: StreamPath, startFromTimepoint?: number): Readable {
   const logger = pino({ base: { streamPath } })
   const streamKey = streamKeyHolder.useKey()
   const timepointQueryString = typeof startFromTimepoint === "number" ? `?timepoint=${startFromTimepoint}` : ""

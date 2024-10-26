@@ -13,7 +13,7 @@ import { redisClient } from "../utils/getRedisClient"
 import { setTimeout } from "node:timers/promises"
 
 const app = new Elysia()
-  .on('error', (err)=>console.error('Error', err.request.url, err.error.message))
+  .on("error", (err) => console.error("Error", err.request.url, err.error.message))
   .use(healthCheckRouter)
   .use(miscRouter)
   .use(eventHistoryRouter)
