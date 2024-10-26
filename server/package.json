@@ -16,7 +16,7 @@
     "typescript": "^5.4.5"
   },
   "dependencies": {
-    "elysia": "1.0.22",
+    "elysia": "^1.1.23",
     "genson-js": "^0.0.8",
     "pino": "^8.21.0",
     "redis": "^4.6.13"
