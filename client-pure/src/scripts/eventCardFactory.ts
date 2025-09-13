@@ -7,6 +7,15 @@ import ExternalLink from "../assets/icons/ExternalLink.svg"
 import formatString from "string-template"
 import { setDelay, setLatency } from "./latencyIndicator"
 
+// converts eg "2025-09-13T14:55:03" to a ISO compliant timestamp
+function parsePublishedAt(timestamp: string) {
+  const hasTimezone = /Z$/.test(timestamp)
+  if (hasTimezone) {
+    return new Date(timestamp)
+  }
+  return new Date(timestamp + "Z")
+}
+
 export function createEventComponent(event) {
   const eventCardContainer = document.createElement("div")
   eventCardContainer.className = `event-card-container`
@@ -18,7 +27,7 @@ export function createEventComponent(event) {
     element.innerHTML = `
     <h3>${title ?? (sentenceCase(event.streamPath) + "event")}</h3>
     <p>${description ?? ""}</p>
-    <span class="published-at">${new Date(event.event.published_at).toLocaleTimeString()}</span>
+    <span class="published-at">${parsePublishedAt(event.event.published_at).toLocaleTimeString()}</span>
     <a target="_blank" href="https://find-and-update.company-information.service.gov.uk/company/${companyNumber}"><code>${companyNumber}<img alt="External link" src=${ExternalLink} width="20" height="20"/></code></a>
   `
     // A button which copys the company number on click rather than a link to companies house
@@ -31,7 +40,7 @@ export function createEventComponent(event) {
     const latencyMs = performance.timeOrigin + performance.now() - received
     // this has been disabled due to the difference in system clocks causing inaccurate latencies (including negative).
     // setLatency(latencyMs)
-    const delay = (Date.now() - new Date(event.event.published_at).getTime()) / 60_000
+    const delay = Math.max((Date.now() - parsePublishedAt(event.event.published_at).getTime()) / 60_000, 0)
     setDelay(streamPath, delay)
     const copyButton = document.createElement("button")
     copyButton.onclick = () => copy(JSON.stringify(originalEvent))

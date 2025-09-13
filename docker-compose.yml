@@ -1,6 +1,6 @@
 services:
   redis:
-    image: redis:7.2.2
+    image: redis:7.4
     restart: unless-stopped
     volumes:
       - redisdata:/data
@@ -45,7 +45,21 @@ services:
     logging:
       driver: local
     depends_on: [ redis ]
-    restart: on-failure
+    restart: on-failure:3
+
+  persistence:
+    build:
+      context: server
+      dockerfile: Persistence.Dockerfile
+    environment:
+      PUBSUB_REDIS_IP: redis
+      SQLITE_PATH: /data/buffer.db
+    logging:
+      driver: local
+    depends_on: [ redis ]
+    restart: on-failure:3
+    volumes:
+      - persisted_events:/data
 
 
 volumes:
@@ -53,3 +67,4 @@ volumes:
   caddy_data:
     external: true
   caddy_config:
+  persisted_events:

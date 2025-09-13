@@ -7,7 +7,7 @@ RUN bun install --omit=dev
 
 COPY . .
 
-# RUN bun build --compile --minify --sourcemap --target=bun-linux-x64-modern ./src/api/server.ts --outfile apiServer
+# RUN bun build --compile --minify --sourcemap --target=bun-linux-x64-musl ./src/api/server.ts --outfile apiServer
 
 EXPOSE 3000
 
@@ -18,8 +18,10 @@ CMD bun ./src/api/server.ts
 # CMD ./apiServer
 
 #FROM alpine
-#
+##
 #WORKDIR /companies-stream/server
-#
-#COPY --chmod=0775 --from=builder /companies-stream/server/apiServer ./apiServer
+##
+#COPY --chmod=0775 --from=builder /companies-stream/server/apiServer apiServer
 #RUN chmod +x apiServer
+#
+#CMD /companies-stream/server/apiServer
