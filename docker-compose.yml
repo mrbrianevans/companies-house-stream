@@ -1,4 +1,3 @@
-version: '3'
 services:
   redis:
     image: redis:7.2.2
@@ -9,14 +8,14 @@ services:
       driver: local
 
   webserver:
-    image: caddy:2.7.5
+    build:
+      context: .
+      dockerfile: Caddy.Dockerfile
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
-      - client_dist:/client
       - caddy_data:/data
       - caddy_config:/config
     logging:
@@ -54,4 +53,3 @@ volumes:
   caddy_data:
     external: true
   caddy_config:
-  client_dist:
