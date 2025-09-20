@@ -60,6 +60,8 @@ services:
     restart: on-failure:3
     volumes:
       - persisted_events:/data
+    env_file:
+      - .env
 
 
 volumes:
