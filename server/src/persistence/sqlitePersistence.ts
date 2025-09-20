@@ -1,9 +1,8 @@
 import { streamPaths } from "../streams/streamPaths"
-import { setTimeout } from "node:timers/promises"
+import { scheduler } from "node:timers/promises"
 import { getRedisClient } from "../utils/getRedisClient"
 import { streamFromRedisLogger as logger } from "../utils/loggers"
 import { DatabaseSync } from "node:sqlite"
-import { AbortError, commandOptions } from "redis"
 import type { AnyEvent } from "../types/eventTypes"
 
 // this connects to the Redis stream and writes events to a SQLite database
@@ -24,8 +23,26 @@ for (const streamPath of streamPaths) {
           timepoint    INTEGER PRIMARY KEY,
           published_at TIMESTAMP NOT NULL,
           event_data   TEXT      NOT NULL
-      )
+      );
   `)
+}
+
+// Streams we read from Redis (subset of all known stream paths)
+const readStreams = [
+  "officers",
+  "persons-with-significant-control",
+  "charges",
+  "insolvency-cases",
+  "disqualified-officers"
+]
+
+// Prepare and cache statements used inside the loop to avoid per-iteration native allocations
+const lastTimepointStmt = new Map<string, ReturnType<typeof db.prepare>>()
+for (const stream of readStreams) {
+  lastTimepointStmt.set(
+    stream,
+    db.prepare(`SELECT timepoint FROM ${getTableName(stream)} ORDER BY timepoint DESC LIMIT 1`)
+  )
 }
 
 // converts eg "2025-09-13T14:55:03" to a ISO compliant timestamp
@@ -41,7 +58,7 @@ function batchInsertEvents(streamPath: string, events: AnyEvent[]) {
   // Use SQLite upsert semantics to ignore duplicates on primary key (timepoint)
   db.exec("BEGIN TRANSACTION")
   try {
-    console.log("Inserting events for streamPath:", streamPath, "with", events.length, "events")
+    // console.debug("Inserting events for streamPath:", streamPath, "with", events.length, "events")
     const placeholders = events.map(() => "(?, ?, ?)").join(", ")
     const values = events.flatMap(event => [event.event.timepoint, normaliseTimestamp(event.event.published_at), JSON.stringify(event)])
     // Using 'OR IGNORE' is valid SQLite. Some SQL parsers may flag it, but DatabaseSync executes it correctly.
@@ -72,20 +89,16 @@ while (true) {
   try {
 
     if (signal?.aborted) break
-    const streams = ["officers", "persons-with-significant-control", "charges", "insolvency-cases", "disqualified-officers"].map(stream => {
-      const query = db.prepare(`SELECT timepoint
-                                FROM ${getTableName(stream)}
-                                ORDER BY timepoint DESC
-                                LIMIT 1`)
+    const streams = readStreams.map(stream => {
+      const query = lastTimepointStmt.get(stream)!
       const timepoint = (query.get() as { timepoint: number } | undefined)?.timepoint?.toString()
       return ({
         key: "events:" + stream,
         id: timepoint ?? "0" // start from the beginning if no timepoint in sqlite
       })
     })
-    console.debug("Streams to read:", streams)
-    const options = commandOptions({ signal })
-    const events = await streamingClient.xRead(options, streams, { COUNT: 1000 })
+    // console.debug("Streams to read:", streams)
+    const events = await streamingClient.xRead(streams, { COUNT: 1000 })
     if (events && events.length) {
       const eventsByStream = Object.groupBy(events.flatMap(({ name, messages }) =>
         messages.map(({ message }) => ({
@@ -99,10 +112,15 @@ while (true) {
           batchInsertEvents(stream, streamEvents.map(({ event }) => event))
       }
     }
-    await setTimeout(5000, null, { signal })
+    // if there were less than 1000 events, sleep for 60 seconds before reading again
+    const totalEvents = events?.flatMap(({ messages }) => messages).length ?? 0
+    const waitDuration = totalEvents >= 1000 ? 5_000 : 60_000
+    await scheduler.wait(waitDuration, { signal })
   } catch (e) {
-    if (!(e instanceof AbortError) && (!(e instanceof Error) || e.name !== "AbortError"))
-      logger.error(e, "Error READing from Redis Stream(s)")
+    if (e instanceof Error && e.name !== "AbortError")
+      logger.error(e, "Error READing from Redis Streams")
+    else
+      logger.info("Aborted listening to Redis Streams")
     break
   }
 
@@ -112,7 +130,6 @@ db.close()
 await streamingClient.quit()
 
 if (shutdownRequestTime) {
-  console.log("Graceful shutdown finished", new Date())
   const waitingMs = Date.now() - (shutdownRequestTime)
   console.log("Graceful shutdown finished", new Date(), "in", waitingMs, "ms")
   process.exit()
