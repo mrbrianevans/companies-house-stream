@@ -46,6 +46,8 @@ services:
       driver: local
     depends_on: [ redis ]
     restart: on-failure:3
+    env_file:
+      - .env
 
   persistence:
     build:
@@ -57,12 +59,11 @@ services:
     logging:
       driver: local
     depends_on: [ redis ]
-    restart: on-failure:3
+    #    restart: never
     volumes:
       - persisted_events:/data
     env_file:
       - .env
-
 
 volumes:
   redisdata:
