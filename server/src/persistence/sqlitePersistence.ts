@@ -7,6 +7,7 @@ import cron from "node-cron"
 import { tmpdir } from "node:os"
 import { mkdir, rm } from "node:fs/promises"
 import { randomUUID } from "node:crypto"
+import { getS3Config } from "./utils"
 
 // this connects to the Redis stream and writes events to a SQLite database
 /* redis stream -> sqlite -> json file -> duckdb table -> parquet in S3 */
@@ -56,15 +57,6 @@ implement a batch job that runs nightly in sqlitePersistence.ts. it should move 
 
 // Nightly export job setup
 
-function getS3Config() {
-  return {
-    bucket: process.env.S3_BUCKET,
-    region: process.env.S3_REGION || "auto",
-    accessKeyId: process.env.S3_ACCESS_KEY_ID,
-    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
-    endpoint: process.env.S3_ENDPOINT
-  }
-}
 
 let exportUnderway = false
 
@@ -96,6 +88,9 @@ async function runNightlyExport() {
       ENDPOINT '${s3.endpoint}',
       REGION '${s3.region}'
     );`)
+    await conn.run("SET memory_limit = '200MB';")
+    await conn.run("SET threads = 1;")
+    await conn.run(`SET preserve_insertion_order = false;`)
     // Attach SQLite database to duckdb
     await conn.run(`ATTACH '${sqlitePath}' AS sqlite_buffer (TYPE SQLITE, READ_ONLY);`)
     for (const streamPath of readStreams) {
@@ -103,6 +98,7 @@ async function runNightlyExport() {
       console.log("Processing", streamPath)
       const table = getTableName(streamPath)
       // Determine available dates (YYYY-MM-DD) from SQLite using SQLite directly for reliability
+      //TODO: arguably this should be run by duckdb for consistency
       const daysStmt = db.prepare(`SELECT substr(published_at,1,10) AS day, COUNT(*) as events
                                    FROM ${table}
                                    GROUP BY day
@@ -125,7 +121,15 @@ async function runNightlyExport() {
           const tempDir = `${tmpdir()}/${randomUUID()}`
           await mkdir(tempDir, { recursive: true })
           const tempFile = `${tempDir}/${day}.json`
-          const tempFileResult = await conn.run(`COPY (SELECT event_data FROM sqlite_buffer.${table} WHERE date_trunc('day', published_at::TIMESTAMP)='${day}' ORDER BY timepoint ASC) TO '${tempFile}' (FORMAT CSV, DELIMINATOR '\\n', HEADER false, QUOTE '', ESCAPE '', RETURN_FILES);`)
+          // random sort to provide schema inference a different sample each day
+          const tempFileResult = await conn.run(`
+          COPY (
+            SELECT event_data 
+            FROM sqlite_buffer.${table} 
+            WHERE date_trunc('day', published_at::TIMESTAMP)='${day}' 
+            ORDER BY RANDOM()
+          ) TO '${tempFile}' (FORMAT CSV, DELIMINATOR '\\n', HEADER false, QUOTE '', ESCAPE '', RETURN_FILES);
+          `)
           console.log("Copied data to temp file", tempFile, (await tempFileResult.getRowObjects())[0])
           await scheduler.wait(500)
           const selectSql = `SELECT 
@@ -134,13 +138,17 @@ async function runNightlyExport() {
                                    month(event.published_at::TIMESTAMP) AS month,
                                    day(event.published_at::TIMESTAMP) AS day,
                                    *
-                            FROM read_ndjson_auto('${tempFile}', auto_detect=true, sample_size = 20480)`
+                             FROM read_ndjson_auto('${tempFile}', auto_detect = true, sample_size = 20480)
+                             ORDER BY event.timepoint ASC`
 
           // try copying to intermediate local table
           const tempTable = `${randomUUID()}_${table}`
           await conn.run(`CREATE OR REPLACE TABLE "${tempTable}" AS (${selectSql});`)
           console.log("Copied data to temp table", tempTable)
-          await scheduler.wait(500)
+          await conn.run(`CHECKPOINT;`)
+          await conn.run(`VACUUM;`)
+
+          await scheduler.wait(1500) // get ready for the upload to S3
 
           const copySql = `COPY "${tempTable}" TO '${s3Url}' (FORMAT 'parquet', PARTITION_BY (year, month, day), FILENAME_PATTERN '{uuidv7}', APPEND, RETURN_STATS);`
           const copyResult = await conn.run(copySql)
