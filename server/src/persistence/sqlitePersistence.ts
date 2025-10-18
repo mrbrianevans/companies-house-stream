@@ -7,7 +7,7 @@ import cron from "node-cron"
 import { tmpdir } from "node:os"
 import { mkdir, rm } from "node:fs/promises"
 import { randomUUID } from "node:crypto"
-import { getS3Config } from "./utils"
+import { getS3Config, readStreams } from "./utils"
 
 // this connects to the Redis stream and writes events to a SQLite database
 /* redis stream -> sqlite -> json file -> duckdb table -> parquet in S3 */
@@ -19,14 +19,6 @@ function getTableName(stream: string) {
   return stream.replaceAll(/[^a-z]/ig, "_") + "_events"
 }
 
-// Streams we read from Redis (subset of all known stream paths)
-const readStreams = [
-  "officers",
-  "persons-with-significant-control",
-  "charges",
-  "insolvency-cases",
-  "disqualified-officers"
-]
 
 const db = new DatabaseSync(process.env.SQLITE_DB_PATH ?? "/data/buffer.db")
 db.exec("PRAGMA journal_mode=WAL") // allow other processes to read the database while we write

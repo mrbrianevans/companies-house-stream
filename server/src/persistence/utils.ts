@@ -7,3 +7,12 @@ export function getS3Config() {
     endpoint: process.env.S3_ENDPOINT
   }
 }
+
+// Streams we read from Redis (subset of all known stream paths)
+export const readStreams = [
+  "officers",
+  "persons-with-significant-control",
+  "charges",
+  "insolvency-cases",
+  "disqualified-officers"
+]
