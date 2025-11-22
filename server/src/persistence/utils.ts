@@ -14,5 +14,8 @@ export const readStreams = [
   "persons-with-significant-control",
   "charges",
   "insolvency-cases",
-  "disqualified-officers"
+  "disqualified-officers",
+  "companies",
+  "company-exemptions",
+  "persons-with-significant-control-statements"
 ]

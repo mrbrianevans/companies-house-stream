@@ -55,13 +55,20 @@ async function checkPersistence() {
         correctEvents = 0n
         if (row.count % row.timepoint_difference === 0n) {
           console.log(streamPath, "Duplicate files detected for ", date)
-        } else {
+        } else if (row.count < row.timepoint_difference) {
           console.log(streamPath, "Missing events in file", date)
+        } else if (row.count > row.timepoint_difference) {
+          console.log(streamPath, "Duplicate events in file", date)
         }
       }
       if (lastTimepoint) {
-        if (row.min_timepoint !== lastTimepoint + 1n) {
+        const expectedMin = lastTimepoint + 1n
+        if (row.min_timepoint > expectedMin) {
+          // this could also be overlap rather than missing.
           console.log(streamPath, "Missing events between days", date, lastTimepoint, "->", row.min_timepoint)
+          correctEvents = 0n
+        } else if (row.min_timepoint < expectedMin) {
+          console.log(streamPath, "Has overlapping events", date, lastTimepoint, "->", row.min_timepoint)
           correctEvents = 0n
         }
       }

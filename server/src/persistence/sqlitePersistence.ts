@@ -8,6 +8,8 @@ import { tmpdir } from "node:os"
 import { mkdir, rm } from "node:fs/promises"
 import { randomUUID } from "node:crypto"
 import { getS3Config, readStreams } from "./utils"
+import { DuckDBListValue, VARCHAR } from "@duckdb/node-api"
+import { statSync } from "fs"
 
 // this connects to the Redis stream and writes events to a SQLite database
 /* redis stream -> sqlite -> json file -> duckdb table -> parquet in S3 */
@@ -80,98 +82,142 @@ async function runNightlyExport() {
       ENDPOINT '${s3.endpoint}',
       REGION '${s3.region}'
     );`)
-    await conn.run("SET memory_limit = '200MB';")
+    await conn.run("SET memory_limit = '1024MB';")
     await conn.run("SET threads = 1;")
     await conn.run(`SET preserve_insertion_order = false;`)
+
     // Attach SQLite database to duckdb
     await conn.run(`ATTACH '${sqlitePath}' AS sqlite_buffer (TYPE SQLITE, READ_ONLY);`)
+
     for (const streamPath of readStreams) {
       console.log("Memory usage:", process.memoryUsage().rss / 1024 / 1024, "MB")
       console.log("Processing", streamPath)
       const table = getTableName(streamPath)
-      // Determine available dates (YYYY-MM-DD) from SQLite using SQLite directly for reliability
-      //TODO: arguably this should be run by duckdb for consistency
-      const daysStmt = db.prepare(`SELECT substr(published_at,1,10) AS day, COUNT(*) as events
-                                   FROM ${table}
+      // Determine available dates (YYYY-MM-DD)
+      const eventsPerDayResult = await conn.run(`SELECT substr(published_at::VARCHAR, 1, 10) AS day, COUNT(*) as events
+                                                 FROM sqlite_buffer.${table}
                                    GROUP BY day
                                    ORDER BY day ASC;`)
-      const eventsPerDay = daysStmt.all()
+      const eventsPerDay = await eventsPerDayResult.getRowObjects()
       console.log("Determined available dates", eventsPerDay)
-
-      const eventsInDayStmt = db.prepare(`SELECT COUNT(*) AS count FROM ${table} WHERE substr(published_at,1,10)=?`)
 
       const days = eventsPerDay.map((r: any) => r.day as string).slice(0, -1) // don't compact the most recent day
       for (const day of days) {
         console.log("Exporting day", day, streamPath)
         const s3Url = `s3://${s3.bucket}/${streamPath}`
+        const tempDir = `${tmpdir()}/${randomUUID()}`
 
         try {
-          const eventCount = (eventsInDayStmt.get(day) as { count: number }).count
+          await conn.run("BEGIN TRANSACTION;")
+          const eventsInDayDuck = await conn.runAndReadAll(`SELECT COUNT(*)       AS count,
+                                                                   MIN(timepoint) AS min,
+                                                                   MAX(timepoint) AS max
+                                                            FROM sqlite_buffer.${table}
+                                                            WHERE substr(published_at::VARCHAR, 1, 10) = $day`, { day }, { day: VARCHAR })
+          const eventsInDayResult = eventsInDayDuck.getRowObjects()[0]
+          const eventCount = Number((eventsInDayResult).count)
+          const minTimepoint = Number((eventsInDayResult).min)
+          const maxTimepoint = Number((eventsInDayResult).max)
+          const timepointDifference = maxTimepoint - minTimepoint
           console.log("Events in day", day, streamPath, eventCount)
+          if (eventCount !== timepointDifference + 1) {
+            console.error("Wrong number of events for the timepoint difference on day", day, streamPath)
+            console.error(streamPath, day, { timepointDifference, eventCount })
+          }
 
-          // copy json data from sqlite to a json file, using duckdb
-          const tempDir = `${tmpdir()}/${randomUUID()}`
+          // copy json data from sqlite to json files, using duckdb
           await mkdir(tempDir, { recursive: true })
-          const tempFile = `${tempDir}/${day}.json`
-          // random sort to provide schema inference a different sample each day
-          const tempFileResult = await conn.run(`
+          const filePartSize = "25MB" // ensures that we can infer the schema of the whole file without OOM
+          const tempFileCopy = await conn.run(`
           COPY (
             SELECT event_data 
             FROM sqlite_buffer.${table} 
-            WHERE date_trunc('day', published_at::TIMESTAMP)='${day}' 
-            ORDER BY RANDOM()
-          ) TO '${tempFile}' (FORMAT CSV, DELIMINATOR '\\n', HEADER false, QUOTE '', ESCAPE '', RETURN_FILES);
+            WHERE timepoint >= ${minTimepoint} AND timepoint <= ${maxTimepoint}
+          ) TO '${tempDir}' (FORMAT CSV, DELIMINATOR '\\n', HEADER false, QUOTE '', ESCAPE '', FILE_SIZE_BYTES '${filePartSize}', FILENAME_PATTERN '${day}_part{i}', FILE_EXTENSION 'json', RETURN_FILES);
           `)
-          console.log("Copied data to temp file", tempFile, (await tempFileResult.getRowObjects())[0])
-          await scheduler.wait(500)
-          const selectSql = `SELECT 
-                                   date_trunc('day', event.published_at::TIMESTAMP) AS date,
+          const tempFilesResult = (await tempFileCopy.getRowObjects())[0]
+          console.log("Copied data to temp dir", tempDir, tempFilesResult)
+          const jsonFiles = (tempFilesResult.Files as DuckDBListValue)?.items ?? []
+
+          let dailyRowsUploaded = 0
+
+          for (const tempFile of jsonFiles) {
+            console.log("local json file", tempFile)
+
+            const stats = statSync((tempFile as string))
+            if (stats.size < 10) {
+              console.log("skipping small file", tempFile, stats.size)
+              continue
+            }
+
+            await scheduler.wait(500)
+            const selectSql = `SELECT date_trunc('day', event.published_at::TIMESTAMP) AS date,
                                    year(event.published_at::TIMESTAMP) AS year,
                                    month(event.published_at::TIMESTAMP) AS month,
                                    day(event.published_at::TIMESTAMP) AS day,
                                    *
-                             FROM read_ndjson_auto('${tempFile}', auto_detect = true, sample_size = 20480)
-                             ORDER BY event.timepoint ASC`
+                               FROM read_ndjson_auto('${tempFile}', auto_detect = true, sample_size = -1)
+            `
+            // copy to intermediate local table in duckdb
+            const tempTable = `${randomUUID()}_${table}`
+            await conn.run(`CREATE OR REPLACE TABLE "${tempTable}" AS (${selectSql});`)
+            console.log("Copied data to temp table", tempTable)
+            await scheduler.wait(1500) // get ready for the upload to S3
 
-          // try copying to intermediate local table
-          const tempTable = `${randomUUID()}_${table}`
-          await conn.run(`CREATE OR REPLACE TABLE "${tempTable}" AS (${selectSql});`)
-          console.log("Copied data to temp table", tempTable)
-          await conn.run(`CHECKPOINT;`)
-          await conn.run(`VACUUM;`)
+            // copy to s3 parquet
+            const copySql = `COPY "${tempTable}" TO '${s3Url}' (FORMAT 'parquet', PARTITION_BY (year, month, day), FILENAME_PATTERN '{uuidv7}', APPEND, RETURN_STATS);`
+            const copyResult = await conn.run(copySql)
+            await conn.run(`DROP TABLE "${tempTable}";`)
+            const copiedStats = await copyResult.getRowObjects()
+            console.log("Copied data to parquet", copiedStats[0].count, copiedStats[0].filename)
+            for (const uploadedFile of copiedStats) {
+              const uploadedRangeResult = await conn.runAndReadAll(`SELECT COUNT(*)               AS count,
+                                                                           MIN(event.timepoint)   AS min,
+                                                                           MAX(event.timepoint)   AS max,
+                                                                           max - min              AS difference,
+                                                                           difference + 1 = count AS matches
+                                                                    FROM '${uploadedFile.filename}';`)
+              const uploadedRange = uploadedRangeResult.getRowObjects()[0]
+              console.log("File uploaded with stats", uploadedRange)
+            }
 
-          await scheduler.wait(1500) // get ready for the upload to S3
+            const copiedRows = copiedStats.reduce((a, b) => a + Number(b.count), 0)
+            dailyRowsUploaded += copiedRows
+          }
+          console.log("Copied to S3", s3Url, dailyRowsUploaded, "rows", eventCount, "events")
+          if (dailyRowsUploaded !== eventCount) throw new Error(`Copied ${dailyRowsUploaded} rows but expected ${eventCount} rows`)
 
-          const copySql = `COPY "${tempTable}" TO '${s3Url}' (FORMAT 'parquet', PARTITION_BY (year, month, day), FILENAME_PATTERN '{uuidv7}', APPEND, RETURN_STATS);`
-          const copyResult = await conn.run(copySql)
-          await conn.run(`DROP TABLE "${tempTable}";`)
-          const copiedStats = await copyResult.getRowObjects()
-          console.log("Copied data to parquet", copiedStats)
-          await rm(tempDir, { force: true, recursive: true }) // clean up temporary json file
-          const copiedRows = copiedStats.reduce((a, b) => a + Number(b.count), 0)
-          console.log("Copied to S3", s3Url, copiedRows, "rows", eventCount, "events")
-          if (copiedRows !== eventCount) throw new Error(`Copied ${copiedRows} rows but expected ${eventCount} rows`)
+          await conn.run("COMMIT;")
           try {
             db.exec("BEGIN TRANSACTION")
-            const del = db.prepare(`DELETE FROM ${table} WHERE substr(published_at,1,10)=?`)
+            // would be good if duckdb could do the delete, but requires a write lock on sqlite.
+            const del = db.prepare(`DELETE
+                                    FROM ${table}
+                                    WHERE timepoint >= ?
+                                      AND timepoint <= ?`)
             console.log("Deleting rows from SQLite", day)
-            const { changes } = del.run(day)
+            const { changes } = del.run(minTimepoint, maxTimepoint)
             console.log("Deleted", changes, "rows from SQLite", table, day)
-            if (copiedRows === changes) {
+            if (dailyRowsUploaded === changes) {
               //only commit DELETE if it's the same number of rows as has been stored in S3
               db.exec("COMMIT")
               console.log(`Exported and deleted ${table} for day ${day} -> ${s3Url}`)
             } else {
-              throw new Error(`Deleted ${changes} rows but copied ${copiedRows} rows`)
+              throw new Error(`Deleted ${changes} rows but copied ${dailyRowsUploaded} rows`)
             }
           } catch (e) {
             db.exec("ROLLBACK")
-            logger.error(e, "Failed to delete rows after upload; will retry next run")
+            logger.error(e, "Failed to delete rows after upload; will retry next run causing duplicates in S3")
+            //TODO: clean up s3 path if upload succeeded
           }
         } catch (error) {
+          await conn.run("ROLLBACK;")
           console.error("Failed to export day", day, streamPath, error)
           logger.error({ error, day, streamPath }, "Failed to export day")
           // Intentionally do not throw to continue with other days/streams
+        } finally {
+          await rm(tempDir, { force: true, recursive: true }) // clean up temporary json file
+          await conn.run("CHECKPOINT;")
         }
       }
     }
@@ -187,7 +233,7 @@ async function runNightlyExport() {
   }
 }
 
-// Schedule at 2am server local time daily
+// Schedule at 2am server local time daily. could be run more often during times of bulk loading by CH.
 cron.schedule("0 2 * * *", () => {
   runNightlyExport().catch(err => console.error("Nightly export error:", err))
 })
@@ -195,11 +241,17 @@ await runNightlyExport() //run on startup
 
 // converts eg "2025-09-13T14:55:03" to a ISO compliant timestamp
 function normaliseTimestamp(timestamp: string) {
-  const hasTimezone = /Z$/.test(timestamp)
-  if (hasTimezone) {
-    return new Date(timestamp).toISOString()
+  try {
+    const hasTimezone = /Z$/.test(timestamp) || /\+\d\d:\d\d$/.test(timestamp)
+    if (hasTimezone) {
+      return new Date(timestamp).toISOString()
+    }
+    return new Date(timestamp + "Z").toISOString()
+  } catch (e) {
+    console.log("Failed to normalise", timestamp)
+    throw e
   }
-  return new Date(timestamp + "Z").toISOString()
+
 }
 
 function batchInsertEvents(streamPath: string, events: AnyEvent[]) {
@@ -262,9 +314,9 @@ while (true) {
     } else if (exportUnderway) {
       logger.info("Skipping events load into sqlite during export")
     }
-    // if there were less than 1000 events, sleep for 60 seconds before reading again
+    // if there were less than 1000 events, sleep for 6 seconds before reading again
     const totalEvents = events?.flatMap(({ messages }) => messages).length ?? 0
-    const waitDuration = totalEvents >= 1000 ? 5_000 : 60_000
+    const waitDuration = totalEvents >= 1000 ? 50 : 6_000
     await scheduler.wait(waitDuration, { signal })
   } catch (e) {
     if (e instanceof Error && e.name !== "AbortError")
