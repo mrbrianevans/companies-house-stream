@@ -7,6 +7,9 @@ import { statSync } from "fs"
 import { scheduler } from "node:timers/promises"
 import { streamFromRedisLogger as logger } from "../utils/loggers"
 import { DatabaseSync } from "node:sqlite"
+import { downloadDucklake, uploadDucklake } from "./ducklake"
+
+const maintainDucklake = false
 
 // Nightly compaction job: move events from SQLite to Parquet on S3 using DuckDB.
 export async function runNightlyExport(db: DatabaseSync) {
@@ -16,6 +19,7 @@ export async function runNightlyExport(db: DatabaseSync) {
   const { default: duck } = await import("@duckdb/node-api")
   const duckdbPath = process.env.DUCKDB_DB_PATH ?? "/data/duck.db"
   await rm(duckdbPath, { force: true, recursive: true }) // clean duckdb before we start. not needed to persist anything.
+  const ducklakePath = maintainDucklake ? await downloadDucklake() : undefined
   const duckDb = await duck.DuckDBInstance.create(duckdbPath)
   const conn = await duckDb.connect()
   console.log("connected to duckdb")
@@ -23,11 +27,13 @@ export async function runNightlyExport(db: DatabaseSync) {
   // Enable required extensions and credentials
   await conn.run("INSTALL httpfs; LOAD httpfs;")
   await conn.run("INSTALL sqlite; LOAD sqlite;")
+  if (maintainDucklake)
+    await conn.run("INSTALL ducklake; LOAD ducklake;")
   await conn.run(`CREATE OR REPLACE SECRET secret (
       TYPE s3,
       KEY_ID '${s3.accessKeyId}',
       SECRET '${s3.secretAccessKey}',
-      ENDPOINT '${s3.endpoint}',
+      ENDPOINT '${new URL(s3.endpoint ?? "https://s3.amazonaws.com").hostname}',
       REGION '${s3.region}'
     );`)
   await conn.run("SET memory_limit = '1024MB';")
@@ -36,6 +42,10 @@ export async function runNightlyExport(db: DatabaseSync) {
 
   // Attach SQLite database to duckdb
   await conn.run(`ATTACH '${sqlitePath}' AS sqlite_buffer (TYPE SQLITE, READ_ONLY);`)
+
+  // Attach ducklake
+  if (maintainDucklake)
+    await conn.run(`ATTACH 'ducklake:${ducklakePath}' AS ducklake;`)
 
   for (const streamPath of readStreams) {
     console.log("Memory usage:", process.memoryUsage().rss / 1024 / 1024, "MB")
@@ -163,6 +173,12 @@ export async function runNightlyExport(db: DatabaseSync) {
                 console.log("File uploaded with stats", uploadedRange)
 
                 // TODO: here delete from sqlite for this successful upload. if it can't delete, remove the uploaded file from s3.
+
+                // Add to the ducklake
+                if (maintainDucklake) {
+                  await conn.run(`CALL ducklake_add_data_files('ducklake', '${table}', '${uploadedFile.filename}', ignore_extra_columns => true, allow_missing => true);`)
+                  console.log("Added", uploadedFile.filename, "to ducklake", table)
+                }
               }
 
               const copiedRows = copiedStats.reduce((a, b) => a + Number(b.count), 0)
@@ -208,8 +224,15 @@ export async function runNightlyExport(db: DatabaseSync) {
     }
   }
 
+  if (maintainDucklake)
+    await conn.run(`DETACH ducklake;`)
+  
   conn.closeSync()
   duckDb.closeSync()
+
+  if (maintainDucklake && ducklakePath)
+    await uploadDucklake(ducklakePath)
+
   console.error("Nightly finished")
   db.exec("VACUUM;") // clean up after mass deletes. shrinks file size on disk.
 

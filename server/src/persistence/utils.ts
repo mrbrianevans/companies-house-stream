@@ -10,12 +10,13 @@ export function getS3Config() {
 
 // Streams we read from Redis (subset of all known stream paths)
 export const readStreams = [
+  "companies",
+  "filings",
   "officers",
   "persons-with-significant-control",
   "charges",
   "insolvency-cases",
   "disqualified-officers",
-  "companies",
   "company-exemptions",
   "persons-with-significant-control-statements"
 ]
