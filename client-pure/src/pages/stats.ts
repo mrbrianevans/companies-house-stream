@@ -89,7 +89,7 @@ const streamPaths = new Set(["filings", "companies", "persons-with-significant-c
         chart.setOption({
           series: [{
             type: "line",
-            data: Object.entries(data),
+            data: Object.entries(data).sort(([a], [b]) => a.localeCompare(b)),
             name: streamPath
           }]
         })
