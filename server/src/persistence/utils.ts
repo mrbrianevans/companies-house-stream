@@ -19,3 +19,7 @@ export const readStreams = [
   "company-exemptions",
   "persons-with-significant-control-statements"
 ]
+
+export function getTableName(stream: string) {
+  return stream.replaceAll(/[^a-z]/ig, "_") + "_events"
+}
