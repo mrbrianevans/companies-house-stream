@@ -24,4 +24,15 @@
         handle_path /events/* {
                 reverse_proxy api:3000
         }
+
+        @historical {
+            path /companies* /filings* /officers* \
+                  /persons-with-significant-control* /charges* /insolvency-cases* \
+                  /disqualified-officers* /company-exemptions* \
+                  /persons-with-significant-control-statements*
+        }
+
+        handle @historical {
+            reverse_proxy 10.106.0.5:3000
+        }
 }
