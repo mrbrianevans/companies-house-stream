@@ -18,7 +18,7 @@ export async function downloadSampleEvents(streamPath: string, qty = 100) {
 }
 
 function getNdjson(array: any[]) {
-  return array.map(({ received, ...i }) => JSON.stringify(i)).join("\n");
+  return array.map(({ received: _received, ...i }) => JSON.stringify(i)).join("\n");
 }
 
 export async function downloadStringAsFile(

@@ -106,7 +106,7 @@ const streamPaths = new Set([
           ],
         });
       } catch (error) {
-        console.error("Failed to load", streamPath, "stats");
+        console.error("Failed to load", streamPath, "stats", error);
       }
     }
   }

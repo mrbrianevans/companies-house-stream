@@ -9,7 +9,7 @@ export async function generateLanguageSchemaInWorker(schemas, language) {
     type: "module",
   });
   worker.postMessage({ type: "generate-language", schemas, language });
-  const output = await new Promise((resolve, reject) =>
+  const output = await new Promise((resolve) =>
     worker.addEventListener("message", (e) => resolve(e.data)),
   );
   worker.terminate();

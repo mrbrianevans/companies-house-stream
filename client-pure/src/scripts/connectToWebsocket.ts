@@ -11,11 +11,11 @@ export function websocketEmitter(url: string) {
   function start() {
     socket = new WebSocket(url);
     // Connection opened
-    socket.addEventListener("open", function (event) {
+    socket.addEventListener("open", function () {
       emitter.dispatchEvent(new Event("connected"));
     });
 
-    socket.addEventListener("close", function (event) {
+    socket.addEventListener("close", function () {
       emitter.dispatchEvent(new Event("disconnected"));
     });
 

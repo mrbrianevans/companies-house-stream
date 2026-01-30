@@ -5,11 +5,11 @@ import { formatFilingDescription } from "./formatFilingDescription";
 import ClipboardCopy from "../assets/icons/ClipboardCopy.svg";
 import ExternalLink from "../assets/icons/ExternalLink.svg";
 import formatString from "string-template";
-import { setDelay, setLatency } from "./latencyIndicator";
+import { setDelay } from "./latencyIndicator";
 
 // converts eg "2025-09-13T14:55:03" to a ISO compliant timestamp
 function parsePublishedAt(timestamp: string) {
-  const hasTimezone = /Z$/.test(timestamp);
+  const hasTimezone = timestamp.endsWith("Z");
   if (hasTimezone) {
     return new Date(timestamp);
   }
@@ -36,10 +36,7 @@ export function createEventComponent(event) {
     // companyNumberButton.innerText = companyNumber
     // element.appendChild(companyNumberButton)
 
-    const { received, streamPath, ...originalEvent } = event;
-    const latencyMs = performance.timeOrigin + performance.now() - received;
-    // this has been disabled due to the difference in system clocks causing inaccurate latencies (including negative).
-    // setLatency(latencyMs)
+    const { received: _received, streamPath, ...originalEvent } = event;
     const delay = Math.max(
       (Date.now() - parsePublishedAt(event.event.published_at).getTime()) / 60_000,
       0,
