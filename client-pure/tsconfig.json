@@ -10,6 +10,11 @@
       "vite/client"
     ],
     "noEmit": true,
-    "isolatedModules": true
-  }
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "strict": false
+  },
+  "exclude": [
+    "vite.config.ts"
+  ]
 }

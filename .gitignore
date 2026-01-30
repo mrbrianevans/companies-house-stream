@@ -7,3 +7,4 @@ server/**/*.js
 terraform/.terraform*
 terraform/terraform.*
 todo.md
+**/tsconfig.tsbuildinfo
