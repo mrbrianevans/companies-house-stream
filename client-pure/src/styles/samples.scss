@@ -1,16 +1,11 @@
 
-
-main{
-  max-width: 60rem;
-  margin: 0 auto;
-}
-
-.streams-container{
+.streams-container {
   display: grid;
   gap: 1rem;
   justify-content: center;
   grid-template-columns: repeat(auto-fill, 20rem);
-  button{
+
+  button {
     border: 1px solid black;
     border-radius: 2px;
     padding: 2px 1rem;
@@ -18,8 +13,8 @@ main{
 }
 
 
-section.view-online{
-  pre{
+section.view-online {
+  pre {
     overflow: clip;
   }
 }

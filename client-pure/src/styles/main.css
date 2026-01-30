@@ -29,3 +29,9 @@ code {
 a {
     color: #427baa;
 }
+
+
+main.page {
+    max-width: 60rem;
+    margin: 0 auto;
+}
