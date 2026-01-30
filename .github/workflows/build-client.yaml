@@ -1,6 +1,5 @@
 name: 'Frontend'
-on: # rebuild any PRs and any branch changes for the client directory
-  pull_request:
+on: # build and check any branch changes for the client directory
   push:
     paths:
       - client-pure/**
