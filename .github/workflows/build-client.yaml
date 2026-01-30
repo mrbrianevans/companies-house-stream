@@ -1,4 +1,4 @@
-name: 'build client'
+name: 'Frontend'
 on: # rebuild any PRs and any branch changes for the client directory
   pull_request:
   push:
@@ -7,14 +7,51 @@ on: # rebuild any PRs and any branch changes for the client directory
       - .github/workflows/build-client.yaml
 
 jobs:
-  build-client:
+  vite:
+    name: Vite
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: oven-sh/setup-bun@v1
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
       - name: Install dependencies
         run: bun install --frozen-lockfile
         working-directory: client-pure
       - name: Build client with Vite
         run: bun run build
+        working-directory: client-pure
+  typescript:
+    name: Typescript
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+        working-directory: client-pure
+      - name: Check typescript
+        run: bun run typecheck
+        working-directory: client-pure
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+        working-directory: client-pure
+      - name: Oxlint
+        run: bun x oxlint
+        working-directory: client-pure
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+        working-directory: client-pure
+      - name: Oxfmt
+        run: bun x oxfmt --check
         working-directory: client-pure
