@@ -8,9 +8,7 @@
   "theme_color": "#e9c069",
   "description": "Stream live events from Companies House such as new accounts filings and insolvencies. Built with the Companies House Streaming API, and shows the statuses of those endpoints.",
   "orientation": "landscape-primary",
-  "categories": [
-    "companies house"
-  ],
+  "categories": ["companies house"],
   "icons": [
     {
       "src": "icon/icon512.svg",

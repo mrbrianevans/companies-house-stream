@@ -1,0 +1,31 @@
+ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+ul li {
+  padding: 15px 10px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+ul li:last-child {
+  border-bottom: none;
+}
+
+ul li a {
+  text-decoration: none;
+  font-size: 1.1rem;
+  display: block;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+ul li p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+ul li a:hover {
+  text-decoration: underline;
+}

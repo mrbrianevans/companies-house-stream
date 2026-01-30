@@ -1,98 +1,124 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>About companies.stream</title>
-  <meta name="description"
-        content="Companies House streaming API can be used to develop applications that respond to real time changes to the companies register, such as keeping a database always up-to-date.">
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <title>About companies.stream</title>
+    <meta
+      name="description"
+      content="Companies House streaming API can be used to develop applications that respond to real time changes to the companies register, such as keeping a database always up-to-date."
+    />
+    <link rel="stylesheet" href="styles/theme.scss" />
+  </head>
+  <body>
+    <main class="page">
+      <article>
+        <header>
+          <h1 class="title">About</h1>
+          <div class="badges">
+            <a href="/">Home</a>
+            <a href="/stats">Stats</a>
+          </div>
+        </header>
 
-<main>
-  <article>
-    <header>
-      <h1 class="title">About</h1>
-      <div class="badges">
-        <a href="/">Home</a>
-        <a href="/stats">Stats</a>
-      </div>
-    </header>
+        <section>
+          <h2>About the Streaming API</h2>
+          <p>
+            The Streaming API offered by Companies House makes it possible to listen for changes to
+            the companies register.
+          </p>
+          <p>
+            It uses a long-running HTTP endpoint, similar to
+            <a
+              href="https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events"
+              target="_blank"
+              >Server Sent Events</a
+            >
+            (SSE).
+          </p>
+          <p>Related links:</p>
 
-    <section>
-      <h2>About the Streaming API</h2>
-      <p>The Streaming API offered by Companies House makes it possible to listen for changes to the companies
-        register.</p>
-      <p>It uses a long-running HTTP endpoint, similar to <a
-        href="https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events" target="_blank">Server Sent
-        Events</a> (SSE).</p>
-      <p>
-        Related links:
-      </p>
+          <ul>
+            <li>
+              <a
+                href="https://developer-specs.company-information.service.gov.uk/streaming-api/guides/overview"
+                target="_blank"
+                >Official documentation</a
+              >
+            </li>
+            <li><a href="https://chguide.co.uk/streams" target="_blank">CH Guide</a></li>
+          </ul>
+        </section>
 
-      <ul>
-        <li><a href="https://developer-specs.company-information.service.gov.uk/streaming-api/guides/overview"
-               target="_blank">Official documentation</a></li>
-        <li><a href="https://chguide.co.uk/streams" target="_blank">CH Guide</a></li>
-      </ul>
-    </section>
+        <section>
+          <h2>About this website <code>companies.stream</code></h2>
+          <p>
+            This website is primarily designed as a developer tool for devs working with the
+            Streaming API.
+          </p>
+          <p>
+            It shows the status of the various streams, as well as how much activity there currently
+            is. This helps developers correctly diagnose problems with their application if they
+            aren't getting any events.
+          </p>
+          <p>
+            The application code is fully open source and available in the GitHub repository
+            <code
+              ><a href="https://github.com/mrbrianevans/companies-house-stream" target="_blank"
+                >mrbrianevans/companies-house-stream</a
+              ></code
+            >.
+          </p>
+        </section>
 
-    <section>
-      <h2>About this website <code>companies.stream</code></h2>
-      <p>This website is primarily designed as a developer tool for devs working with the Streaming API.</p>
-      <p>
-        It shows the status of the various streams, as well as how much activity there currently is.
-        This helps developers correctly diagnose problems with their application if they aren't getting any events.
-      </p>
-      <p>
-        The application code is fully open source and available in the GitHub repository
-        <code><a href="https://github.com/mrbrianevans/companies-house-stream" target="_blank">mrbrianevans/companies-house-stream</a></code>.
-      </p>
-    </section>
+        <section>
+          <h2>About Companies House</h2>
+          <p>
+            Companies House is a government organisation in the UK. Registered companies file annual
+            accounts with them and they publish company data on a public register.
+          </p>
+          <p>
+            A non-technical interface for this data can be found at
+            <a href="https://find-and-update.company-information.service.gov.uk/" target="_blank"
+              >Find and update company information</a
+            >.
+          </p>
+          <p>
+            Companies House offers multiple data products, which can be used by software developers
+            to extract useful datasets about UK companies. More information about each of their data
+            products can be found on
+            <a href="https://chguide.co.uk/streams" target="_blank">CH Guide</a>, which I started to
+            collect related information about the data products. At a high level, there are three
+            main ways to access Companies House data:
+          </p>
+          <ul>
+            <li>bulk data files</li>
+            <li>REST API (JSON)</li>
+            <li>Streaming API</li>
+          </ul>
+        </section>
 
-    <section>
-      <h2>About Companies House</h2>
-      <p>
-        Companies House is a government organisation in the UK.
-        Registered companies file annual accounts with them and they publish company data on a public register.
-      </p>
-      <p>
-        A non-technical interface for this data can be found at
-        <a href="https://find-and-update.company-information.service.gov.uk/" target="_blank">Find and update company
-          information</a>.
-      </p>
-      <p>
-        Companies House offers multiple data products, which can be used by software developers to extract useful
-        datasets about UK companies.
-        More information about each of their data products can be found on <a href="https://chguide.co.uk/streams"
-                                                                              target="_blank">CH Guide</a>,
-        which I started to collect related information about the data products. At a high level, there are three main
-        ways to access Companies House data:
-      </p>
-      <ul>
-        <li>bulk data files</li>
-        <li>REST API (JSON)</li>
-        <li>Streaming API</li>
-      </ul>
-    </section>
-
-    <section>
-      <h2>About the creator</h2>
-      <p>This website was created by Brian Evans in January 2021.</p>
-      <p>Brian Evans is a software developer with a focus on the JavaScript/TypeScript languages, and has used the
-        Companies House data products since 2020.</p>
-      <ul>
-        <li><a href="https://brianevans.tech" target="_blank">Personal website</a></li>
-        <li><a href="https://github.com/mrbrianevans" target="_blank">GitHub profile</a></li>
-        <li><a href="https://www.linkedin.com/in/brianevanstech/" target="_blank">LinkedIn profile</a></li>
-      </ul>
-      <p>
-        I've worked with all the major Companies House public data products including their bulk data products, the REST
-        API and the Streaming API.
-      </p>
-    </section>
-  </article>
-</main>
-
-<script src="pages/about.ts" type="module"></script>
-</body>
+        <section>
+          <h2>About the creator</h2>
+          <p>This website was created by Brian Evans in January 2021.</p>
+          <p>
+            Brian Evans is a software developer with a focus on the JavaScript/TypeScript languages,
+            and has used the Companies House data products since 2020.
+          </p>
+          <ul>
+            <li><a href="https://brianevans.tech" target="_blank">Personal website</a></li>
+            <li><a href="https://github.com/mrbrianevans" target="_blank">GitHub profile</a></li>
+            <li>
+              <a href="https://www.linkedin.com/in/brianevanstech/" target="_blank"
+                >LinkedIn profile</a
+              >
+            </li>
+          </ul>
+          <p>
+            I've worked with all the major Companies House public data products including their bulk
+            data products, the REST API and the Streaming API.
+          </p>
+        </section>
+      </article>
+    </main>
+  </body>
 </html>

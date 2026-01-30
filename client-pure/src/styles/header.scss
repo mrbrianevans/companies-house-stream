@@ -1,13 +1,10 @@
-
-
-header{
-
-  h1.title{
+header {
+  h1.title {
     text-align: center;
     font-size: 2rem;
   }
 
-  .badges{
+  .badges {
     display: flex;
     flex-wrap: wrap;
     flex-direction: row;
@@ -15,12 +12,10 @@ header{
     align-items: center;
     gap: 1rem;
   }
-
 }
 
-
 @media (max-width: 700px) {
-  header h1.title{
+  header h1.title {
     font-size: 1.4rem;
   }
 }

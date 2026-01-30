@@ -1,6 +1,5 @@
 name: 'build server'
-on: # rebuild any PRs and any branch changes for the server directory
-  pull_request:
+on: # rebuild any branch changes for the server directory
   push:
     paths:
       - server/**

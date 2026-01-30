@@ -1,31 +1,39 @@
-
 body {
-    font-family: 'Inter', sans-serif;
-    color: #242424;
-    background-color: rgba(224, 244, 244, 0.13);
+  font-family: "Inter", sans-serif;
+  color: #242424;
+  background-color: rgba(224, 244, 244, 0.13);
 }
 
-button, input, select, textarea {
-    font-family: 'Inter', sans-serif;
+button,
+input,
+select,
+textarea {
+  font-family: "Inter", sans-serif;
 }
 
 button {
-    cursor: pointer;
+  cursor: pointer;
 }
 
-code, pre {
-    font-family: 'JetBrains Mono', monospace;
-    background-color: rgba(44, 137, 137, 0.13);
-    border-radius: 3px;
-    padding: 1px 3px;
-    line-height: 1.5;
+code,
+pre {
+  font-family: "JetBrains Mono", monospace;
+  background-color: rgba(44, 137, 137, 0.13);
+  border-radius: 3px;
+  padding: 1px 3px;
+  line-height: 1.5;
 }
 
 code {
-    /*temporarily disabled until "more info" button implemented to hide endpoint url to prevent forcing column widths*/
-    /*white-space: nowrap;*/
+  /*temporarily disabled until "more info" button implemented to hide endpoint url to prevent forcing column widths*/
+  /*white-space: nowrap;*/
 }
 
 a {
-    color: #427baa;
+  color: #427baa;
+}
+
+main.page {
+  max-width: 60rem;
+  margin: 0 auto;
 }
