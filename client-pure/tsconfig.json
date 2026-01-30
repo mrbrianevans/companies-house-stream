@@ -6,15 +6,11 @@
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "types": [
-      "vite/client"
-    ],
+    "types": ["vite/client"],
     "noEmit": true,
     "isolatedModules": true,
     "skipLibCheck": true,
     "strict": false
   },
-  "exclude": [
-    "vite.config.ts"
-  ]
+  "exclude": ["vite.config.ts"]
 }

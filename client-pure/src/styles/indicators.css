@@ -1,36 +1,40 @@
+.indicator {
+  transition: background-color 500ms;
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 5px;
 
-.indicator{
-    transition: background-color 500ms;
-    display: inline-block;
-    width: 10px;
-    height: 10px;
-    border-radius: 5px;
-
-    --red: #bc5454;
-    --green: #5fbf5f;
-}
-
-#visibility-indicator{
-}
-#visibility-indicator.hidden{
-    background-color: gray;
-}
-#visibility-indicator.visible{
-    background-color: dodgerblue;
+  --red: #bc5454;
+  --green: #5fbf5f;
 }
 
-#connection-status{
-}
-#connection-indicator.disconnected{
-    background-color: VAR(--red);
-}
-#connection-indicator.connected{
-    background-color: VAR(--green);
+#visibility-indicator {
 }
 
-.upstream-status.indicator.good{
-    background-color: VAR(--green);
+#visibility-indicator.hidden {
+  background-color: gray;
 }
-.upstream-status.indicator.bad{
-    background-color: VAR(--red);
+
+#visibility-indicator.visible {
+  background-color: dodgerblue;
+}
+
+#connection-status {
+}
+
+#connection-indicator.disconnected {
+  background-color: VAR(--red);
+}
+
+#connection-indicator.connected {
+  background-color: VAR(--green);
+}
+
+.upstream-status.indicator.good {
+  background-color: VAR(--green);
+}
+
+.upstream-status.indicator.bad {
+  background-color: VAR(--red);
 }

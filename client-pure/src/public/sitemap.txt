@@ -3,5 +3,4 @@ https://companies.stream/api
 https://companies.stream/
 https://companies.stream/resources
 https://companies.stream/samples
-https://companies.stream/search
 https://companies.stream/stats

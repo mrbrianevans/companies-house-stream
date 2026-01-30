@@ -1,62 +1,64 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Sample events from Companies House Streaming API</title>
-  <meta name="description"
-        content="Samples of the events that come through on the Companies House streaming API. This is to help software engineers design systems for consuming the Streaming APIs. The 10,000 most recent events for each stream are available for download, along with auto-maintained schemas.">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Sample events from Companies House Streaming API</title>
+    <meta
+      name="description"
+      content="Samples of the events that come through on the Companies House streaming API. This is to help software engineers design systems for consuming the Streaming APIs. The 10,000 most recent events for each stream are available for download, along with auto-maintained schemas."
+    />
+  </head>
 
-</head>
+  <body>
+    <main class="page">
+      <header>
+        <h1 class="title">Samples</h1>
+        <div class="badges">
+          <a href="/">Home</a>
+        </div>
+        <p>
+          Event samples for the different streams. Use this to see the shape of the JSON objects
+          sent on the streams.
+        </p>
+      </header>
 
-<body>
-<main class="page">
-  <header>
-    <h1 class="title">Samples</h1>
-    <div class="badges">
-      <a href="/">Home</a>
-    </div>
-    <p>Event samples for the different streams. Use this to see the shape of the JSON objects sent on the streams.</p>
-  </header>
+      <section>
+        <h2>Download JSON files</h2>
+        <p>
+          Download a JSON file of events recently received on this stream. You can adjust the
+          quantity, up to a maximum of 10,000.
+        </p>
+        <div id="download-streams-container" class="streams-container"></div>
+      </section>
 
-  <section>
-    <h2>Download JSON files</h2>
-    <p>Download a JSON file of events recently received on this stream. You can adjust the quantity, up to a maximum of
-      10,000.</p>
-    <div id="download-streams-container" class="streams-container">
+      <section class="view-online">
+        <h2>View sample online</h2>
+        <p>View the JSON for the most recent event received on this stream.</p>
+        <div id="view-streams-container" class="streams-container"></div>
+        <p id="sample-description"></p>
+        <pre id="view-samples"></pre>
+      </section>
 
-    </div>
-  </section>
+      <section class="schemas">
+        <h2>Schemas</h2>
+        <p>
+          These are <a href="https://json-schema.org/" target="_blank">JSON schemas</a> generated
+          from events sent on the streams. They are categorised by <code>resource_kind</code> rather
+          than stream, because some streams (such as persons with significant control) send multiple
+          resource kinds.
+        </p>
+        <p>
+          You can convert these schemas to a language structure using
+          <a href="https://app.quicktype.io/">quicktype</a>. Choose a language from the dropdown and
+          then click "convert schemas to language". If there is a language that you would like that
+          isn't already on the list, open an issue on the repository for me to add it.
+        </p>
+        <div id="schemas-container" class="streams-container"></div>
+        <p id="schema-description"></p>
+        <pre id="view-schema"></pre>
+      </section>
+    </main>
 
-  <section class="view-online">
-    <h2>View sample online</h2>
-    <p>View the JSON for the most recent event received on this stream.</p>
-    <div id="view-streams-container" class="streams-container">
-
-    </div>
-    <p id="sample-description"></p>
-    <pre id="view-samples"></pre>
-  </section>
-
-  <section class="schemas">
-    <h2>Schemas</h2>
-    <p>
-      These are <a href="https://json-schema.org/" target="_blank">JSON schemas</a> generated from events sent on the
-      streams.
-      They are categorised by <code>resource_kind</code> rather than stream,
-      because some streams (such as persons with significant control) send multiple resource kinds.
-    </p>
-    <p>
-      You can convert these schemas to a language structure using <a href="https://app.quicktype.io/">quicktype</a>.
-      Choose a language from the dropdown and then click "convert schemas to language".
-      If there is a language that you would like that isn't already on the list, open an issue on the repository for me
-      to add it.
-    </p>
-    <div id="schemas-container" class="streams-container"></div>
-    <p id="schema-description"></p>
-    <pre id="view-schema"></pre>
-  </section>
-</main>
-
-<script src="pages/samples.ts" type="module"></script>
-</body>
+    <script src="pages/samples.ts" type="module"></script>
+  </body>
 </html>

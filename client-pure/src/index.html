@@ -1,49 +1,60 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Companies Stream</title>
-  <meta name="description"
-        content="Data visualisation tool for streaming events in real time from Companies House using their Streaming API. This site connects to the streaming API from a server and then sends the events over a websocket to be shown in the frontend. The CH streaming API can be used for keeping a database always in-sync with the live companies, officers, psc and charges registers.">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Companies Stream</title>
+    <meta
+      name="description"
+      content="Data visualisation tool for streaming events in real time from Companies House using their Streaming API. This site connects to the streaming API from a server and then sends the events over a websocket to be shown in the frontend. The CH streaming API can be used for keeping a database always in-sync with the live companies, officers, psc and charges registers."
+    />
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&family=JetBrains+Mono&display=optional"
-    rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&family=JetBrains+Mono&display=optional"
+      rel="stylesheet"
+    />
 
+    <meta name="theme-color" content="#e9c069" />
+    <link rel="apple-touch-icon" href="/icon/icon192.png" sizes="192x192" />
+    <link rel="icon" type="image/png" href="/icon/icon512.png" />
+    <link rel="manifest" href="/manifest.json" />
+  </head>
+  <body>
+    <noscript
+      >You need to enable JavaScript to run this app. It requires the <code>WebSocket API</code> to
+      receive events.
+    </noscript>
+    <header>
+      <h1 class="title">Stream data from Companies House in realtime</h1>
+      <div class="badges">
+        <code>
+          <a href="https://github.com/mrbrianevans/companies-house-stream" target="_blank"
+            >View source code</a
+          >
+        </code>
+        <a href="./resources">More resources</a>
+      </div>
+      <div class="row">
+        <button class="disconnected" id="connection-button">Connect</button>
+        <span
+          id="connection-indicator"
+          class="disconnected indicator"
+          aria-label="Connection status"
+          role="status"
+        ></span>
+        <div id="counter-container">
+          <div class="bubble">Counter: <span id="notification-counter">0</span></div>
+        </div>
+        <span style="display: none">Latency: <span id="latency">?</span></span>
+        <span>Users connected: <span id="open-websockets">?</span></span>
+        <label>Filter: <input type="text" placeholder="Company number" id="filter-text" /></label>
+      </div>
+    </header>
 
-  <meta name="theme-color" content="#e9c069" />
-  <link rel="apple-touch-icon" href="/icon/icon192.png" sizes="192x192">
-  <link rel="icon" type="image/png" href="/icon/icon512.png" />
-  <link rel="manifest" href="/manifest.json">
-</head>
-<body>
-<noscript>You need to enable JavaScript to run this app. It requires the <code>WebSocket API</code> to receive events.
-</noscript>
-<header>
-  <h1 class="title">Stream data from Companies House in realtime</h1>
-  <div class="badges">
-    <code>
-      <a href="https://github.com/mrbrianevans/companies-house-stream" target="_blank">View source code</a>
-    </code>
-    <a href="./resources">More resources</a>
-  </div>
-  <div class="row">
-    <button class="disconnected" id="connection-button">Connect</button>
-    <span id="connection-indicator" class="disconnected indicator" aria-label="Connection status" role="status"></span>
-    <div id="counter-container">
-      <div class="bubble">Counter: <span id="notification-counter">0</span></div>
-    </div>
-    <span style="display: none">Latency: <span id="latency">?</span></span>
-    <span>Users connected: <span id="open-websockets">?</span></span>
-    <label>Filter: <input type="text" placeholder="Company number" id="filter-text" /></label>
-  </div>
-</header>
+    <div id="events"></div>
 
-<div id="events"></div>
-
-<script src="scripts/main.ts" type="module"></script>
-</body>
+    <script src="scripts/main.ts" type="module"></script>
+  </body>
 </html>

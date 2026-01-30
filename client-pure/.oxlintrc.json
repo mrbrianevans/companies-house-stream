@@ -36,5 +36,5 @@
     "builtin": true
   },
   "globals": {},
-  "ignorePatterns": []
+  "ignorePatterns": ["dist", "node_modules"]
 }

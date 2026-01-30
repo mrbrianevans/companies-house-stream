@@ -1,8 +1,7 @@
-
 .row {
-    display: flex;
-    flex-direction: row;
-    gap: 15px;
-    flex-wrap: wrap;
-    align-items: center;
+  display: flex;
+  flex-direction: row;
+  gap: 15px;
+  flex-wrap: wrap;
+  align-items: center;
 }

@@ -1,54 +1,67 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Companies Stream backfill API</title>
-  <meta name="description"
-        content="A historical backfill service for the Companies House Streaming API. Go further back on the streams than Companies House provide.">
-  <link rel="stylesheet" href="styles/theme.scss">
-</head>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Companies Stream backfill API</title>
+    <meta
+      name="description"
+      content="A historical backfill service for the Companies House Streaming API. Go further back on the streams than Companies House provide."
+    />
+    <link rel="stylesheet" href="styles/theme.scss" />
+  </head>
 
-<body>
-<main class="page">
-  <header>
-    <h1 class="title">Stream Backfill API</h1>
-    <div class="badges">
-      <a href="/">Home</a>
-    </div>
+  <body>
+    <main class="page">
+      <header>
+        <h1 class="title">Stream Backfill API</h1>
+        <div class="badges">
+          <a href="/">Home</a>
+        </div>
 
-    <p>Companies Stream provides a service to backfill past events.</p>
-  </header>
+        <p>Companies Stream provides a service to backfill past events.</p>
+      </header>
 
-  <section>
-    <p>When building a Companies House data integration, teams usually are required to build an ETL or ELT pipeline to
-      load each of the bulk data files from Companies House, and then also build an integration with the Streaming API
-      to keep the dataset up to date.</p>
-    <p>What if you could simply build one data pipeline to ingest events from the Streaming API, and backfill all
-      relevant historical data through that pipeline to get started?</p>
-    <p>Companies Stream has saved events that have come through since the start of 2026, and makes them available via a
-      web service exposing the same API as the official Companies House Streaming API endpoints, but allowing you to
-      start much further back in the stream.</p>
+      <section>
+        <p>
+          When building a Companies House data integration, teams usually are required to build an
+          ETL or ELT pipeline to load each of the bulk data files from Companies House, and then
+          also build an integration with the Streaming API to keep the dataset up to date.
+        </p>
+        <p>
+          What if you could simply build one data pipeline to ingest events from the Streaming API,
+          and backfill all relevant historical data through that pipeline to get started?
+        </p>
+        <p>
+          Companies Stream has saved events that have come through since the start of 2026, and
+          makes them available via a web service exposing the same API as the official Companies
+          House Streaming API endpoints, but allowing you to start much further back in the stream.
+        </p>
+      </section>
 
-  </section>
+      <section>
+        <p>
+          It's backed by a private event store that goes back further than the 10 days which
+          Companies House keep available on their streaming endpoints.
+        </p>
+        <p>Persons with Significant Control events go all the way back to 2022.</p>
+        <p>
+          The officer endpoint has all active officers, since they were all run through the system
+          in late 2025 for identity verification.
+        </p>
 
-  <section>
-    <p>It's backed by a private event store that goes back further than the 10 days which Companies House keep available
-      on their streaming endpoints.</p>
-    <p>Persons with Significant Control events go all the way back to 2022.</p>
-    <p>The officer endpoint has all active officers, since they were all run through the system in late 2025 for
-      identity verification.</p>
+        <p>
+          If you would like to go further back, we can by special arrangement provide all events
+          since June 2024.
+        </p>
+      </section>
 
-    <p>If you would like to go further back, we can by special arrangement provide all events since June 2024.</p>
-  </section>
-
-  <section>
-    <p style="font-weight: bold">This service is currently in a free beta stage.</p>
-    <p>
-      If you would be interested in trying it out and providing feedback, please contact Brian Evans.
-    </p>
-
-  </section>
-</main>
-
-</body>
+      <section>
+        <p style="font-weight: bold">This service is currently in a free beta stage.</p>
+        <p>
+          If you would be interested in trying it out and providing feedback, please contact Brian
+          Evans.
+        </p>
+      </section>
+    </main>
+  </body>
 </html>

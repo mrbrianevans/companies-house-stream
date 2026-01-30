@@ -6,10 +6,12 @@ the schema generator is wrapped in a worker so that:
 
 export async function generateLanguageSchemaInWorker(schemas, language) {
   const worker = new Worker(new URL("./schemasWorker.ts", import.meta.url), {
-    type: "module"
-  })
-  worker.postMessage({ type: "generate-language", schemas, language })
-  const output = await new Promise((resolve, reject) => worker.addEventListener("message", e => resolve(e.data)))
-  worker.terminate()
-  return output
+    type: "module",
+  });
+  worker.postMessage({ type: "generate-language", schemas, language });
+  const output = await new Promise((resolve, reject) =>
+    worker.addEventListener("message", (e) => resolve(e.data)),
+  );
+  worker.terminate();
+  return output;
 }
