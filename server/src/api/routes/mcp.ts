@@ -36,5 +36,7 @@ server.registerTool(
 await server.connect(transport);
 
 export const mcpRouter = (app: Elysia) => {
-  return app.get('/mcp',({ request })=>transport.handleRequest(request))
+  return app
+    .get('/mcp', async ({ request, })=> transport.handleRequest(request))
+    .post('/mcp', async ({ request, })=> transport.handleRequest(request))
 }
