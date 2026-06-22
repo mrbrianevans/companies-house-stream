@@ -10,23 +10,24 @@
     "stream-sub": "bun src/api/server.ts"
   },
   "devDependencies": {
-    "@types/node": "^22.10.2",
+    "@types/node": "^22.20.0",
     "@types/node-cron": "^3.0.11",
-    "bun-types": "^1.1.42",
-    "mitata": "^1.0.23",
-    "typescript": "^5.7.2"
+    "bun-types": "^1.3.14",
+    "mitata": "^1.0.34",
+    "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.946.0",
+    "@aws-sdk/client-s3": "^3.1073.0",
     "@cfworker/json-schema": "^4.1.1",
-    "@duckdb/node-api": "^1.3.4-alpha.27",
+    "@duckdb/node-api": "^1.5.4-r.1",
     "@modelcontextprotocol/server": "^2.0.0-alpha.2",
-    "elysia": "~1.0.27",
+    "@sinclair/typebox": "^0.34.49",
+    "elysia": "^1.4.29",
     "genson-js": "^0.0.8",
-    "node-cron": "^4.2.1",
-    "pino": "^9.6.0",
-    "redis": "^4.7.0",
-    "simple-git": "^3.28.0",
+    "node-cron": "^4.5.0",
+    "pino": "^9.14.0",
+    "redis": "^4.7.1",
+    "simple-git": "^3.36.0",
     "zod": "^4.4.3"
   }
 }

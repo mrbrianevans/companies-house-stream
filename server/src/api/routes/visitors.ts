@@ -2,7 +2,7 @@ import { Elysia, t } from "elysia"
 import { VisitorCounterService } from "../visitorCounter"
 import { redisClient } from "../../utils/getRedisClient"
 
-export const visitorsRouter = async (app: Elysia) => {
+export const visitorsRouter = (app: Elysia) => {
   const visitorCounter = new VisitorCounterService(redisClient)
   return app.get("/visitors", async () => {
     const total = await visitorCounter.getTotalCount()

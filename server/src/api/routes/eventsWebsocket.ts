@@ -5,7 +5,7 @@ import { VisitorCounterService } from "../visitorCounter"
 import { setTimeout } from "node:timers/promises"
 import { redisClient } from "../../utils/getRedisClient"
 
-export const eventWebsocketRouter = async (app: Elysia) => {
+export const eventWebsocketRouter = (app: Elysia) => {
   const visitorCounter = new VisitorCounterService(redisClient)
   const ac = new AbortController()
   const { signal } = ac
