@@ -18,7 +18,7 @@ export async function splitStream<EventType>(streamPath = "filings", callback: (
   const path = "/" + streamPath + (typeof startFromTimepoint === "number" ? `?timepoint=${startFromTimepoint}` : "")
   const options: RequestOptions = { hostname: "stream.companieshouse.gov.uk", path, auth }
   get(options, (res) => {
-    if (res.statusCode === 200) res.pipe(split2(JSON.parse)).on("data", callback)
+    if (res.statusCode === 200) res.pipe(split2(line=>JSON.parse(line))).on("data", callback)
     else res.pipe(process.stdout)
     res.on("end", () => console.log("Stream ended. 'end' event triggered"))
   }).end()

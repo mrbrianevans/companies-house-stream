@@ -2,7 +2,7 @@ FROM oven/bun as builder
 
 WORKDIR /companies-stream/server
 
-COPY package.json bun.lockb ./
+COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
 COPY . .

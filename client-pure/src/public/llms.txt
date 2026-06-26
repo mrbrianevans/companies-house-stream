@@ -1,0 +1,53 @@
+# Companies Stream
+
+> Companies Stream (https://companies.stream) is a developer tool to visualise the UK Companies House Streaming API by
+> showing event streams as cards in real time.
+
+This project is a visualiser of changes made to the Companies House database of UK companies. It
+shows events as they happen in realtime, such as a new company registering, or a company going
+insolvent.
+
+The Companies House Streaming API is a HTTP-based, real time API which sends consumers updates in near-real-time as
+changes are made to the registers held by Companies House.
+
+The available streams are:
+
+```json
+[
+  "companies",
+  "filings",
+  "officers",
+  "persons-with-significant-control",
+  "charges",
+  "insolvency-cases",
+  "disqualified-officers",
+  "company-exemptions",
+  "persons-with-significant-control-statements"
+]
+```
+
+## What companies.stream is used for
+
+Developers who are integrating with the streaming API find it useful to be able to see the activity on the streams, especially from an external source (ie not their own implementation) to help identify bugs in their integration.
+
+Even non-developers find the site interesting as it shows the real time nature of Companies House data, how its constantly changing.
+
+## How it was made
+
+- server written in [TypeScript](https://www.typescriptlang.org/) with [Elysia](https://elysiajs.com) framework
+  and [Bun](https://bun.sh)
+  runtime run
+  in [Docker](https://www.docker.com/) container deployed on [Digital Ocean](https://www.digitalocean.com/).
+- [Redis Streams](https://redis.io/docs/data-types/streams/) as event broker and buffer.
+- [WebSockets](https://javascript.info/websocket) for client-server communication.
+- Frontend client written in Typescript and built with [Vite](https://vitejs.dev/) (no frameworks, 10kb bundle).
+- Served by [Caddy](https://caddyserver.com/)
+
+The full source code of the project including documentation and examples is public and available on GitHub: https://github.com/mrbrianevans/companies-house-stream.
+
+## How LLMs can access companies.stream data
+
+There is an MCP server designed to allow agents and LLMs to access companies.stream data in a structured way.
+The MCP URL is `https://companies.stream/events/mcp`.
+
+You can also access the API (the same one the frontend uses) without authentication. It's available on the `/events` route, for example a health check can be done by sending a GET request to `https://companies.stream/events/health` which responds with a boolean for each stream where true represents its currently connected and live, whereas false means disconnected or offline.
