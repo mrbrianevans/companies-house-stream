@@ -66,7 +66,7 @@ class ChStream extends EventEmitter {
 }
 
 const testStream = new ChStream("officers")
-// testStream.on("event", (d) => console.log("event emitted", d))
+testStream.on("event", (d) => console.log("event emitted", d))
 testStream.on("heartbeat", () => console.log(new Date(), "heartbeat emitted"))
 const { statusCode } = await testStream.connect()
 console.log(new Date(), "Received response", { statusCode })
