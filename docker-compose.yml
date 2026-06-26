@@ -48,6 +48,8 @@ services:
     restart: on-failure:3
     env_file:
       - .env
+    stop_grace_period: 4s
+    stop_signal: SIGTERM
 
   persistence:
     build:
