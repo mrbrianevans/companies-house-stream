@@ -3,6 +3,7 @@ import { redisClient } from "../../utils/getRedisClient"
 import { McpServer, WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/server"
 import { z } from "zod"
 import { streamPaths } from "../../streams/streamPaths"
+import { VisitorCounterService } from "../visitorCounter"
 
 const server = new McpServer({
   name: 'companies.stream mcp',
@@ -159,6 +160,45 @@ server.registerTool(
       return {
         isError: true,
         content: [{ type: "text", text: "Invalid stream path. Try listing stream paths first." }]
+      };
+    }
+  },
+);
+const visitorCounter = new VisitorCounterService(redisClient)
+
+server.registerTool(
+  'get_all_time_visitor_count',
+  {
+    title: 'Get all time visitor count for this site',
+    description: 'Returns the total number of unique visitors who have connected to this site. De-duplicates by IP address, only counts websocket connections to exclude cold crawlers. Records began on 2023-09-12',
+    inputSchema: z.object({}),
+  },
+  async ({}) => {
+    console.log("MCP get visitor count")
+    const count = await visitorCounter.getTotalCount()
+    return {
+      content: [{ type: 'text', text: JSON.stringify(count) }],
+    };
+  },
+);
+server.registerTool(
+  'get_visitor_count_for_date',
+  {
+    title: 'Get visitor count for this site on a particular date',
+    description: 'Returns the total number of unique visitors who have connected to this site on a particular date. De-duplicates by IP address, only counts websocket connections to exclude cold crawlers. Records began on 2023-09-12',
+    inputSchema: z.object({date: z.string().nonempty().min(10).max(10).describe("Specify the date to get visitor count for in YYYY-MM-DD format.")}),
+  },
+  async ({date}) => {
+    console.log("MCP get visitor count for date", date)
+    if (new Date(date) < new Date("2023-09-12")) {
+      return {
+        isError: true,
+        content: [{ type: "text", text: "Invalid date. Records only began on 2023-09-12. Request a date after that" }]
+      };
+    } else {
+      const count = await visitorCounter.getCount(date)
+      return {
+        content: [{ type: 'text', text: JSON.stringify({ [date]: count }) }],
       };
     }
   },
