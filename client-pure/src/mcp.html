@@ -2,10 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Companies Stream backfill API</title>
+    <title>Companies Stream MCP Server</title>
     <meta
       name="description"
-      content="A historical backfill service for the Companies House Streaming API. Go further back on the streams than Companies House provide."
+      content="An MCP server to provide context to LLMs and Agents about the Companies House Streaming API, including sample events and statistics."
     />
     <link rel="stylesheet" href="styles/theme.scss" />
   </head>
@@ -16,6 +16,8 @@
         <h1 class="title">Companies Stream MCP Server</h1>
         <div class="badges">
           <a href="/">Home</a>
+        </div>
+        <div class="badges" style="margin-top: 0.5rem">
           <code>https://companies.stream/events/mcp</code>
         </div>
       </header>
@@ -30,6 +32,20 @@
           streams to help with your integration.
         </p>
       </section>
+
+      <section>
+        <h2>Authentication and access</h2>
+        <p>
+          The MCP server is public and does not require any authentication. There is no rate limit.
+        </p>
+      </section>
+
+      <section>
+        <h2>Available tools</h2>
+        <div id="mcp-tools">Loading tools...</div>
+      </section>
     </main>
+
+    <script src="pages/mcp.ts" type="module"></script>
   </body>
 </html>
