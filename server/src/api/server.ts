@@ -21,7 +21,7 @@ const app = new Elysia()
   .use(visitorsRouter)
   .use(eventWebsocketRouter)
   .use(mcpRouter)
-  .on("request", ({ request }) => console.log("Request to server", request.url))
+  .on("request", ({ request }) => console.log("Request to server", request.method, request.url))
   .on("stop", async () => {
     logger.flush()
     await redisClient.quit()
