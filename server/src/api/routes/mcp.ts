@@ -112,10 +112,32 @@ server.registerTool(
   async ({streamPath}) => {
     console.log("MCP get resource_kind frequencies", streamPath)
     const frequencies = await redisClient.hGetAll(`resourceKinds:${streamPath}`)
-console.log(frequencies)
     return {
       content: [{ type: 'text', text: JSON.stringify(frequencies, null, 2) }],
     };
+  },
+);
+server.registerTool(
+  'get_latest_sample_event',
+  {
+    title: 'Get the latest event for a stream',
+    description: 'Returns the latest event published on a given stream. Since this is constantly changing, it serves as a random sample as well.',
+    inputSchema: z.object({streamPath: z.string().nonempty().describe("Specify the stream to get the latest event for.")}),
+  },
+  async ({streamPath}) => {
+    console.log("MCP get latest event", streamPath)
+    if (streamPaths.has(streamPath)) {
+      const history = await redisClient.xRevRange("events:" + streamPath, "+", "-", { COUNT: 1 })
+      const [event] = history.map(h => JSON.parse(h.message.event))
+      return {
+        content: [{ type: 'text', text: JSON.stringify(event, null, 2) }],
+      };
+    }else{
+      return {
+        isError: true,
+        content: [{ type: "text", text: "Invalid stream path. Try listing stream paths first." }]
+      };
+    }
   },
 );
 
