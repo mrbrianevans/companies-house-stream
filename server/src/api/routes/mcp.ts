@@ -140,6 +140,29 @@ server.registerTool(
     }
   },
 );
+server.registerTool(
+  'get_stream_daily_event_count',
+  {
+    title: 'Get the daily event count for a stream',
+    description: 'Returns the daily event count for a given stream in the format { [date]: count } eg { "2022-01-01": 100, "2022-01-02": 105 }.',
+    inputSchema: z.object({streamPath: z.string().nonempty().describe("Specify the stream to get the daily event count for. Must be a valid stream path. You can list stream paths first if you don't have an exact stream path.")}),
+  },
+  async ({streamPath}) => {
+    console.log("MCP get event counts", streamPath)
+    if (streamPaths.has(streamPath)) {
+      const rawCounts = await redisClient.hGetAll(`counts:${streamPath}:daily`)
+      const counts = Object.fromEntries(Object.entries(rawCounts).map(([date, count]) => [date, parseInt(count)]))
+      return {
+        content: [{ type: 'text', text: JSON.stringify(counts, null, 2) }],
+      };
+    }else{
+      return {
+        isError: true,
+        content: [{ type: "text", text: "Invalid stream path. Try listing stream paths first." }]
+      };
+    }
+  },
+);
 
 await server.connect(transport);
 
