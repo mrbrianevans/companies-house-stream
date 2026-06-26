@@ -54,6 +54,71 @@ server.registerTool(
   },
 );
 
+server.registerTool(
+  'get_resource_kind_json_schema',
+  {
+    title: 'Get Json Schema for a resource_kind',
+    description: 'Returns the json schema for a Companies House entity. You can list resource_kinds before using this tool.',
+    inputSchema: z.object({resource_kind: z.string().nonempty().describe("The resource kind of the entity")}),
+  },
+  async ({resource_kind}) => {
+    console.log("MCP get schema for resource_kind", resource_kind)
+    const schema = await redisClient.hGet("schemas", resource_kind)
+    if(!schema) return {
+      isError: true,
+      content: [{ type: "text", text: "resource_kind not found. Try listing resource_kinds first." }]
+    };
+    return {
+      content: [{ type: 'text', text: schema }],
+    };
+  },
+);
+server.registerTool(
+  'list_all_resource_kinds',
+  {
+    title: 'List valid resource_kind values',
+    description: 'Returns a list of valid resource_kinds. A stream can contain events of multiple resource kinds.',
+    inputSchema: z.object({}),
+  },
+  async ({}) => {
+    console.log("MCP get resource_kind list")
+    const resourceKinds = await redisClient.hKeys("schemas")
+    return {
+      content: [{ type: 'text', text: JSON.stringify(resourceKinds) }],
+    };
+  },
+);
+server.registerTool(
+  'list_stream_paths',
+  {
+    title: 'List valid stream paths',
+    description: 'Returns a list of valid streams served by Companies House Streaming API.',
+    inputSchema: z.object({}),
+  },
+  async ({}) => {
+    console.log("MCP list stream paths")
+    return {
+      content: [{ type: 'text', text: JSON.stringify([...streamPaths]) }],
+    };
+  }
+)
+server.registerTool(
+  'list_resource_kinds_frequencies_for_stream',
+  {
+    title: 'List resource_kind frequencies for a particular stream',
+    description: 'Returns a list of resource_kinds that can appear on the stream along with the relative frequency of each one.',
+    inputSchema: z.object({streamPath: z.string().nonempty().describe("Specify the stream to get resource_kind frequencies for.")}),
+  },
+  async ({streamPath}) => {
+    console.log("MCP get resource_kind frequencies", streamPath)
+    const frequencies = await redisClient.hGetAll(`resourceKinds:${streamPath}`)
+console.log(frequencies)
+    return {
+      content: [{ type: 'text', text: JSON.stringify(frequencies, null, 2) }],
+    };
+  },
+);
+
 await server.connect(transport);
 
 export const mcpRouter = (app: Elysia) => {
