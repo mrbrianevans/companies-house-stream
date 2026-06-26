@@ -2,6 +2,7 @@ import { Elysia } from "elysia"
 import { redisClient } from "../../utils/getRedisClient"
 import { McpServer, WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/server"
 import { z } from "zod"
+import { streamPaths } from "../../streams/streamPaths"
 
 const server = new McpServer({
   name: 'companies.stream mcp',
@@ -29,6 +30,26 @@ server.registerTool(
 
     return {
       content: [{ type: 'text', text: JSON.stringify(companyNumbers, null, 2) }],
+    };
+  },
+);
+
+server.registerTool(
+  'get_stream_health',
+  {
+    title: 'Get Stream Health',
+    description: 'Returns the health of the streams. A boolean for each stream to represent whether it is online (true) or offline (false).',
+    inputSchema: z.object({}),
+  },
+  async () => {
+    const streamsHealth: Record<string, boolean> = {}
+    for (const streamPath of streamPaths) {
+      const lastHeartbeat = await redisClient.hGet("heartbeats", streamPath).then(t => new Date(parseInt(t || "0")))
+      streamsHealth[streamPath] = Date.now() - lastHeartbeat.getTime() < 60_000 // more than 60 seconds indicates stream offline
+    }
+
+    return {
+      content: [{ type: 'text', text: JSON.stringify(streamsHealth, null, 2) }],
     };
   },
 );
