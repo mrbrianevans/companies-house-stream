@@ -7,21 +7,21 @@
     "dev": "vite",
     "build": "vite build",
     "serve": "vite preview",
-    "typecheck": "tsgo --build"
+    "typecheck": "tsc --build"
   },
   "dependencies": {
     "change-case": "^5.4.4",
-    "copy-to-clipboard": "^3.3.3",
-    "echarts": "^6.0.0",
+    "copy-to-clipboard": "^4.0.2",
+    "echarts": "^6.1.0",
     "quicktype-core": "^23.2.6",
     "string-template": "^1.0.0",
-    "title-case": "^4.3.2"
+    "title-case": "^4.3.2",
+    "typescript": "^7.0.1-rc"
   },
   "devDependencies": {
-    "@typescript/native-preview": "^7.0.0-dev.20260130.1",
-    "oxfmt": "^0.27.0",
-    "oxlint": "^1.42.0",
-    "sass": "^1.97.3",
-    "vite": "^7.3.1"
+    "oxfmt": "^0.56.0",
+    "oxlint": "^1.71.0",
+    "sass": "^1.101.0",
+    "vite": "^8.1.0"
   }
 }
