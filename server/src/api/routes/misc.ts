@@ -5,7 +5,7 @@ export const miscRouter = (app: Elysia) => {
   /** Returns an array of random company numbers */
   return app.get("/randomCompanyNumbers", async ({ query }) => {
     const { qty } = query
-    const companyNumbers = await redisClient.sRandMemberCount("companyNumbers", qty)
+    const companyNumbers = await redisClient.sRandMemberCount("companyNumbers", qty??1)
     return companyNumbers
   }, {
     query: t.Optional(t.Object({
