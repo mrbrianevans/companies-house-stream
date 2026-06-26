@@ -8,8 +8,14 @@ import { streamPaths } from "../../streams/streamPaths"
 import { VisitorCounterService } from "../visitorCounter"
 
 const server = new McpServer({
-  name: "companies.stream mcp", version: "1.0.1"
+  name: "companies.stream mcp",
+  version: "1.0.2",
+  websiteUrl: "https://companies.stream",
+  title: "Companies Stream",
+  description: "Companies Stream MCP for info about Companies House Streaming API",
+  icons: [{ src: "https://companies.stream/icon/icon512.png" }]
 })
+
 const transport = new WebStandardStreamableHTTPServerTransport()
 transport.onmessage = (message: JSONRPCMessage, extra?: MessageExtraInfo) => console.log("MCP request:", "method" in message ? message.method : message)
 server.registerTool("random_company_numbers", {
