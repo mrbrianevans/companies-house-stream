@@ -5,7 +5,7 @@ import pino from "pino"
 import { CustomJsonParse } from "./jsonParseStream.js"
 import { Readable } from "node:stream"
 import { redisClient } from "../utils/getRedisClient"
-import { type } from "node:os"
+
 
 export type StreamPath =
   | "insolvency-cases"
@@ -29,8 +29,8 @@ interface ResponseStartedLogEvent extends ResponseLogEventBase {
   status: string,
   headersObject:string,
   requestedTimepoint: string,
-  ttfb_ms: string
-  base_url: string
+  ttfbMs: string
+  baseUrl: string
 }
 interface ResponseEndedLogEvent extends ResponseLogEventBase {
   type: 'response_ended',
@@ -76,9 +76,9 @@ export function stream<EventType>(streamPath: StreamPath, startFromTimepoint?: n
     logResponse({
       headersObject: JSON.stringify(res.headers),
       status: statusCode?.toString() ?? '',
-      ttfb_ms: ttfbMs.toString(),
+      ttfbMs: ttfbMs.toString(),
       urlPath: path,
-      base_url: 'https://'+BASE_URL,
+      baseUrl: 'https://'+BASE_URL,
       stream: streamPath, type: 'response_started', correlationId, timestamp: new Date().toISOString(), requestedTimepoint: startFromTimepoint?.toString()??'' })
     switch (res.statusCode) {
       case 429:

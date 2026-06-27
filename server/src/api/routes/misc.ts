@@ -21,6 +21,7 @@ export const miscRouter = (app: Elysia) => {
     })
     .get('/responses', async () => {
       const responseMessages = await redisClient.xRevRange("ch:responses", '+', '-', {COUNT: 20})
-      return responseMessages.map(r=>r.message)
+      const responses = responseMessages.map(r=>r.message)
+      return responses.map(({ headersObject, ...message }) => ({...message, ...(headersObject ? {headers: JSON.parse(headersObject)} : {}) }))
     })
 }

@@ -164,7 +164,18 @@ server.registerTool("get_visitor_count_for_date", {
     }
   }
 })
+server.registerTool('get_recent_responses', {
+  title: 'Get recent responses from Companies House to requests on the Streaming API',
+  description: 'Returns the last 20 responses from Companies House to requests on the Streaming API. Useful for debugging during outages. If the user wants to know when the last response (success or failure) was for a stream, call this tool and choose the relevant stream to show the user.',
+  inputSchema: z.object({}),
+}, async()=>{
+  const responseMessages = await redisClient.xRevRange("ch:responses", '+', '-', {COUNT: 20})
+  const responses = responseMessages.map(r=>r.message).map(({ headersObject, ...message }) => ({...message, ...(headersObject ? {headers: JSON.parse(headersObject)} : {}) }))
 
+  return {
+    content: [{ type: "text", text: JSON.stringify({ responses }) }]
+  }
+})
 await server.connect(transport)
 
 export const mcpRouter = (app: Elysia) => {
