@@ -4,9 +4,8 @@ import { streamKeyHolder } from "../utils/KeyHolder.js"
 import pino from "pino"
 import { CustomJsonParse } from "./jsonParseStream.js"
 import { Readable } from "node:stream"
-import { AnyEvent } from "../types/eventTypes"
 import { redisClient } from "../utils/getRedisClient"
-import { String } from "@sinclair/typebox"
+import { type } from "node:os"
 
 export type StreamPath =
   | "insolvency-cases"
@@ -17,7 +16,7 @@ export type StreamPath =
   | "officers"
   | "disqualified-officers"
   | string
-
+const BASE_URL = 'stream.companieshouse.gov.uk'
 interface ResponseLogEventBase extends Record<string, string> {
 correlationId: string,
   type: 'response_started'|'response_ended'
@@ -31,6 +30,7 @@ interface ResponseStartedLogEvent extends ResponseLogEventBase {
   headersObject:string,
   requestedTimepoint: string,
   ttfb_ms: string
+  base_url: string
 }
 interface ResponseEndedLogEvent extends ResponseLogEventBase {
   type: 'response_ended',
@@ -55,7 +55,7 @@ export function stream<EventType>(streamPath: StreamPath, startFromTimepoint?: n
   const timepointQueryString = typeof startFromTimepoint === "number" ? `?timepoint=${startFromTimepoint}` : ""
   const path = "/" + streamPath + timepointQueryString
   const options: RequestOptions = {
-    hostname: "stream.companieshouse.gov.uk", port: 443, path, auth: streamKey + ":"
+    hostname: BASE_URL, port: 443, path, auth: streamKey + ":"
   }
   const parser = new CustomJsonParse({}, true)
   const handleError = (message: string) => (e: Error) => {
@@ -78,6 +78,7 @@ export function stream<EventType>(streamPath: StreamPath, startFromTimepoint?: n
       status: statusCode?.toString() ?? '',
       ttfb_ms: ttfbMs.toString(),
       urlPath: path,
+      base_url: 'https://'+BASE_URL,
       stream: streamPath, type: 'response_started', correlationId, timestamp: new Date().toISOString(), requestedTimepoint: startFromTimepoint?.toString()??'' })
     switch (res.statusCode) {
       case 429:
