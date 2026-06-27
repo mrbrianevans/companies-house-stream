@@ -31,7 +31,7 @@ const incrEventCount = (streamPath: string) => (event: AnyEvent) => redisClient.
 const incrResourceKindCount = (streamPath: string) => (event: AnyEvent) => redisClient.hIncrBy(`resourceKinds:${streamPath}`, event.resource_kind, 1)
 const updateTimepoint = (streamPath: string) => (event: AnyEvent) => redisClient.set("timepoints:" + streamPath, JSON.stringify(event.event), { EX: 86400 * 7 })
 const heartbeat = (streamPath: string) => () => redisClient.hSet("heartbeats", streamPath, Date.now()) // keeps track of which are alive
-const getMostRecentTimepoint = (streamPath: string) => redisClient.get("timepoints:" + streamPath).then(r => r ? JSON.parse(r)?.timepoint : undefined)
+const getMostRecentTimepoint = (streamPath: string) => redisClient.get("timepoints:" + streamPath).then(r => r ? JSON.parse(r)?.timepoint + 1 : undefined)
 const startStream = (streamPath: string): Promise<Readable> => getMostRecentTimepoint(streamPath)
   .then((timepoint) => stream(streamPath, timepoint)
     .on("data", sendEvent(streamPath))
