@@ -10,13 +10,7 @@
                 file_server
         }
 
-        @websockets {
-                header Connection *Upgrade*
-                header Upgrade websocket
-                # protocol ws
-        }
-
-        handle @websockets {
+        handle /events {
                 reverse_proxy api:3000
         }
 
@@ -32,7 +26,13 @@
                   /persons-with-significant-control-statements*
         }
 
+        header -Via
         handle @historical {
-            reverse_proxy 10.106.0.5:3000
+            reverse_proxy 10.106.0.5:3000 {
+                   transport http {
+                        compression off
+                  }
+                  flush_interval -1
+            }
         }
 }
