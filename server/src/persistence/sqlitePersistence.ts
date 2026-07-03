@@ -87,7 +87,7 @@ function batchInsertEvents(streamPath: string, events: AnyEvent[]) {
   // Use SQLite upsert semantics to ignore duplicates on primary key (timepoint)
   db.exec("BEGIN TRANSACTION");
   try {
-    console.debug("Inserting events for streamPath:", streamPath, "with", events.length, "events");
+    // console.debug("Inserting events for streamPath:", streamPath, "with", events.length, "events");
     const placeholders = events.map(() => "(?, ?, ?)").join(", ");
     const values = events.flatMap((event) => [
       event.event.timepoint,

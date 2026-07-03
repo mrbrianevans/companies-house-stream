@@ -123,7 +123,7 @@ export async function runNightlyExport(db: DatabaseSync) {
             FROM sqlite_buffer.${table} 
             WHERE timepoint >= ${minTimepoint} AND timepoint <= ${maxTimepoint} AND (event_data::JSON->>'$.resource_kind') = '${resource_kind}'
             ORDER BY timepoint ASC
-          ) TO '${tempDir}' (FORMAT CSV, DELIMINATOR '\\n', HEADER false, QUOTE '', ESCAPE '', FILE_SIZE_BYTES '${filePartSize}', FILENAME_PATTERN '${resource_kind}_part{i}', FILE_EXTENSION 'json', RETURN_FILES);
+          ) TO '${tempDir}' (FORMAT CSV, DELIMITER '\\n', HEADER false, QUOTE '', ESCAPE '', FILE_SIZE_BYTES '${filePartSize}', FILENAME_PATTERN '${resource_kind}_part{i}', FILE_EXTENSION 'json', RETURN_FILES);
           `);
             const tempFilesResult = (await tempFileCopy.getRowObjects())[0];
             console.log("Copied data to temp dir", tempDir, tempFilesResult);
