@@ -37,13 +37,16 @@ interface ResponseEndedLogEvent extends ResponseLogEventBase {
 }
 type ResponseLogEvent = ResponseStartedLogEvent | ResponseEndedLogEvent
 
-const logResponse = (event: ResponseLogEvent) => redisClient.xAdd("ch:responses", "*", event, {
-  TRIM: {
-    strategy: "MAXLEN",
-    threshold: 1000,
-    strategyModifier: "~"
-  }
-})
+const logResponse = (event: ResponseLogEvent) => {
+  console.log(JSON.stringify(event))
+  redisClient.xAdd("ch:responses", "*", event, {
+    TRIM: {
+      strategy: "MAXLEN",
+      threshold: 1000,
+      strategyModifier: "~"
+    }
+  })
+}
 
 /**
  * Returns a readable stream of events. The recommended way of listening to a stream in this application.

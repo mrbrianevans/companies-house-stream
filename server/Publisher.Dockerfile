@@ -14,7 +14,7 @@ COPY . .
 
 RUN bun build src/chStreamToRedis/streamToRedis.ts --outdir dist --target=node
 
-FROM node:22
+FROM node:26
 
 WORKDIR /companies-stream/server
 
