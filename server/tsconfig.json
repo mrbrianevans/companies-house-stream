@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
-    "types": [
-      "bun-types"
-    ],
-    "lib": [
-      "esnext"
-    ],
+    "types": ["bun-types"],
+    "lib": ["esnext"],
     "module": "esnext",
     "target": "esnext",
     "moduleResolution": "bundler",
@@ -24,7 +20,5 @@
     "downlevelIteration": true,
     "allowSyntheticDefaultImports": true
   },
-  "include": [
-    "src"
-  ]
+  "include": ["src"]
 }

@@ -1,4 +1,3 @@
-import pino from "pino"
+import pino from "pino";
 
-
-export const streamFromRedisLogger = pino({ base: { process: 'streamFromRedis' } })
+export const streamFromRedisLogger = pino({ base: { process: "streamFromRedis" } });
