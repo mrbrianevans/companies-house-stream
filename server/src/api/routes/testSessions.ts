@@ -42,6 +42,7 @@ type LogEntry = {
   ip?: string;
   userAgent?: string;
   streamPath?: string;
+  timepoint?: string;
   reason?: string;
   headers?: Record<string, string>;
 };
@@ -510,6 +511,7 @@ export const testSessionsRouter = (app: Elysia) => {
         ip,
         userAgent,
         streamPath,
+        timepoint: timepointRaw,
         headers: pickHeaders(headers as Record<string, string | undefined>),
       });
       publishSessionUpdate(uuid);

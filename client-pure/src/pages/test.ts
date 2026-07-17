@@ -11,6 +11,7 @@ type LogEntry = {
   ip?: string;
   userAgent?: string;
   streamPath?: string;
+  timepoint?: string;
   reason?: string;
 };
 
@@ -204,7 +205,11 @@ function renderLive(data: Session) {
         log.ts ? new Date(log.ts).toLocaleTimeString() : "?",
         log.type,
         log.connId,
-        log.streamPath ? `/${log.streamPath}` : "",
+        log.streamPath
+          ? log.timepoint
+            ? `/${log.streamPath}?timepoint=${log.timepoint}`
+            : `/${log.streamPath}`
+          : "",
         log.ip || "",
         log.reason || "",
       ]
