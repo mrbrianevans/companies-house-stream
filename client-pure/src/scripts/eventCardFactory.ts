@@ -117,7 +117,7 @@ export function getDescription(event) {
       return {
         companyNumber,
         description: `PSC statement descriptions not yet developed`,
-        title: titleCase(event.data.linked_psc_name),
+        title: titleCase(event.data.statement),
       };
     }
     case "company-exemptions": {
@@ -126,7 +126,7 @@ export function getDescription(event) {
       return {
         companyNumber,
         description: `Company exemptions descriptions not yet developed`,
-        title: titleCase(event.data.linked_psc_name),
+        title: titleCase(Object.keys(event.data)[0]),
       };
     }
     default:
