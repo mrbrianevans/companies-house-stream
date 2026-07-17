@@ -14,7 +14,7 @@
                 reverse_proxy api:3000
         }
 
-        # for health checks
+        # API routes (REST + WebSockets); strips /events prefix for the backend
         handle_path /events/* {
                 reverse_proxy api:3000
         }
@@ -34,5 +34,18 @@
                   }
                   flush_interval -1
             }
+        }
+}
+
+# Official-shaped test Streaming API (Basic Auth session key = UUID from /test page).
+# Set TEST_SITE_ADDRESS like SITE_ADDRESS (e.g. test.companies.stream, localhost:3001, :8443).
+{$TEST_SITE_ADDRESS:test.companies.stream} {
+        log
+        header -Via
+        reverse_proxy api:3000 {
+                transport http {
+                        compression off
+                }
+                flush_interval -1
         }
 }

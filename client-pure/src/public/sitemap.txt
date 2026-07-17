@@ -4,3 +4,4 @@ https://companies.stream/mcp
 https://companies.stream/resources
 https://companies.stream/samples
 https://companies.stream/stats
+https://companies.stream/test

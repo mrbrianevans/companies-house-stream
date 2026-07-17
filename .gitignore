@@ -8,3 +8,5 @@ terraform/.terraform*
 terraform/terraform.*
 todo.md
 **/tsconfig.tsbuildinfo
+
+**/mcps/

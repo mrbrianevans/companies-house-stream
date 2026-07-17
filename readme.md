@@ -86,7 +86,9 @@ See the [LICENSE](LICENSE) file for more information.
 - create `.env` file
     ```
      SITE_ADDRESS=http://localhost:80
+     TEST_SITE_ADDRESS=localhost:3001
     ```
+    (`TEST_SITE_ADDRESS` is the Caddy/Elysia host for official-shaped test streams; production default is `test.companies.stream`.)
 - create `.api.env` file with Streaming API key
     ```
     STREAM_KEY=dd559b99-7870-4792-8a38-054f203eb818

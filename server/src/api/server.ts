@@ -12,6 +12,7 @@ import { eventWebsocketRouter } from "./routes/eventsWebsocket";
 import { redisClient } from "../utils/getRedisClient";
 import { setTimeout } from "node:timers/promises";
 import { mcpRouter } from "./routes/mcp";
+import { testSessionsRouter } from "./routes/testSessions";
 
 const app = new Elysia()
   .on("error", (err) => console.error("Error", err.request.url, err.error.message))
@@ -21,6 +22,7 @@ const app = new Elysia()
   .use(visitorsRouter)
   .use(eventWebsocketRouter)
   .use(mcpRouter)
+  .use(testSessionsRouter)
   .on("request", ({ request }) => console.log("Request to server", request.method, request.url))
   .on("stop", async () => {
     logger.flush();
