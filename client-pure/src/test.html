@@ -19,9 +19,9 @@
           <a href="./resources">Resources</a>
         </div>
         <p>
-          Create a temporary API key that streams live and historical events on
-          <code>test.companies.stream</code>, matching official paths, Basic Auth, NDJSON, timepoints,
-          and concurrent connection behaviour. Sessions expire after 24 hours.
+          Create a temporary API key that streams live and historical events on the configured test
+          site (see base URL below), matching official paths, Basic Auth, NDJSON, timepoints, and
+          concurrent connection behaviour. Sessions expire 24 hours after creation.
         </p>
       </header>
 
@@ -60,7 +60,7 @@
         <div class="card">
           <h3>Base URL</h3>
           <div class="row copy-row">
-            <code id="base-url" class="mono-block">https://test.companies.stream</code>
+            <code id="base-url" class="mono-block"></code>
             <button type="button" id="copy-base-btn" data-copy-target="base-url">Copy</button>
           </div>
         </div>
@@ -70,8 +70,8 @@
           <ul id="stream-paths" class="path-list"></ul>
           <p class="hint">
             Example:
-            <code
-              >curl -N -u "APIKEY:" "https://test.companies.stream/filings?timepoint=…"</code
+            <code id="curl-example"
+              >curl -N -u "APIKEY:" "BASE_URL/filings"</code
             >
           </p>
         </div>

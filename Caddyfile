@@ -42,8 +42,9 @@
         }
 }
 
-# Official-shaped test Streaming API (Basic Auth session key = UUID from /test page)
-test.companies.stream {
+# Official-shaped test Streaming API (Basic Auth session key = UUID from /test page).
+# Set TEST_SITE_ADDRESS like SITE_ADDRESS (e.g. test.companies.stream, localhost:3001, :8443).
+{$TEST_SITE_ADDRESS:test.companies.stream} {
         log
         header -Via
         reverse_proxy api:3000 {

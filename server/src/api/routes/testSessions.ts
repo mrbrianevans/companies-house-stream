@@ -33,14 +33,50 @@ type LogEntry = {
 /** In-memory abort handles so terminate/evict can close sockets immediately. */
 const sessionConnections = new Map<string, Map<string, AbortController>>();
 
-function shortConnId(): string {
-  return crypto.randomUUID().replace(/-/g, "").slice(0, 10);
+/** Caddy/Elysia test stream address, e.g. `test.companies.stream` or `localhost:3001`. */
+function rawTestSiteAddress(): string {
+  return (process.env.TEST_SITE_ADDRESS || "test.companies.stream").trim();
 }
 
-function isTestHostname(host: string | undefined): boolean {
-  if (!host) return false;
-  const hostname = host.split(":")[0].toLowerCase();
-  return hostname === "test.companies.stream" || hostname.startsWith("test.");
+/**
+ * Normalise a site address env value to `host` or `host:port` (no scheme, no trailing slash).
+ * `:8080` becomes `localhost:8080`.
+ */
+function normalizeSiteAddress(addr: string): string {
+  let a = addr.trim().replace(/\/$/, "");
+  a = a.replace(/^https?:\/\//i, "");
+  if (a.startsWith(":")) a = "localhost" + a;
+  return a.toLowerCase();
+}
+
+/** Public base URL for clients (curl examples, dashboard). */
+export function getTestStreamBaseUrl(): string {
+  const raw = rawTestSiteAddress();
+  if (/^https?:\/\//i.test(raw)) return raw.replace(/\/$/, "");
+  const normalized = normalizeSiteAddress(raw);
+  if (
+    normalized.startsWith("localhost") ||
+    normalized.startsWith("127.0.0.1") ||
+    /^\d{1,3}(\.\d{1,3}){3}/.test(normalized)
+  ) {
+    return `http://${normalized}`;
+  }
+  return `https://${normalized}`;
+}
+
+function isTestHost(hostHeader: string | undefined): boolean {
+  if (!hostHeader) return false;
+  const expected = normalizeSiteAddress(rawTestSiteAddress());
+  const actual = hostHeader.toLowerCase().trim();
+  if (actual === expected) return true;
+  // Default ports: Host may omit or include :80 / :443
+  if (actual === `${expected}:443` || actual === `${expected}:80`) return true;
+  if (expected === `${actual}:443` || expected === `${actual}:80`) return true;
+  return false;
+}
+
+function shortConnId(): string {
+  return crypto.randomUUID().replace(/-/g, "").slice(0, 10);
 }
 
 function parseBasicAuthKey(authorization: string | undefined): string | null {
@@ -61,18 +97,23 @@ function isUuid(value: string): boolean {
   );
 }
 
-async function refreshSessionTtl(uuid: string): Promise<void> {
-  const multi = redisClient.multi();
-  multi.expire(KEYS.session(uuid), SESSION_TTL_SECONDS);
-  multi.expire(KEYS.active(uuid), SESSION_TTL_SECONDS);
-  multi.expire(KEYS.logs(uuid), SESSION_TTL_SECONDS);
-  await multi.exec();
+/**
+ * Pin key expiry to session creation + 24h (absolute). Never extends lifetime.
+ * Session key itself is created with EX and is never EXPIRE'd again.
+ */
+async function expireAtSessionEnd(uuid: string, key: string): Promise<void> {
+  const createdAt = await redisClient.get(KEYS.session(uuid));
+  if (!createdAt) return;
+  const createdMs = Date.parse(createdAt);
+  if (!Number.isFinite(createdMs)) return;
+  const expiresAtUnix = Math.floor(createdMs / 1000) + SESSION_TTL_SECONDS;
+  await redisClient.expireAt(key, expiresAtUnix);
 }
 
 async function appendLog(uuid: string, entry: LogEntry): Promise<void> {
   await redisClient.rPush(KEYS.logs(uuid), JSON.stringify(entry));
   await redisClient.lTrim(KEYS.logs(uuid), -500, -1);
-  await redisClient.expire(KEYS.logs(uuid), SESSION_TTL_SECONDS);
+  await expireAtSessionEnd(uuid, KEYS.logs(uuid));
 }
 
 function registerConnection(uuid: string, connId: string, ac: AbortController): void {
@@ -96,6 +137,7 @@ function abortConnection(uuid: string, connId: string): void {
   if (ac && !ac.signal.aborted) ac.abort();
 }
 
+/** Abort all live connections; each connection's cleanup removes itself from Redis active set. */
 function abortAllSessionConnections(uuid: string): string[] {
   const map = sessionConnections.get(uuid);
   if (!map) return [];
@@ -103,7 +145,6 @@ function abortAllSessionConnections(uuid: string): string[] {
   for (const [, ac] of map) {
     if (!ac.signal.aborted) ac.abort();
   }
-  sessionConnections.delete(uuid);
   return ids;
 }
 
@@ -120,7 +161,6 @@ async function enforceConnectionLimit(uuid: string): Promise<void> {
     if (!oldest) break;
     const evictedId = oldest.value;
     abortConnection(uuid, evictedId);
-    unregisterConnection(uuid, evictedId);
     await appendLog(uuid, {
       type: "evict",
       connId: evictedId,
@@ -160,6 +200,7 @@ export const testSessionsRouter = (app: Elysia) => {
       const now = Date.now();
       const cutoff = now - SESSION_TTL_SECONDS * 1000;
 
+      // Drop only expired session members; never EXPIRE/delete the global set key itself.
       await redisClient.zRemRangeByScore(KEYS.globalActive, 0, cutoff);
       const activeCount = await redisClient.zCard(KEYS.globalActive);
       if (activeCount >= MAX_GLOBAL_SESSIONS) {
@@ -173,12 +214,16 @@ export const testSessionsRouter = (app: Elysia) => {
       const uuid = crypto.randomUUID();
       const createdAt = new Date(now).toISOString();
 
+      // TTL is fixed at creation — never extended on later activity.
       await redisClient.set(KEYS.session(uuid), createdAt, { EX: SESSION_TTL_SECONDS });
       await redisClient.zAdd(KEYS.globalActive, { score: now, value: uuid });
-      // Keep global set from growing forever; members also cleaned on create.
-      await redisClient.expire(KEYS.globalActive, SESSION_TTL_SECONDS);
 
-      return { key: uuid, created_at: createdAt, expires_in_seconds: SESSION_TTL_SECONDS };
+      return {
+        key: uuid,
+        created_at: createdAt,
+        expires_in_seconds: SESSION_TTL_SECONDS,
+        stream_base_url: getTestStreamBaseUrl(),
+      };
     })
 
     .get(
@@ -193,8 +238,6 @@ export const testSessionsRouter = (app: Elysia) => {
           set.status = 404;
           return { statusCode: 404, message: "Session not found or expired" };
         }
-
-        await refreshSessionTtl(uuid);
 
         const createdAt = await redisClient.get(KEYS.session(uuid));
         const logRaw = await redisClient.lRange(KEYS.logs(uuid), -LOG_LIMIT, -1);
@@ -217,7 +260,7 @@ export const testSessionsRouter = (app: Elysia) => {
           created_at: createdAt,
           active_connections,
           logs,
-          stream_base_url: "https://test.companies.stream",
+          stream_base_url: getTestStreamBaseUrl(),
           stream_paths: [...streamPaths],
         };
       },
@@ -237,12 +280,8 @@ export const testSessionsRouter = (app: Elysia) => {
           return { statusCode: 404, message: "Session not found or expired" };
         }
 
+        // Abort only; each stream's cleanup removes its own member from the active set.
         const aborted = abortAllSessionConnections(uuid);
-        const remaining = await redisClient.zRange(KEYS.active(uuid), 0, -1);
-        for (const connId of remaining) {
-          if (!aborted.includes(connId)) aborted.push(connId);
-        }
-        await redisClient.del(KEYS.active(uuid));
 
         const ts = new Date().toISOString();
         for (const connId of aborted) {
@@ -253,7 +292,6 @@ export const testSessionsRouter = (app: Elysia) => {
             reason: "manual_terminate",
           });
         }
-        await refreshSessionTtl(uuid);
 
         return { terminated: aborted.length, connIds: aborted };
       },
@@ -271,6 +309,7 @@ export const testSessionsRouter = (app: Elysia) => {
 
         abortAllSessionConnections(uuid);
         await redisClient.del([KEYS.session(uuid), KEYS.active(uuid), KEYS.logs(uuid)]);
+        // Remove only this session from the global set; leave the set key intact.
         await redisClient.zRem(KEYS.globalActive, uuid);
 
         return { deleted: true, key: uuid };
@@ -278,12 +317,10 @@ export const testSessionsRouter = (app: Elysia) => {
       { params: t.Object({ uuid: t.String() }) },
     );
 
-  // --- Test subdomain: official-shaped streaming endpoints ---
+  // --- Test site: official-shaped streaming endpoints (Host = TEST_SITE_ADDRESS) ---
   for (const streamPath of streamPaths) {
     app.get(`/${streamPath}`, async ({ request, query, set, headers }) => {
-      const host = headers["host"];
-      // Prefer test host, but allow direct hits for local/dev if Authorization is present.
-      if (!isTestHostname(host) && !headers["authorization"]) {
+      if (!isTestHost(headers["host"])) {
         set.status = 404;
         return { statusCode: 404, message: "Not found" };
       }
@@ -291,7 +328,8 @@ export const testSessionsRouter = (app: Elysia) => {
       const key = parseBasicAuthKey(headers["authorization"]);
       if (!key || !isUuid(key) || !(await sessionExists(key))) {
         set.status = 401;
-        set.headers["WWW-Authenticate"] = 'Basic realm="test.companies.stream"';
+        set.headers["WWW-Authenticate"] =
+          `Basic realm="${normalizeSiteAddress(rawTestSiteAddress())}"`;
         return "Invalid Authorization";
       }
 
@@ -320,6 +358,7 @@ export const testSessionsRouter = (app: Elysia) => {
 
       registerConnection(uuid, connId, ac);
       await redisClient.zAdd(KEYS.active(uuid), { score: connectedAt, value: connId });
+      await expireAtSessionEnd(uuid, KEYS.active(uuid));
       await enforceConnectionLimit(uuid);
       // If we were immediately evicted (race), bail out.
       if (ac.signal.aborted || !(await redisClient.zScore(KEYS.active(uuid), connId))) {
@@ -337,7 +376,6 @@ export const testSessionsRouter = (app: Elysia) => {
         streamPath,
         headers: pickHeaders(headers as Record<string, string | undefined>),
       });
-      await refreshSessionTtl(uuid);
 
       const encoder = new TextEncoder();
       const requestSignal = request.signal;

@@ -146,11 +146,15 @@ async function resumeSession() {
 
 function renderSession(data: SessionResponse) {
   sessionMeta.textContent = data.created_at
-    ? `Created ${new Date(data.created_at).toLocaleString()} · expires ~24h after last activity`
+    ? `Created ${new Date(data.created_at).toLocaleString()} · expires 24h after creation`
     : "Session active";
 
   if (data.stream_base_url) {
     baseUrlEl.textContent = data.stream_base_url;
+    const curlExample = document.getElementById("curl-example");
+    if (curlExample) {
+      curlExample.textContent = `curl -N -u "APIKEY:" "${data.stream_base_url}/filings"`;
+    }
   }
 
   streamPathsEl.replaceChildren();

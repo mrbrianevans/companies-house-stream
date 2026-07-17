@@ -52,17 +52,21 @@ This document outlines the Redis key patterns used throughout the application.
 
 ## Test streaming sessions
 
-Temporary developer sessions that mirror the official Streaming API on `test.companies.stream`. All keys expire after 24 hours (`EXPIRE 86400`).
+Temporary developer sessions that mirror the official Streaming API on `TEST_SITE_ADDRESS` (default `test.companies.stream`). Session data expires **exactly 24 hours after creation** (TTL is never refreshed).
 
 - `test:session:{uuid}` - **String**
   - Session existence marker; value is ISO `created_at`
+  - `EX 86400` set once at creation only
 - `test:session:{uuid}:active` - **Sorted Set**
   - Score: connection start timestamp (ms)
   - Member: short `connId`
   - Used for ~10 concurrent connection limit (evict oldest)
+  - `EXPIREAT` aligned to session creation + 24h (not extended)
 - `test:session:{uuid}:logs` - **List**
   - JSON log entries (connect / disconnect / terminate / evict)
+  - `EXPIREAT` aligned to session creation + 24h (not extended)
 - `test:sessions:active` - **Sorted Set** (global)
   - Score: session create timestamp (ms)
   - Member: session uuid
   - Global concurrent session limit (1000)
+  - Key is **not** expired; expired members are removed with `ZREMRANGEBYSCORE` / `ZREM` only

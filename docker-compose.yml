@@ -22,6 +22,7 @@ services:
       driver: local
     environment:
       SITE_ADDRESS: ${SITE_ADDRESS}
+      TEST_SITE_ADDRESS: ${TEST_SITE_ADDRESS:-test.companies.stream}
 
   event-publisher:
     build:
@@ -42,6 +43,7 @@ services:
       dockerfile: Api.Dockerfile
     environment:
       PUBSUB_REDIS_IP: redis
+      TEST_SITE_ADDRESS: ${TEST_SITE_ADDRESS:-test.companies.stream}
     logging:
       driver: local
     depends_on: [ redis ]
