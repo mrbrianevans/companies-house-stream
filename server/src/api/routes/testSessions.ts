@@ -602,7 +602,30 @@ export const testSessionsRouter = (app: Elysia) => {
           if (!ac.signal.aborted) ac.abort();
         },
       });
-      return new Response(body, {
+      class ByteChunker implements Transformer<Uint8Array, Uint8Array> {
+        private buffer = new Uint8Array(0);
+
+        transform(chunk: Uint8Array, controller: TransformStreamDefaultController<Uint8Array>) {
+          // Append
+          const newBuffer = new Uint8Array(this.buffer.length + chunk.length);
+          newBuffer.set(this.buffer);
+          newBuffer.set(chunk, this.buffer.length);
+          this.buffer = newBuffer;
+
+          // Emit full 100-byte chunks only (to split events across multiple chunks)
+          while (this.buffer.length >= 100) {
+            controller.enqueue(this.buffer.subarray(0, 100));
+            this.buffer = this.buffer.subarray(100);
+          }
+        }
+
+        flush(controller: TransformStreamDefaultController<Uint8Array>) {
+          // Ignore any remaining bytes on end — do not enqueue
+          // (buffer is simply discarded) to simulate mid-event termination.
+        }
+      }
+      const chunkedBody = body.pipeThrough(new TransformStream(new ByteChunker()));
+      return new Response(chunkedBody, {
         status: 200,
         headers: {
           ...OFFICIAL_STREAM_HEADERS,
