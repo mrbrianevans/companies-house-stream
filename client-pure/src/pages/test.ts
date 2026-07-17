@@ -153,7 +153,8 @@ function renderSession(data: SessionResponse) {
     baseUrlEl.textContent = data.stream_base_url;
     const curlExample = document.getElementById("curl-example");
     if (curlExample) {
-      curlExample.textContent = `curl -N -u "APIKEY:" "${data.stream_base_url}/filings"`;
+      const key = data.key || currentUuid || "APIKEY";
+      curlExample.textContent = `curl -N -u "${key}:" "${data.stream_base_url}/filings"`;
     }
   }
 
@@ -220,7 +221,6 @@ async function refreshSession() {
 
 async function terminateConnections() {
   if (!currentUuid) return;
-  if (!confirm("Force-close all active stream connections for this session?")) return;
   terminateBtn.disabled = true;
   try {
     const res = await fetch(`/test/sessions/${encodeURIComponent(currentUuid)}/terminate`, {
@@ -242,7 +242,6 @@ async function terminateConnections() {
 
 async function deleteSession() {
   if (!currentUuid) return;
-  if (!confirm("Delete this session and all its logs? This cannot be undone.")) return;
   deleteBtn.disabled = true;
   try {
     const res = await fetch(`/test/sessions/${encodeURIComponent(currentUuid)}`, {

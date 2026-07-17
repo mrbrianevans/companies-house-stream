@@ -12,6 +12,22 @@ const MAX_GLOBAL_SESSIONS = 1000;
 const MAX_SESSION_CONNECTIONS = 10;
 const LOG_LIMIT = 100;
 
+/**
+ * Successful stream response headers matching official Companies House Streaming API.
+ * See TESTER.md appendix "Sample headers".
+ * (`date` / `transfer-encoding: chunked` are applied by the runtime for streaming bodies.)
+ */
+const OFFICIAL_STREAM_HEADERS: Record<string, string> = {
+  "Content-Type": "text/plain; charset=utf-8",
+  Connection: "keep-alive",
+  "Access-Control-Allow-Credentials": "true",
+  "Access-Control-Allow-Headers":
+    "origin, content-type, content-length, user-agent, host, accept, authorization",
+  "Access-Control-Expose-Headers":
+    "Location, www-authenticate, cache-control, pragma, content-type, expires, last-modified",
+  "Access-Control-Max-Age": "3600",
+};
+
 const KEYS = {
   session: (uuid: string) => `test:session:${uuid}`,
   active: (uuid: string) => `test:session:${uuid}:active`,
@@ -33,41 +49,72 @@ type LogEntry = {
 /** In-memory abort handles so terminate/evict can close sockets immediately. */
 const sessionConnections = new Map<string, Map<string, AbortController>>();
 
-/** Caddy/Elysia test stream address, e.g. `test.companies.stream` or `localhost:3001`. */
+/** Caddy/Elysia test stream address, e.g. `test.companies.stream`, `localhost:3001`, or `:8001`. */
 function rawTestSiteAddress(): string {
   return (process.env.TEST_SITE_ADDRESS || "test.companies.stream").trim();
 }
 
 /**
- * Normalise a site address env value to `host` or `host:port` (no scheme, no trailing slash).
- * `:8080` becomes `localhost:8080`.
+ * Strip scheme/trailing slash. Port-only values like `:8001` are left as-is
+ * (Caddy meaning: listen on that port for any hostname).
  */
-function normalizeSiteAddress(addr: string): string {
-  let a = addr.trim().replace(/\/$/, "");
-  a = a.replace(/^https?:\/\//i, "");
-  if (a.startsWith(":")) a = "localhost" + a;
-  return a.toLowerCase();
+function stripSiteAddress(addr: string): string {
+  return addr
+    .trim()
+    .replace(/\/$/, "")
+    .replace(/^https?:\/\//i, "")
+    .toLowerCase();
 }
 
-/** Public base URL for clients (curl examples, dashboard). */
-export function getTestStreamBaseUrl(): string {
+/**
+ * Public base URL for clients (curl examples, dashboard).
+ * When `TEST_SITE_ADDRESS` is port-only (`:8001`), derive host from the
+ * management request's Host header so LAN hostnames (e.g. carrot) work.
+ */
+export function getTestStreamBaseUrl(requestHost?: string): string {
   const raw = rawTestSiteAddress();
   if (/^https?:\/\//i.test(raw)) return raw.replace(/\/$/, "");
-  const normalized = normalizeSiteAddress(raw);
-  if (
-    normalized.startsWith("localhost") ||
-    normalized.startsWith("127.0.0.1") ||
-    /^\d{1,3}(\.\d{1,3}){3}/.test(normalized)
-  ) {
-    return `http://${normalized}`;
+
+  const stripped = stripSiteAddress(raw);
+
+  // Port-only: build http://{request-hostname}:port
+  if (stripped.startsWith(":")) {
+    const port = stripped.slice(1);
+    const hostname = (requestHost || "localhost").split(":")[0] || "localhost";
+    return `http://${hostname}:${port}`;
   }
-  return `https://${normalized}`;
+
+  if (
+    stripped.startsWith("localhost") ||
+    stripped.startsWith("127.0.0.1") ||
+    /^\d{1,3}(\.\d{1,3}){3}/.test(stripped)
+  ) {
+    return `http://${stripped}`;
+  }
+  return `https://${stripped}`;
 }
 
+/**
+ * Match request Host against TEST_SITE_ADDRESS.
+ * - `:8001` → any hostname on port 8001 (matches Caddy port-only site blocks)
+ * - `carrot:8001` → that host:port only
+ * - `test.companies.stream` → that host (with optional :80/:443)
+ */
 function isTestHost(hostHeader: string | undefined): boolean {
   if (!hostHeader) return false;
-  const expected = normalizeSiteAddress(rawTestSiteAddress());
+  const expected = stripSiteAddress(rawTestSiteAddress());
   const actual = hostHeader.toLowerCase().trim();
+
+  // Port-only bind (e.g. :8001): accept any host on that port
+  if (expected.startsWith(":")) {
+    const port = expected.slice(1);
+    if (!port) return false;
+    if (actual.endsWith(`:${port}`)) return true;
+    // Host header omits default ports
+    if ((port === "80" || port === "443") && !actual.includes(":")) return true;
+    return false;
+  }
+
   if (actual === expected) return true;
   // Default ports: Host may omit or include :80 / :443
   if (actual === `${expected}:443` || actual === `${expected}:80`) return true;
@@ -196,7 +243,7 @@ function pickHeaders(headers: Record<string, string | undefined>): Record<string
 export const testSessionsRouter = (app: Elysia) => {
   // --- Main domain: session management ---
   app
-    .post("/test/sessions", async ({ set }) => {
+    .post("/test/sessions", async ({ set, headers }) => {
       const now = Date.now();
       const cutoff = now - SESSION_TTL_SECONDS * 1000;
 
@@ -222,13 +269,13 @@ export const testSessionsRouter = (app: Elysia) => {
         key: uuid,
         created_at: createdAt,
         expires_in_seconds: SESSION_TTL_SECONDS,
-        stream_base_url: getTestStreamBaseUrl(),
+        stream_base_url: getTestStreamBaseUrl(headers["host"]),
       };
     })
 
     .get(
       "/test/sessions/:uuid",
-      async ({ params, set }) => {
+      async ({ params, set, headers }) => {
         const { uuid } = params;
         if (!isUuid(uuid)) {
           set.status = 400;
@@ -260,7 +307,7 @@ export const testSessionsRouter = (app: Elysia) => {
           created_at: createdAt,
           active_connections,
           logs,
-          stream_base_url: getTestStreamBaseUrl(),
+          stream_base_url: getTestStreamBaseUrl(headers["host"]),
           stream_paths: [...streamPaths],
         };
       },
@@ -329,7 +376,7 @@ export const testSessionsRouter = (app: Elysia) => {
       if (!key || !isUuid(key) || !(await sessionExists(key))) {
         set.status = 401;
         set.headers["WWW-Authenticate"] =
-          `Basic realm="${normalizeSiteAddress(rawTestSiteAddress())}"`;
+          `Basic realm="${stripSiteAddress(rawTestSiteAddress())}"`;
         return "Invalid Authorization";
       }
 
@@ -440,10 +487,9 @@ export const testSessionsRouter = (app: Elysia) => {
       return new Response(body, {
         status: 200,
         headers: {
-          "Content-Type": "text/plain; charset=utf-8",
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          Connection: "keep-alive",
-          "X-Accel-Buffering": "no",
+          ...OFFICIAL_STREAM_HEADERS,
+          // Explicit Date matches official sample format (HTTP-date / IMF-fix)
+          Date: new Date().toUTCString(),
         },
       });
     });

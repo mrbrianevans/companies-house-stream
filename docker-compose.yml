@@ -15,6 +15,8 @@ services:
     ports:
       - "80:80"
       - "443:443"
+      # TEST_SITE_ADDRESS port (default :8001) must be published for LAN access
+      - "8001:8001"
     volumes:
       - caddy_data:/data
       - caddy_config:/config
