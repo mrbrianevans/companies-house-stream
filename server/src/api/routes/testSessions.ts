@@ -238,7 +238,49 @@ function pickHeaders(headers: Record<string, string | undefined>): Record<string
   return out;
 }
 
+type SessionActiveConnection = {
+  connId: string;
+  connected_at: string;
+  alive: boolean;
+};
+
+type SessionUpdateMessage = {
+  type: "update";
+  active: SessionActiveConnection[];
+  logs: LogEntry[];
+};
+
+async function buildSessionSnapshot(uuid: string): Promise<SessionUpdateMessage | null> {
+  if (!(await sessionExists(uuid))) return null;
+
+  const logRaw = await redisClient.lRange(KEYS.logs(uuid), -LOG_LIMIT, -1);
+  const logs = logRaw.map((line) => {
+    try {
+      return JSON.parse(line) as LogEntry;
+    } catch {
+      return { type: "disconnect" as const, connId: "?", ts: "", reason: "bad_log" };
+    }
+  });
+  const activeMembers = await redisClient.zRangeWithScores(KEYS.active(uuid), 0, -1);
+  const active = activeMembers.map((m) => ({
+    connId: m.value,
+    connected_at: new Date(m.score).toISOString(),
+    alive: sessionConnections.get(uuid)?.has(m.value) ?? false,
+  }));
+
+  return { type: "update", active, logs };
+}
+
 export const testSessionsRouter = (app: Elysia) => {
+  /** Push full dashboard snapshot to any tabs subscribed on this session uuid. */
+  const publishSessionUpdate = (uuid: string) => {
+    void buildSessionSnapshot(uuid)
+      .then((snapshot) => {
+        if (snapshot) app.server?.publish(uuid, JSON.stringify(snapshot));
+      })
+      .catch(() => {});
+  };
+
   // --- Main domain: session management ---
   app
     .post("/test/sessions", async ({ set, headers }) => {
@@ -285,26 +327,12 @@ export const testSessionsRouter = (app: Elysia) => {
         }
 
         const createdAt = await redisClient.get(KEYS.session(uuid));
-        const logRaw = await redisClient.lRange(KEYS.logs(uuid), -LOG_LIMIT, -1);
-        const logs = logRaw.map((line) => {
-          try {
-            return JSON.parse(line) as LogEntry;
-          } catch {
-            return { type: "disconnect", connId: "?", ts: "", reason: "bad_log" };
-          }
-        });
-        const activeMembers = await redisClient.zRangeWithScores(KEYS.active(uuid), 0, -1);
-        const active_connections = activeMembers.map((m) => ({
-          connId: m.value,
-          connected_at: new Date(m.score).toISOString(),
-          alive: sessionConnections.get(uuid)?.has(m.value) ?? false,
-        }));
-
+        const snapshot = await buildSessionSnapshot(uuid);
         return {
           key: uuid,
           created_at: createdAt,
-          active_connections,
-          logs,
+          active_connections: snapshot?.active ?? [],
+          logs: snapshot?.logs ?? [],
           stream_base_url: getTestStreamBaseUrl(headers["host"]),
           stream_paths: [...streamPaths],
         };
@@ -338,6 +366,7 @@ export const testSessionsRouter = (app: Elysia) => {
           });
         }
 
+        publishSessionUpdate(uuid);
         return { terminated: aborted.length, connIds: aborted };
       },
       { params: t.Object({ uuid: t.String() }) },
@@ -357,10 +386,31 @@ export const testSessionsRouter = (app: Elysia) => {
         // Remove only this session from the global set; leave the set key intact.
         await redisClient.zRem(KEYS.globalActive, uuid);
 
+        app.server?.publish(uuid, JSON.stringify({ type: "deleted", key: uuid }));
         return { deleted: true, key: uuid };
       },
       { params: t.Object({ uuid: t.String() }) },
-    );
+    )
+
+    // Live dashboard updates (one WS per open tab; topic = session uuid)
+    .ws("/test/sessions/:uuid/ws", {
+      params: t.Object({ uuid: t.String() }),
+      async open(ws) {
+        const { uuid } = ws.data.params;
+        if (!isUuid(uuid) || !(await sessionExists(uuid))) {
+          ws.send(JSON.stringify({ type: "deleted", key: uuid }));
+          ws.close();
+          return;
+        }
+        ws.subscribe(uuid);
+        const snapshot = await buildSessionSnapshot(uuid);
+        if (snapshot) ws.send(JSON.stringify(snapshot));
+      },
+      close(ws) {
+        const { uuid } = ws.data.params;
+        if (uuid) ws.unsubscribe(uuid);
+      },
+    });
 
   // --- Test site: official-shaped streaming endpoints (Host = TEST_SITE_ADDRESS) ---
   for (const streamPath of streamPaths) {
@@ -420,6 +470,7 @@ export const testSessionsRouter = (app: Elysia) => {
         streamPath,
         headers: pickHeaders(headers as Record<string, string | undefined>),
       });
+      publishSessionUpdate(uuid);
 
       const encoder = new TextEncoder();
       const requestSignal = request.signal;
@@ -449,6 +500,7 @@ export const testSessionsRouter = (app: Elysia) => {
               streamPath,
               reason: abrupt ? "aborted" : "stream_ended",
             }).catch(() => {});
+            publishSessionUpdate(uuid);
             try {
               if (abrupt) controller.error(new Error("connection terminated"));
               else controller.close();

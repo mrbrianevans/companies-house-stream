@@ -75,10 +75,18 @@
   padding: 0;
   margin: 0.5rem 0 0;
   max-height: 18rem;
-  overflow: auto;
+  display: flex;
+  flex-direction: column-reverse; /* newest at the visual bottom */
+  overflow-y: auto;
   font-family: "JetBrains Mono", monospace;
   font-size: 0.8rem;
   line-height: 1.45;
+}
+
+/* Active connections stay top-to-bottom chronological */
+#active-list.log-list {
+  display: block;
+  overflow: auto;
 }
 
 .log-list li {
@@ -99,6 +107,26 @@
 .muted {
   color: #666;
   font-size: 0.9rem;
+}
+
+.ws-status[data-state="connected"] {
+  color: #1b5e20;
+}
+
+.ws-status[data-state="disconnected"] {
+  color: #a12622;
+}
+
+.ws-status[data-state="connecting"] {
+  color: #666;
+}
+
+#ws-reconnect-btn {
+  border: 1px solid #c5c5c5;
+  border-radius: 3px;
+  padding: 0.35rem 0.7rem;
+  background: #f7f7f7;
+  margin: 0.25rem 0 0.5rem;
 }
 
 .error {

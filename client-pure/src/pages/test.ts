@@ -1,7 +1,6 @@
 import "../styles/theme.scss";
 import "../styles/test.css";
 
-const POLL_MS = 3000;
 const STORAGE_KEY = "test-session-uuid";
 
 type LogEntry = {
@@ -27,6 +26,17 @@ type SessionResponse = {
   stream_paths: string[];
 };
 
+type WsUpdateMessage = {
+  type: "update";
+  active: SessionResponse["active_connections"];
+  logs: LogEntry[];
+};
+
+type WsDeletedMessage = {
+  type: "deleted";
+  key?: string;
+};
+
 const createView = document.getElementById("create-view") as HTMLElement;
 const sessionView = document.getElementById("session-view") as HTMLElement;
 const createError = document.getElementById("create-error") as HTMLElement;
@@ -40,6 +50,8 @@ const activeList = document.getElementById("active-list") as HTMLUListElement;
 const activeEmpty = document.getElementById("active-empty") as HTMLElement;
 const logList = document.getElementById("log-list") as HTMLUListElement;
 const resumeInput = document.getElementById("resume-uuid") as HTMLInputElement;
+const wsStatusEl = document.getElementById("ws-status") as HTMLElement;
+const reconnectBtn = document.getElementById("ws-reconnect-btn") as HTMLButtonElement;
 
 const createBtn = document.getElementById("create-session-btn") as HTMLButtonElement;
 const resumeBtn = document.getElementById("resume-session-btn") as HTMLButtonElement;
@@ -48,7 +60,10 @@ const deleteBtn = document.getElementById("delete-btn") as HTMLButtonElement;
 const backBtn = document.getElementById("back-btn") as HTMLButtonElement;
 
 let currentUuid: string | null = null;
-let pollTimer: ReturnType<typeof setInterval> | null = null;
+/** Stable fields from REST; live active/logs come from WebSocket snapshots. */
+let sessionBase: SessionResponse | null = null;
+let sessionWs: WebSocket | null = null;
+let intentionalWsClose = false;
 
 function showError(el: HTMLElement, message: string | null) {
   if (!message) {
@@ -70,20 +85,91 @@ function showStatus(message: string | null) {
   sessionStatus.textContent = message;
 }
 
-function stopPolling() {
-  if (pollTimer) {
-    clearInterval(pollTimer);
-    pollTimer = null;
+function setWsStatus(state: "connected" | "disconnected" | "connecting") {
+  if (!wsStatusEl) return;
+  wsStatusEl.hidden = false;
+  wsStatusEl.dataset.state = state;
+  if (state === "connected") {
+    wsStatusEl.textContent = "Live updates connected";
+    if (reconnectBtn) reconnectBtn.hidden = true;
+  } else if (state === "connecting") {
+    wsStatusEl.textContent = "Connecting live updates…";
+    if (reconnectBtn) reconnectBtn.hidden = true;
+  } else {
+    wsStatusEl.textContent = "Live updates disconnected";
+    if (reconnectBtn) reconnectBtn.hidden = false;
   }
 }
 
+function closeSessionWs() {
+  intentionalWsClose = true;
+  if (sessionWs) {
+    try {
+      sessionWs.close();
+    } catch {
+      // ignore
+    }
+    sessionWs = null;
+  }
+  intentionalWsClose = false;
+}
+
+function openSessionWs(uuid: string) {
+  closeSessionWs();
+  setWsStatus("connecting");
+
+  const protocol = location.protocol === "https:" ? "wss" : "ws";
+  // /events prefix is stripped by Caddy (handle_path) before the API
+  const ws = new WebSocket(`${protocol}://${location.host}/events/test/sessions/${uuid}/ws`);
+  sessionWs = ws;
+
+  ws.addEventListener("open", () => {
+    if (sessionWs === ws) setWsStatus("connected");
+  });
+
+  ws.addEventListener("message", (event) => {
+    if (sessionWs !== ws) return;
+    try {
+      const msg = JSON.parse(String(event.data)) as WsUpdateMessage | WsDeletedMessage;
+      if (msg.type === "deleted") {
+        showError(sessionError, "Session expired or was deleted.");
+        localStorage.removeItem(STORAGE_KEY);
+        closeSessionWs();
+        return;
+      }
+      if (msg.type === "update" && sessionBase) {
+        renderSession({
+          ...sessionBase,
+          active_connections: msg.active ?? [],
+          logs: msg.logs ?? [],
+        });
+      }
+    } catch {
+      // ignore malformed frames
+    }
+  });
+
+  ws.addEventListener("close", () => {
+    if (sessionWs !== ws) return;
+    sessionWs = null;
+    if (!intentionalWsClose && currentUuid) setWsStatus("disconnected");
+  });
+
+  ws.addEventListener("error", () => {
+    // close handler will surface disconnected state
+  });
+}
+
 function showCreateView() {
-  stopPolling();
+  closeSessionWs();
   currentUuid = null;
+  sessionBase = null;
   sessionView.hidden = true;
   createView.hidden = false;
   showError(sessionError, null);
   showStatus(null);
+  if (wsStatusEl) wsStatusEl.hidden = true;
+  if (reconnectBtn) reconnectBtn.hidden = true;
 }
 
 function showSessionView(uuid: string) {
@@ -94,16 +180,14 @@ function showSessionView(uuid: string) {
   localStorage.setItem(STORAGE_KEY, uuid);
   history.replaceState(null, "", `#${uuid}`);
   showError(createError, null);
-  void refreshSession();
-  stopPolling();
-  pollTimer = setInterval(() => void refreshSession(), POLL_MS);
+  void loadSessionAndSubscribe(uuid);
 }
 
 async function createSession() {
   showError(createError, null);
   createBtn.disabled = true;
   try {
-    const res = await fetch("/test/sessions", { method: "POST" });
+    const res = await fetch("/events/test/sessions", { method: "POST" });
     const body = await res.json();
     if (!res.ok) {
       showError(createError, body.message || `Failed to create session (${res.status})`);
@@ -126,7 +210,7 @@ async function resumeSession() {
   showError(createError, null);
   resumeBtn.disabled = true;
   try {
-    const res = await fetch(`/test/sessions/${encodeURIComponent(uuid)}`);
+    const res = await fetch(`/events/test/sessions/${encodeURIComponent(uuid)}`);
     if (res.status === 404) {
       showError(createError, "Session not found or expired.");
       return;
@@ -136,7 +220,17 @@ async function resumeSession() {
       showError(createError, body.message || `Failed to open session (${res.status})`);
       return;
     }
-    showSessionView(uuid);
+    const data = (await res.json()) as SessionResponse;
+    currentUuid = uuid;
+    createView.hidden = true;
+    sessionView.hidden = false;
+    apiKeyEl.textContent = uuid;
+    localStorage.setItem(STORAGE_KEY, uuid);
+    history.replaceState(null, "", `#${uuid}`);
+    showError(createError, null);
+    sessionBase = data;
+    renderSession(data);
+    openSessionWs(uuid);
   } catch (e) {
     showError(createError, e instanceof Error ? e.message : "Network error");
   } finally {
@@ -145,21 +239,30 @@ async function resumeSession() {
 }
 
 function renderSession(data: SessionResponse) {
-  sessionMeta.textContent = data.created_at
-    ? `Created ${new Date(data.created_at).toLocaleString()} · expires 24h after creation`
+  sessionBase = {
+    ...data,
+    // preserve stream_base_url / paths if a partial update omitted them
+    stream_base_url: data.stream_base_url || sessionBase?.stream_base_url || "",
+    stream_paths: data.stream_paths?.length ? data.stream_paths : (sessionBase?.stream_paths ?? []),
+    created_at: data.created_at ?? sessionBase?.created_at ?? null,
+    key: data.key || sessionBase?.key || currentUuid || "",
+  };
+
+  sessionMeta.textContent = sessionBase.created_at
+    ? `Created ${new Date(sessionBase.created_at).toLocaleString()} · expires 24h after creation`
     : "Session active";
 
-  if (data.stream_base_url) {
-    baseUrlEl.textContent = data.stream_base_url;
+  if (sessionBase.stream_base_url) {
+    baseUrlEl.textContent = sessionBase.stream_base_url;
     const curlExample = document.getElementById("curl-example");
     if (curlExample) {
-      const key = data.key || currentUuid || "APIKEY";
-      curlExample.textContent = `curl -N -u "${key}:" "${data.stream_base_url}/filings"`;
+      const key = sessionBase.key || currentUuid || "APIKEY";
+      curlExample.textContent = `curl -N -u "${key}:" "${sessionBase.stream_base_url}/filings"`;
     }
   }
 
   streamPathsEl.replaceChildren();
-  for (const path of data.stream_paths) {
+  for (const path of sessionBase.stream_paths) {
     const li = document.createElement("li");
     const code = document.createElement("code");
     code.textContent = `/${path}`;
@@ -181,7 +284,9 @@ function renderSession(data: SessionResponse) {
   }
 
   logList.replaceChildren();
-  for (const log of data.logs) {
+  // Newest first in the DOM; column-reverse shows them at the visual bottom.
+  const logsNewestFirst = [...data.logs].reverse();
+  for (const log of logsNewestFirst) {
     const li = document.createElement("li");
     const parts = [
       log.ts ? new Date(log.ts).toLocaleTimeString() : "?",
@@ -197,25 +302,26 @@ function renderSession(data: SessionResponse) {
   }
 }
 
-async function refreshSession() {
-  if (!currentUuid) return;
+async function loadSessionAndSubscribe(uuid: string) {
   try {
-    const res = await fetch(`/test/sessions/${encodeURIComponent(currentUuid)}`);
+    const res = await fetch(`/events/test/sessions/${encodeURIComponent(uuid)}`);
     if (res.status === 404) {
       showError(sessionError, "Session expired or was deleted.");
-      stopPolling();
       localStorage.removeItem(STORAGE_KEY);
+      closeSessionWs();
       return;
     }
     if (!res.ok) {
-      showError(sessionError, `Failed to refresh (${res.status})`);
+      showError(sessionError, `Failed to load session (${res.status})`);
       return;
     }
     showError(sessionError, null);
     const data = (await res.json()) as SessionResponse;
     renderSession(data);
+    openSessionWs(uuid);
   } catch (e) {
     showError(sessionError, e instanceof Error ? e.message : "Network error");
+    setWsStatus("disconnected");
   }
 }
 
@@ -223,7 +329,7 @@ async function terminateConnections() {
   if (!currentUuid) return;
   terminateBtn.disabled = true;
   try {
-    const res = await fetch(`/test/sessions/${encodeURIComponent(currentUuid)}/terminate`, {
+    const res = await fetch(`/events/test/sessions/${encodeURIComponent(currentUuid)}/terminate`, {
       method: "POST",
     });
     const body = await res.json();
@@ -232,7 +338,7 @@ async function terminateConnections() {
       return;
     }
     showStatus(`Terminated ${body.terminated ?? 0} connection(s).`);
-    await refreshSession();
+    // Live UI comes from WebSocket snapshot publishes on terminate / disconnect.
   } catch (e) {
     showError(sessionError, e instanceof Error ? e.message : "Network error");
   } finally {
@@ -244,7 +350,7 @@ async function deleteSession() {
   if (!currentUuid) return;
   deleteBtn.disabled = true;
   try {
-    const res = await fetch(`/test/sessions/${encodeURIComponent(currentUuid)}`, {
+    const res = await fetch(`/events/test/sessions/${encodeURIComponent(currentUuid)}`, {
       method: "DELETE",
     });
     if (!res.ok && res.status !== 404) {
@@ -291,6 +397,9 @@ function init() {
   backBtn.addEventListener("click", () => {
     history.replaceState(null, "", location.pathname);
     showCreateView();
+  });
+  reconnectBtn?.addEventListener("click", () => {
+    if (currentUuid) openSessionWs(currentUuid);
   });
 
   for (const btn of document.querySelectorAll<HTMLButtonElement>("[data-copy-target]")) {

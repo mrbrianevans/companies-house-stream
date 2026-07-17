@@ -14,13 +14,8 @@
                 reverse_proxy api:3000
         }
 
-        # for health checks
+        # API routes (REST + WebSockets); strips /events prefix for the backend
         handle_path /events/* {
-                reverse_proxy api:3000
-        }
-
-        # Test streaming session management UI API
-        handle /test/* {
                 reverse_proxy api:3000
         }
 

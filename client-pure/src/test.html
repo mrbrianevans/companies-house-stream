@@ -82,7 +82,7 @@
 
         <div class="card">
           <h3>Connection logs</h3>
-          <p class="muted">Polled every few seconds. Newest last.</p>
+          <p class="muted">Live via WebSocket. Newest at the bottom.</p>
           <ul id="log-list" class="log-list"></ul>
         </div>
 
@@ -91,6 +91,8 @@
           <button type="button" id="delete-btn" class="danger">Delete session</button>
           <button type="button" id="back-btn">Back</button>
         </div>
+        <p id="ws-status" class="muted ws-status" hidden></p>
+        <button type="button" id="ws-reconnect-btn" hidden>Reconnect live updates</button>
         <p id="session-error" class="error" hidden></p>
         <p id="session-status" class="status" hidden></p>
       </section>
