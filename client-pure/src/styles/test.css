@@ -130,11 +130,6 @@
   margin-top: 1.25rem;
 }
 
-.terminate-hint {
-  margin: 0.35rem 0 0;
-  font-size: 0.85rem;
-}
-
 button.warn {
   background: #fff3cd;
   border: 1px solid #e0c36a;

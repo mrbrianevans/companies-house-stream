@@ -47,14 +47,8 @@ type LogEntry = {
   headers?: Record<string, string>;
 };
 
-type ConnHandle = {
-  ac: AbortController;
-  /** When true, write half of the next event line then abort (partial NDJSON cut). */
-  cutMidEvent: boolean;
-};
-
-/** In-memory handles so terminate/evict can close sockets (or arm mid-event cut). */
-const sessionConnections = new Map<string, Map<string, ConnHandle>>();
+/** In-memory handles so terminate/evict can close sockets. */
+const sessionConnections = new Map<string, Map<string, AbortController>>();
 
 /** Caddy/Elysia test stream address, e.g. `test.companies.stream`, `localhost:3001`, or `:8001`. */
 function rawTestSiteAddress(): string {
@@ -174,7 +168,7 @@ function registerConnection(uuid: string, connId: string, ac: AbortController): 
     map = new Map();
     sessionConnections.set(uuid, map);
   }
-  map.set(connId, { ac, cutMidEvent: false });
+  map.set(connId, ac);
 }
 
 function unregisterConnection(uuid: string, connId: string): void {
@@ -185,8 +179,8 @@ function unregisterConnection(uuid: string, connId: string): void {
 }
 
 function abortConnection(uuid: string, connId: string): void {
-  const handle = sessionConnections.get(uuid)?.get(connId);
-  if (handle && !handle.ac.signal.aborted) handle.ac.abort();
+  const ac = sessionConnections.get(uuid)?.get(connId);
+  if (ac && !ac.signal.aborted) ac.abort();
 }
 
 /** Abort all live connections immediately; each connection's cleanup ZREMs itself. */
@@ -194,34 +188,10 @@ function abortAllSessionConnections(uuid: string): string[] {
   const map = sessionConnections.get(uuid);
   if (!map) return [];
   const ids = [...map.keys()];
-  for (const [, handle] of map) {
-    if (!handle.ac.signal.aborted) handle.ac.abort();
+  for (const ac of map.values()) {
+    if (!ac.signal.aborted) ac.abort();
   }
   return ids;
-}
-
-/**
- * Arm mid-event cut on all live connections: on the next event, write only the
- * first half of the NDJSON line then abort (tests partial-stream handlers).
- */
-function armMidEventTerminate(uuid: string): string[] {
-  const map = sessionConnections.get(uuid);
-  if (!map) return [];
-  const ids: string[] = [];
-  for (const [connId, handle] of map) {
-    handle.cutMidEvent = true;
-    ids.push(connId);
-  }
-  return ids;
-}
-
-function truthyQuery(value: unknown): boolean {
-  if (value === true || value === 1) return true;
-  if (typeof value === "string") {
-    const v = value.toLowerCase();
-    return v === "true" || v === "1" || v === "yes";
-  }
-  return false;
 }
 
 async function sessionExists(uuid: string): Promise<boolean> {
@@ -273,7 +243,6 @@ type SessionActiveConnection = {
   connId: string;
   connected_at: string;
   alive: boolean;
-  cut_mid_event?: boolean;
 };
 
 type SessionUpdateMessage = {
@@ -298,7 +267,6 @@ async function buildSessionSnapshot(uuid: string): Promise<SessionUpdateMessage 
     connId: m.value,
     connected_at: new Date(m.score).toISOString(),
     alive: sessionConnections.get(uuid)?.has(m.value) ?? false,
-    cut_mid_event: sessionConnections.get(uuid)?.get(m.value)?.cutMidEvent ?? false,
   }));
 
   return { type: "update", active, logs };
@@ -375,7 +343,7 @@ export const testSessionsRouter = (app: Elysia) => {
 
     .post(
       "/test/sessions/:uuid/terminate",
-      async ({ params, query, set }) => {
+      async ({ params, set }) => {
         const { uuid } = params;
         if (!isUuid(uuid)) {
           set.status = 400;
@@ -386,9 +354,7 @@ export const testSessionsRouter = (app: Elysia) => {
           return { statusCode: 404, message: "Session not found or expired" };
         }
 
-        const midEvent = truthyQuery(query.midEvent);
-        // Immediate abort, or arm cut-after-half-event on each live connection.
-        const connIds = midEvent ? armMidEventTerminate(uuid) : abortAllSessionConnections(uuid);
+        const connIds = abortAllSessionConnections(uuid);
 
         const ts = new Date().toISOString();
         for (const connId of connIds) {
@@ -396,7 +362,7 @@ export const testSessionsRouter = (app: Elysia) => {
             type: "terminate",
             connId,
             ts,
-            reason: midEvent ? "mid_event_armed" : "manual_terminate",
+            reason: "manual_terminate",
           });
         }
 
@@ -404,15 +370,9 @@ export const testSessionsRouter = (app: Elysia) => {
         return {
           terminated: connIds.length,
           connIds,
-          midEvent,
         };
       },
-      {
-        params: t.Object({ uuid: t.String() }),
-        query: t.Object({
-          midEvent: t.Optional(t.Union([t.Boolean(), t.String(), t.Numeric()])),
-        }),
-      },
+      { params: t.Object({ uuid: t.String() }) },
     )
 
     .delete(
@@ -581,16 +541,7 @@ export const testSessionsRouter = (app: Elysia) => {
                 continue;
               }
 
-              const line = chunk.eventJson + "\n";
-              const cutMid = sessionConnections.get(uuid)?.get(connId)?.cutMidEvent === true;
-              if (cutMid) {
-                // Partial line (no trailing newline guarantee) then hard abort —
-                // exercises clients that must handle mid-JSON cutoffs.
-                enqueue(line.slice(0, Math.floor(line.length / 2)));
-                if (!ac.signal.aborted) ac.abort();
-                break;
-              }
-              enqueue(line);
+              enqueue(chunk.eventJson + "\n");
             }
           } catch {
             // stream aborted or redis error

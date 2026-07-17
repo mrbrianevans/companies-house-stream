@@ -22,7 +22,6 @@ type Session = {
     connId: string;
     connected_at: string;
     alive: boolean;
-    cut_mid_event?: boolean;
   }[];
   logs: LogEntry[];
   stream_base_url: string;
@@ -49,7 +48,6 @@ const reconnectBtn = $<HTMLButtonElement>("ws-reconnect-btn");
 const createBtn = $<HTMLButtonElement>("create-session-btn");
 const resumeBtn = $<HTMLButtonElement>("resume-session-btn");
 const terminateBtn = $<HTMLButtonElement>("terminate-btn");
-const terminateMidBtn = $<HTMLButtonElement>("terminate-mid-btn");
 const deleteBtn = $<HTMLButtonElement>("delete-btn");
 const backBtn = $<HTMLButtonElement>("back-btn");
 
@@ -187,14 +185,9 @@ function renderLive(data: Session) {
   activeEmpty.hidden = data.active_connections.length > 0;
   fillList(
     activeList,
-    data.active_connections.map((c) => {
-      const flags = [c.alive ? "alive" : "tracked", c.cut_mid_event ? "mid-event armed" : ""]
-        .filter(Boolean)
-        .join(", ");
-      return {
-        text: `${c.connId} · ${flags} · since ${new Date(c.connected_at).toLocaleTimeString()}`,
-      };
-    }),
+    data.active_connections.map((c) => ({
+      text: `${c.connId} · ${c.alive ? "alive" : "tracked"} · since ${new Date(c.connected_at).toLocaleTimeString()}`,
+    })),
   );
 
   // Newest first in DOM; CSS column-reverse puts newest at visual bottom
@@ -267,18 +260,16 @@ async function resumeSession() {
   }
 }
 
-async function terminateConnections(midEvent = false) {
+async function terminateConnections() {
   if (!currentUuid) return;
-  const btn = midEvent ? terminateMidBtn : terminateBtn;
-  btn.disabled = true;
+  terminateBtn.disabled = true;
   try {
-    const q = midEvent ? "?midEvent=true" : "";
-    await api(`/sessions/${encodeURIComponent(currentUuid)}/terminate${q}`, {
+    await api(`/sessions/${encodeURIComponent(currentUuid)}/terminate`, {
       method: "POST",
     });
     // Live UI updates via WebSocket snapshots
   } finally {
-    btn.disabled = false;
+    terminateBtn.disabled = false;
   }
 }
 
@@ -325,8 +316,7 @@ function init() {
   resumeInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") void resumeSession();
   });
-  terminateBtn.addEventListener("click", () => void terminateConnections(false));
-  terminateMidBtn.addEventListener("click", () => void terminateConnections(true));
+  terminateBtn.addEventListener("click", () => void terminateConnections());
   deleteBtn.addEventListener("click", () => void deleteSession());
   backBtn.addEventListener("click", () => {
     history.replaceState(null, "", location.pathname);

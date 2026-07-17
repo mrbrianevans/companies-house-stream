@@ -94,14 +94,9 @@
 
         <div class="row actions danger-row">
           <button type="button" id="terminate-btn" class="warn">Terminate connections</button>
-          <button type="button" id="terminate-mid-btn" class="warn">Terminate mid-event</button>
           <button type="button" id="delete-btn" class="danger">Delete session</button>
           <button type="button" id="back-btn">Back</button>
         </div>
-        <p class="muted terminate-hint">
-          Mid-event waits for the next event, writes half the NDJSON line, then cuts the connection
-          — for testing handling of terminated connections without clean breaks.
-        </p>
         <p id="ws-status" class="muted ws-status" hidden></p>
         <button type="button" id="ws-reconnect-btn" hidden>Reconnect live updates</button>
         <p id="session-error" class="error" hidden></p>
