@@ -19,6 +19,9 @@ interface StreamEventsFromRedisProps {
  * Read events from a Redis stream as an async generator.
  * Advances the last-seen ID so historical catch-up then live works correctly.
  * Emits heartbeat chunks when a BLOCK wait times out with no events.
+ *
+ * On abort, disconnects the Redis client immediately so a blocked XREAD does not
+ * wait out the full BLOCK timeout.
  */
 export async function* streamEventsFromRedis(
   props: StreamEventsFromRedisProps,
@@ -28,23 +31,23 @@ export async function* streamEventsFromRedis(
   let lastId = props.startAfterId ?? "$";
   const streamingClient = await getRedisClient("test-stream:" + streamPath);
 
+  /** AbortSignal alone does not always unblock Redis BLOCK; force-drop the socket. */
+  const forceUnblock = () => {
+    if (streamingClient.isOpen) {
+      streamingClient.disconnect().catch(() => {});
+    }
+  };
+  signal?.addEventListener("abort", forceUnblock);
+
   try {
     while (true) {
       if (signal?.aborted) break;
 
       try {
-        const ac = new AbortController();
-        const triggerAbort = () => ac.abort();
-        signal?.addEventListener("abort", triggerAbort);
-
-        const options = commandOptions({ signal: ac.signal });
-        const result = await streamingClient.xRead(
-          options,
-          { key, id: lastId },
-          { COUNT: 50, BLOCK: blockMs },
-        );
-
-        signal?.removeEventListener("abort", triggerAbort);
+        const options = signal ? commandOptions({ signal }) : undefined;
+        const result = options
+          ? await streamingClient.xRead(options, { key, id: lastId }, { COUNT: 50, BLOCK: blockMs })
+          : await streamingClient.xRead({ key, id: lastId }, { COUNT: 50, BLOCK: blockMs });
 
         if (signal?.aborted) break;
 
@@ -55,6 +58,7 @@ export async function* streamEventsFromRedis(
 
         const { messages } = result[0];
         for (const item of messages) {
+          if (signal?.aborted) break;
           lastId = item.id;
           const eventJson = item.message.event;
           if (typeof eventJson === "string") {
@@ -62,13 +66,19 @@ export async function* streamEventsFromRedis(
           }
         }
       } catch (e) {
-        if (e instanceof AbortError || signal?.aborted) break;
+        if (signal?.aborted || e instanceof AbortError) break;
+        // disconnect() rejects in-flight commands; treat as stop if we intended to abort
+        const msg = e instanceof Error ? e.message : String(e);
+        if (/disconnect|abort|connection.*closed|Socket closed/i.test(msg)) break;
         logger.error(e, "Error READing from Redis stream for test session");
         break;
       }
     }
   } finally {
-    await streamingClient.quit().catch(() => {});
+    signal?.removeEventListener("abort", forceUnblock);
+    if (streamingClient.isOpen) {
+      await streamingClient.quit().catch(() => {});
+    }
   }
 }
 
@@ -87,7 +97,14 @@ export function timepointToStartAfterId(timepoint: number): string {
  * Returns true if the client should receive HTTP 416.
  */
 export async function isTimepointOutOfRange(
-  redis: { xRange: (key: string, start: string, end: string, opts?: { COUNT: number }) => Promise<{ id: string }[]> },
+  redis: {
+    xRange: (
+      key: string,
+      start: string,
+      end: string,
+      opts?: { COUNT: number },
+    ) => Promise<{ id: string }[]>;
+  },
   streamPath: string,
   timepoint: number,
 ): Promise<boolean> {

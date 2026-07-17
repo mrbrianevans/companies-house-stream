@@ -8,8 +8,8 @@ import {
 } from "../streamEventsFromRedis";
 
 const SESSION_TTL_SECONDS = 86_400;
-const MAX_GLOBAL_SESSIONS = 1000;
-const MAX_SESSION_CONNECTIONS = 10;
+const MAX_GLOBAL_SESSIONS = 100;
+const MAX_SESSION_CONNECTIONS = 9;
 const LOG_LIMIT = 100;
 
 /**
@@ -139,9 +139,7 @@ function parseBasicAuthKey(authorization: string | undefined): string | null {
 }
 
 function isUuid(value: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-    value,
-  );
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
 /**
@@ -375,8 +373,7 @@ export const testSessionsRouter = (app: Elysia) => {
       const key = parseBasicAuthKey(headers["authorization"]);
       if (!key || !isUuid(key) || !(await sessionExists(key))) {
         set.status = 401;
-        set.headers["WWW-Authenticate"] =
-          `Basic realm="${stripSiteAddress(rawTestSiteAddress())}"`;
+        set.headers["WWW-Authenticate"] = `Basic realm="${stripSiteAddress(rawTestSiteAddress())}"`;
         return "Invalid Authorization";
       }
 
@@ -434,7 +431,41 @@ export const testSessionsRouter = (app: Elysia) => {
 
       const body = new ReadableStream<Uint8Array>({
         async start(controller) {
+          let finished = false;
+
+          const finish = async (abrupt: boolean) => {
+            if (finished) return;
+            finished = true;
+            requestSignal.removeEventListener("abort", onClientAbort);
+            ac.signal.removeEventListener("abort", onAbortSignal);
+            await redisClient.zRem(KEYS.active(uuid), connId).catch(() => {});
+            unregisterConnection(uuid, connId);
+            await appendLog(uuid, {
+              type: "disconnect",
+              connId,
+              ts: new Date().toISOString(),
+              ip,
+              userAgent,
+              streamPath,
+              reason: abrupt ? "aborted" : "stream_ended",
+            }).catch(() => {});
+            try {
+              if (abrupt) controller.error(new Error("connection terminated"));
+              else controller.close();
+            } catch {
+              // already closed / cancelled
+            }
+          };
+
+          // Tear down the HTTP stream immediately on abort — do not wait for
+          // the next XREAD/heartbeat iteration (can lag by BLOCK ms).
+          const onAbortSignal = () => {
+            void finish(true);
+          };
+          ac.signal.addEventListener("abort", onAbortSignal);
+
           const enqueue = (text: string) => {
+            if (finished || ac.signal.aborted) return;
             try {
               controller.enqueue(encoder.encode(text));
             } catch {
@@ -448,7 +479,7 @@ export const testSessionsRouter = (app: Elysia) => {
               startAfterId,
               signal: ac.signal,
             })) {
-              if (ac.signal.aborted) break;
+              if (finished || ac.signal.aborted) break;
               if (chunk.type === "heartbeat") {
                 enqueue("\n");
               } else {
@@ -458,25 +489,7 @@ export const testSessionsRouter = (app: Elysia) => {
           } catch {
             // stream aborted or redis error
           } finally {
-            requestSignal.removeEventListener("abort", onClientAbort);
-            await redisClient.zRem(KEYS.active(uuid), connId).catch(() => {});
-            unregisterConnection(uuid, connId);
-            await appendLog(uuid, {
-              type: "disconnect",
-              connId,
-              ts: new Date().toISOString(),
-              ip,
-              userAgent,
-              streamPath,
-              reason: ac.signal.aborted ? "aborted" : "stream_ended",
-            }).catch(() => {});
-            // Prefer error close on abort so clients treat it as an abrupt cutoff.
-            try {
-              if (ac.signal.aborted) controller.error(new Error("connection terminated"));
-              else controller.close();
-            } catch {
-              // already closed / cancelled
-            }
+            await finish(ac.signal.aborted);
           }
         },
         cancel() {
