@@ -109,16 +109,8 @@
   font-size: 0.9rem;
 }
 
-.ws-status[data-state="connected"] {
-  color: #1b5e20;
-}
-
-.ws-status[data-state="disconnected"] {
+.ws-status {
   color: #a12622;
-}
-
-.ws-status[data-state="connecting"] {
-  color: #666;
 }
 
 #ws-reconnect-btn {
@@ -131,11 +123,6 @@
 
 .error {
   color: #a12622;
-  margin-top: 0.75rem;
-}
-
-.status {
-  color: #1b5e20;
   margin-top: 0.75rem;
 }
 

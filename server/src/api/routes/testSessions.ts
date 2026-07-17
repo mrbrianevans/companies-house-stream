@@ -548,7 +548,6 @@ export const testSessionsRouter = (app: Elysia) => {
           if (!ac.signal.aborted) ac.abort();
         },
       });
-
       return new Response(body, {
         status: 200,
         headers: {
