@@ -17,7 +17,12 @@ type LogEntry = {
 type Session = {
   key: string;
   created_at: string | null;
-  active_connections: { connId: string; connected_at: string; alive: boolean }[];
+  active_connections: {
+    connId: string;
+    connected_at: string;
+    alive: boolean;
+    cut_mid_event?: boolean;
+  }[];
   logs: LogEntry[];
   stream_base_url: string;
   stream_paths: string[];
@@ -43,6 +48,7 @@ const reconnectBtn = $<HTMLButtonElement>("ws-reconnect-btn");
 const createBtn = $<HTMLButtonElement>("create-session-btn");
 const resumeBtn = $<HTMLButtonElement>("resume-session-btn");
 const terminateBtn = $<HTMLButtonElement>("terminate-btn");
+const terminateMidBtn = $<HTMLButtonElement>("terminate-mid-btn");
 const deleteBtn = $<HTMLButtonElement>("delete-btn");
 const backBtn = $<HTMLButtonElement>("back-btn");
 
@@ -74,7 +80,11 @@ function fillList(ul: HTMLElement, items: { text: string; title?: string }[]) {
   );
 }
 
-async function api<T>(path: string, init?: RequestInit, errEl: HTMLElement = sessionError): Promise<T | null> {
+async function api<T>(
+  path: string,
+  init?: RequestInit,
+  errEl: HTMLElement = sessionError,
+): Promise<T | null> {
   try {
     const res = await fetch(API + path, init);
     const body = await res.json().catch(() => ({}));
@@ -176,9 +186,14 @@ function renderLive(data: Session) {
   activeEmpty.hidden = data.active_connections.length > 0;
   fillList(
     activeList,
-    data.active_connections.map((c) => ({
-      text: `${c.connId} · ${c.alive ? "alive" : "tracked"} · since ${new Date(c.connected_at).toLocaleTimeString()}`,
-    })),
+    data.active_connections.map((c) => {
+      const flags = [c.alive ? "alive" : "tracked", c.cut_mid_event ? "mid-event armed" : ""]
+        .filter(Boolean)
+        .join(", ");
+      return {
+        text: `${c.connId} · ${flags} · since ${new Date(c.connected_at).toLocaleTimeString()}`,
+      };
+    }),
   );
 
   // Newest first in DOM; CSS column-reverse puts newest at visual bottom
@@ -247,14 +262,18 @@ async function resumeSession() {
   }
 }
 
-async function terminateConnections() {
+async function terminateConnections(midEvent = false) {
   if (!currentUuid) return;
-  terminateBtn.disabled = true;
+  const btn = midEvent ? terminateMidBtn : terminateBtn;
+  btn.disabled = true;
   try {
-    await api(`/sessions/${encodeURIComponent(currentUuid)}/terminate`, { method: "POST" });
+    const q = midEvent ? "?midEvent=true" : "";
+    await api(`/sessions/${encodeURIComponent(currentUuid)}/terminate${q}`, {
+      method: "POST",
+    });
     // Live UI updates via WebSocket snapshots
   } finally {
-    terminateBtn.disabled = false;
+    btn.disabled = false;
   }
 }
 
@@ -262,7 +281,9 @@ async function deleteSession() {
   if (!currentUuid) return;
   deleteBtn.disabled = true;
   try {
-    const res = await fetch(`${API}/sessions/${encodeURIComponent(currentUuid)}`, { method: "DELETE" });
+    const res = await fetch(`${API}/sessions/${encodeURIComponent(currentUuid)}`, {
+      method: "DELETE",
+    });
     if (!res.ok && res.status !== 404) {
       const body = await res.json().catch(() => ({}));
       showError(sessionError, body.message || `Delete failed (${res.status})`);
@@ -299,7 +320,8 @@ function init() {
   resumeInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") void resumeSession();
   });
-  terminateBtn.addEventListener("click", () => void terminateConnections());
+  terminateBtn.addEventListener("click", () => void terminateConnections(false));
+  terminateMidBtn.addEventListener("click", () => void terminateConnections(true));
   deleteBtn.addEventListener("click", () => void deleteSession());
   backBtn.addEventListener("click", () => {
     history.replaceState(null, "", location.pathname);
