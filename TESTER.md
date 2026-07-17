@@ -1,6 +1,6 @@
-**Implementation Plan: Test Streaming Sessions**
+# Test Streaming Sessions
 
-Goal: Minimal test feature so developers can create temporary sessions that mirror the official Companies House Streaming API (paths, auth, NDJSON, timepoints, 416, concurrent limits, abrupt close) and force-terminate connections on demand. UI on main domain; streams on `test.companies.stream`. 24 h auto-expiry. Reuse existing Redis stream readers and event data.
+Goal: Test feature so developers can create temporary sessions that mirror the official Companies House Streaming API (paths, auth, NDJSON, timepoints, 416, concurrent limits, abrupt close) and force-terminate connections on demand. UI on main domain; streams on `test.companies.stream`. 24 h auto-expiry. Reuse existing Redis stream readers and event data.
 
 ### Redis keys (all with `EXPIRE 86400`)
 - `test:session:{uuid}` — simple key (or HASH with `created_at`) proving the session exists.
@@ -74,3 +74,11 @@ Core streaming logic should call into the same code path already used for histor
 - Everything auto-expires; optional manual delete.
 
 Keep the feature small while maximising fidelity for testing reconnection / cutoff logic.
+
+## Appendix
+
+### Sample headers
+These are the headers sent with a successful response on the official api endpoints.
+```json
+{"date":"Fri, 17 Jul 2026 12:15:39 GMT","content-type":"text/plain; charset=utf-8","transfer-encoding":"chunked","connection":"keep-alive","access-control-allow-credentials":"true","access-control-allow-headers":"origin, content-type, content-length, user-agent, host, accept, authorization","access-control-expose-headers":"Location, www-authenticate, cache-control, pragma, content-type, expires, last-modified","access-control-max-age":"3600"}
+```

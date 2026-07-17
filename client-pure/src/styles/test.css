@@ -1,0 +1,146 @@
+.actions {
+  margin: 1rem 0;
+  gap: 0.75rem;
+}
+
+.resume-row {
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  align-items: center;
+}
+
+.resume-row label {
+  font-weight: 500;
+}
+
+.resume-row input {
+  flex: 1;
+  min-width: 16rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #c5c5c5;
+  border-radius: 4px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.9rem;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+  padding: 1rem 1.1rem;
+  margin: 1rem 0;
+}
+
+.card h3 {
+  margin: 0 0 0.6rem;
+  font-size: 1.05rem;
+}
+
+.copy-row {
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.mono-block {
+  display: block;
+  flex: 1;
+  word-break: break-all;
+  padding: 0.45rem 0.55rem;
+  font-size: 0.9rem;
+}
+
+.path-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.75rem;
+}
+
+.path-list li code {
+  font-size: 0.9rem;
+}
+
+.log-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0;
+  max-height: 18rem;
+  overflow: auto;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.log-list li {
+  padding: 0.25rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.log-list li:last-child {
+  border-bottom: none;
+}
+
+.hint {
+  margin: 0.75rem 0 0;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.muted {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.error {
+  color: #a12622;
+  margin-top: 0.75rem;
+}
+
+.status {
+  color: #1b5e20;
+  margin-top: 0.75rem;
+}
+
+.danger-row {
+  margin-top: 1.25rem;
+}
+
+button.warn {
+  background: #fff3cd;
+  border: 1px solid #e0c36a;
+  border-radius: 4px;
+  padding: 0.4rem 0.75rem;
+}
+
+button.danger {
+  background: #f8d7da;
+  border: 1px solid #e0a0a6;
+  border-radius: 4px;
+  padding: 0.4rem 0.75rem;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+#create-session-btn,
+#resume-session-btn,
+#back-btn,
+#copy-key-btn,
+#copy-base-btn {
+  border: 1px solid #c5c5c5;
+  border-radius: 4px;
+  padding: 0.4rem 0.75rem;
+  background: #f7f7f7;
+}
+
+#create-session-btn:hover,
+#resume-session-btn:hover,
+#back-btn:hover,
+#copy-key-btn:hover,
+#copy-base-btn:hover {
+  background: #ececec;
+}

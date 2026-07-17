@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Test Streaming Sessions — companies.stream</title>
+    <meta
+      name="description"
+      content="Create temporary test sessions that mirror the official Companies House Streaming API for reconnection and cutoff testing."
+    />
+    <meta name="robots" content="noindex" />
+  </head>
+
+  <body>
+    <main class="page">
+      <header>
+        <h1 class="title">Test Streaming Sessions</h1>
+        <div class="badges">
+          <a href="/">Home</a>
+          <a href="./resources">Resources</a>
+        </div>
+        <p>
+          Create a temporary API key that streams live and historical events on
+          <code>test.companies.stream</code>, matching official paths, Basic Auth, NDJSON, timepoints,
+          and concurrent connection behaviour. Sessions expire after 24 hours.
+        </p>
+      </header>
+
+      <section id="create-view">
+        <h2>Create or resume</h2>
+        <p>Start a new session, or paste an existing session UUID to open its dashboard.</p>
+        <div class="row actions">
+          <button type="button" id="create-session-btn">Create new session</button>
+        </div>
+        <div class="row resume-row">
+          <label for="resume-uuid">Existing UUID</label>
+          <input
+            type="text"
+            id="resume-uuid"
+            placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <button type="button" id="resume-session-btn">Open session</button>
+        </div>
+        <p id="create-error" class="error" hidden></p>
+      </section>
+
+      <section id="session-view" hidden>
+        <h2>Session dashboard</h2>
+        <p id="session-meta" class="muted"></p>
+
+        <div class="card">
+          <h3>API key</h3>
+          <div class="row copy-row">
+            <code id="api-key" class="mono-block"></code>
+            <button type="button" id="copy-key-btn" data-copy-target="api-key">Copy</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Base URL</h3>
+          <div class="row copy-row">
+            <code id="base-url" class="mono-block">https://test.companies.stream</code>
+            <button type="button" id="copy-base-btn" data-copy-target="base-url">Copy</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Stream paths</h3>
+          <ul id="stream-paths" class="path-list"></ul>
+          <p class="hint">
+            Example:
+            <code
+              >curl -N -u "APIKEY:" "https://test.companies.stream/filings?timepoint=…"</code
+            >
+          </p>
+        </div>
+
+        <div class="card">
+          <h3>Active connections</h3>
+          <p id="active-empty" class="muted">No active connections.</p>
+          <ul id="active-list" class="log-list"></ul>
+        </div>
+
+        <div class="card">
+          <h3>Connection logs</h3>
+          <p class="muted">Polled every few seconds. Newest last.</p>
+          <ul id="log-list" class="log-list"></ul>
+        </div>
+
+        <div class="row actions danger-row">
+          <button type="button" id="terminate-btn" class="warn">Terminate connections</button>
+          <button type="button" id="delete-btn" class="danger">Delete session</button>
+          <button type="button" id="back-btn">Back</button>
+        </div>
+        <p id="session-error" class="error" hidden></p>
+        <p id="session-status" class="status" hidden></p>
+      </section>
+    </main>
+
+    <script src="pages/test.ts" type="module"></script>
+  </body>
+</html>

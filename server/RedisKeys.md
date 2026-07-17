@@ -49,3 +49,20 @@ This document outlines the Redis key patterns used throughout the application.
 
 - `currentWsConnections` - **String**
   - Counter for current WebSocket connections
+
+## Test streaming sessions
+
+Temporary developer sessions that mirror the official Streaming API on `test.companies.stream`. All keys expire after 24 hours (`EXPIRE 86400`).
+
+- `test:session:{uuid}` - **String**
+  - Session existence marker; value is ISO `created_at`
+- `test:session:{uuid}:active` - **Sorted Set**
+  - Score: connection start timestamp (ms)
+  - Member: short `connId`
+  - Used for ~10 concurrent connection limit (evict oldest)
+- `test:session:{uuid}:logs` - **List**
+  - JSON log entries (connect / disconnect / terminate / evict)
+- `test:sessions:active` - **Sorted Set** (global)
+  - Score: session create timestamp (ms)
+  - Member: session uuid
+  - Global concurrent session limit (1000)

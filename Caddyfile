@@ -19,6 +19,11 @@
                 reverse_proxy api:3000
         }
 
+        # Test streaming session management UI API
+        handle /test/* {
+                reverse_proxy api:3000
+        }
+
         @historical {
             path /companies* /filings* /officers* \
                   /persons-with-significant-control* /charges* /insolvency-cases* \
@@ -34,5 +39,17 @@
                   }
                   flush_interval -1
             }
+        }
+}
+
+# Official-shaped test Streaming API (Basic Auth session key = UUID from /test page)
+test.companies.stream {
+        log
+        header -Via
+        reverse_proxy api:3000 {
+                transport http {
+                        compression off
+                }
+                flush_interval -1
         }
 }

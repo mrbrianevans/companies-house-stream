@@ -43,6 +43,7 @@ export default defineConfig({
       "/events/stats": backendHttpUrl,
       "/events/visitors": backendHttpUrl,
       "/events/mcp": backendHttpUrl,
+      "/test": backendHttpUrl,
       "/events": { ws: true, target: "ws://localhost/events" }, // can't be proxied to companies.stream
     },
   },
