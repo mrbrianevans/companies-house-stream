@@ -25,21 +25,24 @@
           <a href="/">Home</a>
           <a href="./resources">Resources</a>
         </div>
+
         <p>
-          Create a temporary API key that streams live and historical events on the configured test
-          site (see base URL below), matching official paths, Basic Auth, NDJSON, timepoints, and
-          concurrent connection behaviour. Sessions expire 24 hours after creation.
+          Test your streaming implementation against a mock-up service which mirrors the official
+          Companies House Streaming API behaviour and supports fault injection for testing
+          reconnection logic.
+          <br />
+          Create a temporary API key for your session, and use the test service base URL.
         </p>
       </header>
 
       <section id="create-view">
         <h2>Create or resume</h2>
-        <p>Start a new session, or paste an existing session UUID to open its dashboard.</p>
+        <p>Start a new session, or paste an existing test key to open its dashboard.</p>
         <div class="row actions">
           <button type="button" id="create-session-btn">Create new session</button>
         </div>
         <div class="row resume-row">
-          <label for="resume-uuid">Existing UUID</label>
+          <label for="resume-uuid">Existing test key</label>
           <input
             type="text"
             id="resume-uuid"
@@ -100,6 +103,56 @@
         <p id="ws-status" class="muted ws-status" hidden></p>
         <button type="button" id="ws-reconnect-btn" hidden>Reconnect live updates</button>
         <p id="session-error" class="error" hidden></p>
+      </section>
+
+      <section>
+        <h2>Implementation checklist</h2>
+        <p>
+          Every production implementation that connects to the streaming API should account for
+          these.
+        </p>
+
+        <ul>
+          <li>
+            <label
+              ><input type="checkbox" /> Authenticate requests with HTTP Basic Auth, ie
+              <code>Authorization: Basic {base64(apiKey+':')}</code></label
+            >
+          </li>
+          <li>
+            <label
+              ><input type="checkbox" /> Re-connect when disconnected, using last received timepoint
+              + 1</label
+            >
+          </li>
+          <li>
+            <label
+              ><input type="checkbox" /> Handle 416 response code for timepoint out of range
+              (usually drop the timepoint param)</label
+            >
+          </li>
+          <li>
+            <label
+              ><input type="checkbox" /> Split HTTP response stream by newlines without waiting for
+              full response</label
+            >
+          </li>
+          <li>
+            <label><input type="checkbox" /> Max of 9 concurrent connections per API key</label>
+          </li>
+          <li>
+            <label
+              ><input type="checkbox" /> Handle 429 response for too many connections in quick
+              succession</label
+            >
+          </li>
+          <li>
+            <label
+              ><input type="checkbox" /> Handle 5xx responses. They're common. Just retry after a
+              few minutes.</label
+            >
+          </li>
+        </ul>
       </section>
     </main>
 
