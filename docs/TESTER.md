@@ -75,6 +75,34 @@ Core streaming logic should call into the same code path already used for histor
 
 Keep the feature small while maximising fidelity for testing reconnection / cutoff logic.
 
+## Fault injection & Auto-tester
+This feature has not been implemented yet, but noted down as a candidate for future development.
+
+### More fault injection options
+Add the ability to store a config for each session and have various settings in the session dashboard to change the config.
+Store config as a stringified JSON object at `test:session:{uuid}:config`.
+
+Ideas for config options:
+ - 5xx error rate (percentage of responses to randomly send 5xx to)
+ - start x events ago. so that connection requests without a timepoint get guaranteed events in response, regardless of current stream traffic.
+ - max concurrent connections before eviction (default to official value of 9, some users may want to reduce for easier testing, min 1, max 10)
+ - auto-terminate connections after x seconds. x seconds after a new connection is made, terminate itself without further user action. only terminates one connection, not all at same time.
+ - 401 and 403 error rate. companies house sometimes randomly send these even with valid credentials.
+
+### Stress test
+A torture test mode which the user can enable to run a suite of fault injections and measure the response from the client.
+
+Inject all manner of errors and test how long it takes the client to reconnect.
+
+Test begins.
+Client connects to all stream paths concurrently. Check the auth headers.
+Then it starts terminating them at random, and waiting for the reconnection request.
+Send bad response codes on the reconnection requests and check they retry appropriately. Check they never request the same stream more than once at a time.
+Check they pick up again from exactly the right timepoint of where the last response got up to. 
+Send at least one 416 code and check that the client drops the timepoint param.
+
+Tick off the production-readiness checklist as the client passes each test.
+
 ## Appendix
 
 ### Sample headers
