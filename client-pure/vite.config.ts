@@ -31,10 +31,10 @@ export default defineConfig({
     outDir: resolve("dist"),
     emptyOutDir: true,
     sourcemap: true,
-    rollupOptions: {
+    rolldownOptions: {
       input: pages.map((p) => "src/" + p),
     },
-    target: "es2022",
+    target: "baseline-widely-available",
   },
   server: {
     proxy: {
@@ -50,10 +50,5 @@ export default defineConfig({
   plugins: [],
   worker: {
     format: "es",
-  },
-  optimizeDeps: {
-    esbuildOptions: {
-      target: "es2020",
-    },
   },
 });
