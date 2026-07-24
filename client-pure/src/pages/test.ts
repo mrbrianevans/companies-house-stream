@@ -214,19 +214,29 @@ function renderLive(data: Session) {
 }
 
 async function enterSession(uuid: string, errEl: HTMLElement = sessionError) {
+  showError(createError, null);
+  showError(sessionError, null);
+
+  const data = await api<Session>(`/sessions/${encodeURIComponent(uuid)}`, undefined, errEl);
+  if (!data) {
+    // Session missing/expired: drop stale key so we don't re-enter a dead session on reload.
+    if (localStorage.getItem(STORAGE_KEY) === uuid) {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+    if (location.hash.replace(/^#/, "").trim() === uuid) {
+      history.replaceState(null, "", location.pathname);
+    }
+    resumeInput.value = uuid;
+    showCreateView();
+    return;
+  }
+
   currentUuid = uuid;
   createView.hidden = true;
   sessionView.hidden = false;
   apiKeyEl.textContent = uuid;
   localStorage.setItem(STORAGE_KEY, uuid);
   history.replaceState(null, "", `#${uuid}`);
-  showError(createError, null);
-
-  const data = await api<Session>(`/sessions/${encodeURIComponent(uuid)}`, undefined, errEl);
-  if (!data) {
-    if (errEl === sessionError) localStorage.removeItem(STORAGE_KEY);
-    return;
-  }
 
   session = data;
   renderMeta(data);
