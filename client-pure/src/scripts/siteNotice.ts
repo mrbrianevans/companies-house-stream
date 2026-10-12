@@ -1,10 +1,10 @@
 import "../styles/siteNotice.css";
 
 /**
- * Site-wide notice. The text comes from Redis key `site:announcement`,
- * via GET /events/announcement (`{ text }`). A missing, blank, or failed
- * response leaves the page with no banner. Dismissal is stored in
- * localStorage under `companies.stream.notice.dismissed.<sha256>` so a
+ * Home-page notice, included only from index.html. The text comes from Redis
+ * key `site:announcement`, via GET /events/announcement (`{ text }`). A missing,
+ * blank, or failed response leaves the page with no banner. Dismissal is stored
+ * in localStorage under `companies.stream.notice.dismissed.<sha256>` so a
  * different message is shown again.
  */
 const ANNOUNCEMENT_URL = "/events/announcement";
@@ -46,8 +46,6 @@ function mountBanner(text: string, hash: string) {
 
   const banner = document.createElement("section");
   banner.className = "site-notice";
-  banner.setAttribute("role", "region");
-  banner.setAttribute("aria-label", "Site notice");
 
   const inner = document.createElement("div");
   inner.className = "site-notice-inner";
@@ -59,11 +57,7 @@ function mountBanner(text: string, hash: string) {
   const close = document.createElement("button");
   close.type = "button";
   close.className = "site-notice-close";
-  close.setAttribute("aria-label", "Dismiss notice");
-  const closeIcon = document.createElement("span");
-  closeIcon.setAttribute("aria-hidden", "true");
-  closeIcon.textContent = "×";
-  close.append(closeIcon);
+  close.textContent = "×";
   close.addEventListener("click", () => {
     rememberDismissed(hash);
     banner.remove();
