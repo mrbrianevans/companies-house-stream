@@ -1,11 +1,12 @@
 import "../styles/siteNotice.css";
 
 /**
- * Home-page notice, included only from index.html. The HTML comes from Redis
- * key `site:announcement`, via GET /events/announcement (`{ text }`). A missing,
- * blank, or failed response leaves the page with no banner. Dismissal is stored in localStorage at
- * `companies.stream.notice.dismissed`, with the value set to the SHA-256 of the
- * message, so a different message is shown again.
+ * Home-page notice, included only from index.html. GET /events/announcement
+ * returns the HTML from Redis key `site:announcement` as the response body.
+ * A missing, blank, or failed response leaves the page with no banner.
+ * Dismissal is stored in localStorage at `companies.stream.notice.dismissed`,
+ * with the value set to the SHA-256 of the message, so a different message is
+ * shown again.
  */
 const ANNOUNCEMENT_URL = "/events/announcement";
 const DISMISSED_KEY = "companies.stream.notice.dismissed";
@@ -15,22 +16,15 @@ async function loadAnnouncement() {
     const response = await fetch(ANNOUNCEMENT_URL, { cache: "no-store" });
     if (!response.ok) return;
 
-    const payload: unknown = await response.json();
-    const text =
-      payload &&
-      typeof payload === "object" &&
-      "text" in payload &&
-      typeof payload.text === "string"
-        ? payload.text.trim()
-        : "";
-    if (!text) return;
+    const html = (await response.text()).trim();
+    if (!html) return;
 
     const copy = document.createElement("div");
     copy.className = "site-notice-text";
-    copy.innerHTML = text;
+    copy.innerHTML = html;
     if (!copy.textContent?.trim()) return;
 
-    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(html));
     const hash = Array.from(new Uint8Array(digest), (byte) =>
       byte.toString(16).padStart(2, "0"),
     ).join("");
@@ -61,7 +55,7 @@ async function loadAnnouncement() {
     banner.append(inner);
     document.body.prepend(banner);
   } catch {
-    // Network errors, non-JSON bodies, and a missing endpoint show no banner.
+    // Network errors and a missing endpoint show no banner.
   }
 }
 

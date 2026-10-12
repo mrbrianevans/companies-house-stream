@@ -52,7 +52,7 @@ This document outlines the Redis key patterns used throughout the application.
 - `site:announcement` - **String**
   - HTML fragment shown in the banner on the home page
   - A missing, empty, or whitespace-only value hides the banner
-  - Read by `GET /announcement` (public path `/events/announcement`)
+  - Returned as the body of `GET /announcement` (public path `/events/announcement`)
 
 ## Test streaming sessions
 
