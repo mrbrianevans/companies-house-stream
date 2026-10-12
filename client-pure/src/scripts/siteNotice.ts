@@ -3,8 +3,8 @@ import "../styles/siteNotice.css";
 /**
  * Home-page notice, included only from index.html. The HTML comes from Redis
  * key `site:announcement`, via GET /events/announcement (`{ text }`). A missing,
- * blank, or failed response leaves the page with no banner. `<base>` and
- * `<meta http-equiv="refresh">` are removed before display. Dismissal is stored
+ * blank, or failed response leaves the page with no banner. `<base>` tags are
+ * removed before display. Dismissal is stored
  * in localStorage under `companies.stream.notice.dismissed.<sha256>` so a
  * different message is shown again.
  */
@@ -42,21 +42,17 @@ function announcementText(payload: unknown) {
   return typeof text === "string" ? text.trim() : "";
 }
 
-function stripBlockedAnnouncementTags(root: ParentNode) {
+function stripBaseTags(root: ParentNode) {
   root.querySelectorAll("base").forEach((element) => element.remove());
-  for (const meta of root.querySelectorAll("meta")) {
-    const httpEquiv = meta.getAttribute("http-equiv");
-    if (httpEquiv?.trim().toLowerCase() === "refresh") meta.remove();
-  }
 }
 
-/** Remove `<base>` and meta-refresh tags, including ones that only appear after reparse. */
+/** Remove `<base>` tags, including ones that only appear after reparse. */
 function announcementHtml(html: string) {
   const parsed = new DOMParser().parseFromString(html, "text/html");
-  stripBlockedAnnouncementTags(parsed);
+  stripBaseTags(parsed);
   const detached = document.createElement("div");
   detached.innerHTML = parsed.body.innerHTML;
-  stripBlockedAnnouncementTags(detached);
+  stripBaseTags(detached);
   if (!detached.textContent?.trim()) return "";
   return detached.innerHTML;
 }
