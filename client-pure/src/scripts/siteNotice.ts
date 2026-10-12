@@ -1,9 +1,10 @@
 import "../styles/siteNotice.css";
 
 /**
- * Home-page notice, included only from index.html. The text comes from Redis
+ * Home-page notice, included only from index.html. The HTML comes from Redis
  * key `site:announcement`, via GET /events/announcement (`{ text }`). A missing,
- * blank, or failed response leaves the page with no banner. Dismissal is stored
+ * blank, or failed response leaves the page with no banner. `<base>` and
+ * `<meta http-equiv="refresh">` are removed before display. Dismissal is stored
  * in localStorage under `companies.stream.notice.dismissed.<sha256>` so a
  * different message is shown again.
  */
@@ -41,7 +42,26 @@ function announcementText(payload: unknown) {
   return typeof text === "string" ? text.trim() : "";
 }
 
-function mountBanner(text: string, hash: string) {
+function stripBlockedAnnouncementTags(root: ParentNode) {
+  root.querySelectorAll("base").forEach((element) => element.remove());
+  for (const meta of root.querySelectorAll("meta")) {
+    const httpEquiv = meta.getAttribute("http-equiv");
+    if (httpEquiv?.trim().toLowerCase() === "refresh") meta.remove();
+  }
+}
+
+/** Remove `<base>` and meta-refresh tags, including ones that only appear after reparse. */
+function announcementHtml(html: string) {
+  const parsed = new DOMParser().parseFromString(html, "text/html");
+  stripBlockedAnnouncementTags(parsed);
+  const detached = document.createElement("div");
+  detached.innerHTML = parsed.body.innerHTML;
+  stripBlockedAnnouncementTags(detached);
+  if (!detached.textContent?.trim()) return "";
+  return detached.innerHTML;
+}
+
+function mountBanner(html: string, hash: string) {
   if (document.querySelector(".site-notice")) return;
 
   const banner = document.createElement("section");
@@ -50,9 +70,9 @@ function mountBanner(text: string, hash: string) {
   const inner = document.createElement("div");
   inner.className = "site-notice-inner";
 
-  const copy = document.createElement("p");
+  const copy = document.createElement("div");
   copy.className = "site-notice-text";
-  copy.textContent = text;
+  copy.innerHTML = html;
 
   const close = document.createElement("button");
   close.type = "button";
@@ -73,10 +93,11 @@ async function loadAnnouncement() {
     const response = await fetch(ANNOUNCEMENT_URL, { cache: "no-store" });
     if (!response.ok) return;
     const text = announcementText(await response.json());
-    if (!text) return;
+    const html = announcementHtml(text);
+    if (!html) return;
     const hash = await hashMessage(text);
     if (isDismissed(hash)) return;
-    mountBanner(text, hash);
+    mountBanner(html, hash);
   } catch {
     // Network errors, non-JSON bodies, and a missing endpoint show no banner.
   }

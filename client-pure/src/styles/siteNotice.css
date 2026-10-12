@@ -22,7 +22,25 @@
   margin: 0;
   font-size: 0.95rem;
   line-height: 1.45;
-  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.site-notice-text p {
+  margin: 0;
+}
+
+.site-notice-text p + p {
+  margin-top: 0.35rem;
+}
+
+.site-notice a {
+  color: #17324d;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.site-notice code {
   overflow-wrap: anywhere;
 }
 
