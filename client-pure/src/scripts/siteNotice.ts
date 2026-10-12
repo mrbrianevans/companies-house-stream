@@ -36,11 +36,8 @@ async function loadAnnouncement() {
 
     const banner = document.createElement("section");
     banner.className = "site-notice";
-    const inner = document.createElement("div");
-    inner.className = "site-notice-inner";
     const close = document.createElement("button");
     close.type = "button";
-    close.className = "site-notice-close";
     close.textContent = "×";
     close.addEventListener("click", () => {
       try {
@@ -51,8 +48,7 @@ async function loadAnnouncement() {
       banner.remove();
     });
 
-    inner.append(copy, close);
-    banner.append(inner);
+    banner.append(copy, close);
     document.body.prepend(banner);
   } catch {
     // Network errors and a missing endpoint show no banner.
