@@ -49,6 +49,10 @@ This document outlines the Redis key patterns used throughout the application.
 
 - `currentWsConnections` - **String**
   - Counter for current WebSocket connections
+- `site:announcement` - **String**
+  - Plain-text notice shown in the site-wide banner
+  - A missing, empty, or whitespace-only value hides the banner
+  - Read by `GET /announcement` (public path `/events/announcement`)
 
 ## Test streaming sessions
 
