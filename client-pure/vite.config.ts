@@ -38,6 +38,7 @@ export default defineConfig({
   },
   server: {
     proxy: {
+      "/events/announcement": backendHttpUrl,
       "/events/health": backendHttpUrl,
       "/events/downloadHistory": backendHttpUrl,
       "/events/stats": backendHttpUrl,

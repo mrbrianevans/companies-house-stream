@@ -13,9 +13,11 @@ import { redisClient } from "../utils/getRedisClient";
 import { setTimeout } from "node:timers/promises";
 import { mcpRouter } from "./routes/mcp";
 import { testSessionsRouter } from "./routes/testSessions";
+import { announcementRouter } from "./routes/announcement";
 
 const app = new Elysia()
   .on("error", (err) => console.error("Error", err.request.url, err.error.message))
+  .use(announcementRouter)
   .use(healthCheckRouter)
   .use(miscRouter)
   .use(eventHistoryRouter)

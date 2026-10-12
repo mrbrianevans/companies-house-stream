@@ -1,0 +1,23 @@
+.site-notice {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  background: #e9c069;
+  color: #242424;
+}
+
+.site-notice-text {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.site-notice a {
+  color: #17324d;
+}
+
+.site-notice button {
+  flex: none;
+}
