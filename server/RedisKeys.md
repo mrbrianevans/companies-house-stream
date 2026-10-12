@@ -51,7 +51,6 @@ This document outlines the Redis key patterns used throughout the application.
   - Counter for current WebSocket connections
 - `site:announcement` - **String**
   - HTML fragment shown in the banner on the home page
-  - `<base>` tags are removed before the value is returned
   - A missing, empty, or whitespace-only value hides the banner
   - Read by `GET /announcement` (public path `/events/announcement`)
 

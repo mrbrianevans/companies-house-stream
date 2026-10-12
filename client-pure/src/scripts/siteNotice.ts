@@ -3,8 +3,7 @@ import "../styles/siteNotice.css";
 /**
  * Home-page notice, included only from index.html. The HTML comes from Redis
  * key `site:announcement`, via GET /events/announcement (`{ text }`). A missing,
- * blank, or failed response leaves the page with no banner. `<base>` tags are
- * removed before display. Dismissal is stored in localStorage at
+ * blank, or failed response leaves the page with no banner. Dismissal is stored in localStorage at
  * `companies.stream.notice.dismissed`, with the value set to the SHA-256 of the
  * message, so a different message is shown again.
  */
@@ -26,11 +25,9 @@ async function loadAnnouncement() {
         : "";
     if (!text) return;
 
-    const parsed = new DOMParser().parseFromString(text, "text/html");
-    parsed.querySelectorAll("base").forEach((element) => element.remove());
     const copy = document.createElement("div");
-    copy.innerHTML = parsed.body.innerHTML;
-    copy.querySelectorAll("base").forEach((element) => element.remove());
+    copy.className = "site-notice-text";
+    copy.innerHTML = text;
     if (!copy.textContent?.trim()) return;
 
     const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
@@ -43,7 +40,6 @@ async function loadAnnouncement() {
       // Private mode and blocked storage can throw. Show the banner anyway.
     }
 
-    copy.className = "site-notice-text";
     const banner = document.createElement("section");
     banner.className = "site-notice";
     const inner = document.createElement("div");
