@@ -46,9 +46,13 @@ export async function updateSchemaForEvent(event: AnyEvent, commandClient: Redis
       "Event did not match existing schema %s",
       resource_kind,
     );
-    const newGitSchema = await addEventToSchema(event, newSchema);
-    // update schema in redis
-    await commandClient.hSet("schemas", resource_kind, JSON.stringify(newGitSchema));
+    try {
+      const newGitSchema = await addEventToSchema(event, newSchema);
+      // update schema in redis
+      await commandClient.hSet("schemas", resource_kind, JSON.stringify(newGitSchema));
+    } catch (e) {
+      streamFromRedisLogger.error(e, "Failed to update schema in Git");
+    }
   }
 }
 
