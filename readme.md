@@ -115,3 +115,9 @@ See the [LICENSE](LICENSE) file for more information.
     ```
 
 - try go to `http://localhost` in a web browser!
+
+## Deploying to production
+
+Pushes to `master` deploy the droplet from GitHub Actions after the frontend and server checks pass. The job SSHes in, fast-forwards the checkout, and runs `docker compose up -d --build`. You can run the same workflow by hand from the Actions tab.
+
+The repository secrets, the dedicated deploy key, and the pinned host key are documented in [docs/deploy.md](docs/deploy.md). Create those secrets before merging the workflow, or the first deploy will fail at the SSH step.

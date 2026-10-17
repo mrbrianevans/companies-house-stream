@@ -37,7 +37,7 @@ services:
     logging:
       driver: local
     depends_on: [ redis ]
-    restart: on-failure
+    restart: unless-stopped
 
   api:
     build:
@@ -49,7 +49,7 @@ services:
     logging:
       driver: local
     depends_on: [ redis ]
-    restart: on-failure:3
+    restart: unless-stopped
     env_file:
       - .env
     stop_grace_period: 4s
@@ -65,7 +65,7 @@ services:
     logging:
       driver: local
     depends_on: [ redis ]
-    #    restart: never
+    restart: unless-stopped
     volumes:
       - persisted_events:/data
     env_file:
