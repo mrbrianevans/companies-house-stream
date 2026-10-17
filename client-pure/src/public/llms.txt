@@ -51,3 +51,5 @@ There is an MCP server designed to allow agents and LLMs to access companies.str
 The MCP URL is `https://companies.stream/events/mcp`.
 
 You can also access the API (the same one the frontend uses) without authentication. It's available on the `/events` route, for example a health check can be done by sending a GET request to `https://companies.stream/events/health` which responds with a boolean for each stream where true represents its currently connected and live, whereas false means disconnected or offline.
+
+The live feed is a WebSocket at `wss://companies.stream/events`. It also sends a heartbeat whenever Companies House sends a heartbeat on any stream, to keep idle connections alive: `{"type":"heartbeat","stream":"<stream name>"}`. Clients should ignore messages where `type === "heartbeat"`.

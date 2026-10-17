@@ -9,11 +9,13 @@ import { miscRouter } from "./routes/misc";
 import { eventHistoryRouter } from "./routes/eventHistory";
 import { visitorsRouter } from "./routes/visitors";
 import { eventWebsocketRouter } from "./routes/eventsWebsocket";
-import { redisClient } from "../utils/getRedisClient";
+import { getRedisClient, redisClient } from "../utils/getRedisClient";
 import { setTimeout } from "node:timers/promises";
 import { mcpRouter } from "./routes/mcp";
 import { testSessionsRouter } from "./routes/testSessions";
 import { announcementRouter } from "./routes/announcement";
+
+const heartbeatSubscriber = await getRedisClient("heartbeat-sub");
 
 const app = new Elysia()
   .on("error", (err) => console.error("Error", err.request.url, err.error.message))
@@ -28,6 +30,7 @@ const app = new Elysia()
   .on("request", ({ request }) => console.log("Request to server", request.method, request.url))
   .on("stop", async () => {
     logger.flush();
+    await heartbeatSubscriber.quit();
     await redisClient.quit();
   })
   .listen(3000, () => console.log("Elysia Listening on port 3000"));
@@ -38,6 +41,12 @@ const { signal } = ac;
 const eventStream = listenRedisStream({
   streamKeys: [...streamPaths].map((stream) => ({ stream })),
   signal,
+});
+
+// Republish Companies House blank-line heartbeats to every /events socket.
+// Payload is already {"type":"heartbeat","stream":"<streamPath>"}.
+await heartbeatSubscriber.subscribe("heartbeat", (message) => {
+  app.server?.publish("heartbeat", message);
 });
 
 async function shutdown() {

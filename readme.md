@@ -27,7 +27,9 @@ A [Docker compose](https://docs.docker.com/compose/) application with 3 main com
    recent timepoint
    to avoid missing any events.
 3. A container which reads events from the Redis Stream and serves them as a WebSocket endpoint
-   on `/events`, where each event is sent as a WebSocket message.
+   on `/events`, where each event is sent as a WebSocket message. It also sends
+   `{"type":"heartbeat","stream":"<stream name>"}` whenever Companies House sends a heartbeat on any
+   stream, to keep idle connections alive. Clients should ignore messages where `type === "heartbeat"`.
 
 The frontend is "pure" in that it doesn't use a framework like React, which keeps the JS bundle really tiny and high
 performance.

@@ -19,9 +19,13 @@ export class CustomJsonParse extends Transform {
   }
 
   _transform(chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback) {
-    this.emit("heartbeat"); // this will emit even if the chunk is just a newline (heartbeat on the stream).
+    const text = chunk.toString("utf8");
+    // Companies House sends a blank line when a stream is idle. A newline that only
+    // finishes JSON still buffered from an earlier chunk is not one of those.
+    const blankHeartbeat = this.data.trim().length === 0 && text.trim().length === 0;
+    this.emit("heartbeat", blankHeartbeat);
     const received = performance.timeOrigin + performance.now(); // collect timestamp that event was received
-    this.data += chunk.toString("utf8");
+    this.data += text;
     const objects = this.data.split(/\n+/);
     this.data = "";
     for (const obj of objects) {

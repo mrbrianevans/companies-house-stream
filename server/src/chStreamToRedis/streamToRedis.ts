@@ -39,8 +39,16 @@ const incrResourceKindCount = (streamPath: string) => (event: AnyEvent) =>
   redisClient.hIncrBy(`resourceKinds:${streamPath}`, event.resource_kind, 1);
 const updateTimepoint = (streamPath: string) => (event: AnyEvent) =>
   redisClient.set("timepoints:" + streamPath, JSON.stringify(event.event), { EX: 86400 * 7 });
-const heartbeat = (streamPath: string) => () =>
-  redisClient.hSet("heartbeats", streamPath, Date.now()); // keeps track of which are alive
+const heartbeat =
+  (streamPath: string) =>
+  (blankHeartbeat = false) => {
+    redisClient.hSet("heartbeats", streamPath, Date.now()); // keeps track of which are alive
+    // Blank lines are skipped by the JSON parser, so they never enter events:{stream}
+    // (those IDs are timepoints, and persistence reads them). Publish on a side channel
+    // for the API process to fan out to /events websockets.
+    if (!blankHeartbeat) return;
+    redisClient.publish("heartbeat", JSON.stringify({ type: "heartbeat", stream: streamPath }));
+  };
 const getMostRecentTimepoint = (streamPath: string) =>
   redisClient
     .get("timepoints:" + streamPath)
