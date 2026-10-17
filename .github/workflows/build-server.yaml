@@ -1,15 +1,21 @@
 name: 'build server'
-on: # rebuild any branch changes for the server directory
+# Path-filtered checks for branches other than master. Master runs this
+# workflow via workflow_call from Deploy, then deploys only if it passes.
+on:
   push:
+    branches-ignore:
+      - master
     paths:
       - server/**
+      - .github/workflows/build-server.yaml
+  workflow_call:
 
 jobs:
   build-server:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
       - uses: oven-sh/setup-bun@v1
       - name: Install dependencies
         run: bun install --frozen-lockfile
