@@ -22,6 +22,8 @@ export function websocketEmitter(url: string) {
     // Listen for messages
     socket.addEventListener("message", async function (event) {
       const data = JSON.parse(event.data);
+      // Server keepalive so a proxy does not drop an idle socket. Not an event.
+      if (data?.type === "heartbeat") return;
       emitter.dispatchEvent(new CustomEvent("event", { detail: data }));
     });
   }

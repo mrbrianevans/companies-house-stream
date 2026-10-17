@@ -28,6 +28,7 @@ export const eventWebsocketRouter = (app: Elysia) => {
       for (const streamPath of streamPaths) {
         ws.subscribe(streamPath);
       }
+      ws.subscribe("heartbeat");
       const ipAddress = String(ws.data.headers["x-forwarded-for"]);
       if (ipAddress) await visitorCounter.count(ipAddress);
       else logger.info("No IP Address forwarded, skipping update to visitor statistics");
@@ -38,6 +39,7 @@ export const eventWebsocketRouter = (app: Elysia) => {
     async close(ws, code, reason) {
       // decrement connections counter and unsubscribe from all streams
       for (const streamPath of streamPaths) ws.unsubscribe(streamPath); // don't think this is necessary, surely its done automatically when a socket terminates
+      ws.unsubscribe("heartbeat");
       const redisCount = await redisClient.decr("currentWsConnections");
       console.log("Websocket disconnected with code.", code, {
         clients: app.server?.pendingWebSockets,
