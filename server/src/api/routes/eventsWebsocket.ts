@@ -29,7 +29,8 @@ export const eventWebsocketRouter = (app: Elysia) => {
         ws.subscribe(streamPath);
       }
       ws.subscribe("heartbeat");
-      const ipAddress = String(ws.data.headers["x-forwarded-for"]);
+      const xff = ws.data.headers["x-forwarded-for"];
+      const ipAddress = typeof xff === "string" ? xff.split(",")[0].trim() : "";
       if (ipAddress) await visitorCounter.count(ipAddress);
       else logger.info("No IP Address forwarded, skipping update to visitor statistics");
       const redisCount = await redisClient.incr("currentWsConnections");
