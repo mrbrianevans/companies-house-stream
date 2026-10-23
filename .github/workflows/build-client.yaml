@@ -28,7 +28,7 @@ jobs:
         run: bun install --frozen-lockfile
         working-directory: client-pure
       - name: Check typescript
-        run: bun run typecheck
+        run: bun check
         working-directory: client-pure
   lint:
     name: Lint
@@ -52,5 +52,5 @@ jobs:
         run: bun install --frozen-lockfile
         working-directory: client-pure
       - name: Oxfmt
-        run: bun x oxfmt --check
+        run: bun fmt --check
         working-directory: client-pure

@@ -7,22 +7,22 @@
     "dev": "vite",
     "build": "vite build",
     "serve": "vite preview",
-    "typecheck": "tsc --build",
-    "format": "oxfmt"
+    "typecheck": "bun check",
+    "format": "bun fmt"
   },
   "dependencies": {
     "change-case": "^5.4.4",
     "copy-to-clipboard": "^4.0.2",
     "echarts": "^6.1.0",
-    "quicktype-core": "^23.3.25",
+    "quicktype-core": "^26.0.0",
     "string-template": "^1.0.0",
     "title-case": "^4.3.2",
     "typescript": "^7.0.2"
   },
   "devDependencies": {
-    "oxfmt": "^0.56.0",
-    "oxlint": "^1.74.0",
-    "sass": "^1.101.0",
-    "vite": "^8.1.5"
+    "oxfmt": "^0.74.0",
+    "oxlint": "^1.89.0",
+    "sass": "^1.106.1",
+    "vite": "^8.3.5"
   }
 }
