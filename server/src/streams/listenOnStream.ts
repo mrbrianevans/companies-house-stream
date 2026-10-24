@@ -15,7 +15,7 @@ export type StreamPath =
   | "officers"
   | "disqualified-officers"
   | string;
-const BASE_URL = "stream.companieshouse.gov.uk";
+const BASE_URL = process.env.STREAM_BASE_URL || "stream.companieshouse.gov.uk";
 interface ResponseLogEventBase extends Record<string, string> {
   correlationId: string;
   type: "response_started" | "response_ended";
