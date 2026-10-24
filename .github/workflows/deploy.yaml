@@ -1,0 +1,157 @@
+# Push to master, or Actions → Deploy → Run workflow.
+# Frontend and server checks run first. The deploy job then SSHes to the
+# droplet, fast-forwards the checkout, and rebuilds the compose stack.
+name: Deploy
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+# Queue a second deploy instead of cancelling one that is already in progress.
+concurrency:
+  group: deploy-companies-stream
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    name: Frontend
+    uses: ./.github/workflows/build-client.yaml
+
+  server:
+    name: build server
+    uses: ./.github/workflows/build-server.yaml
+
+  deploy:
+    name: Deploy to droplet
+    needs:
+      - frontend
+      - server
+    # success() is implied, so a failed or skipped check does not deploy.
+    # workflow_dispatch from any other branch runs the checks and skips this job.
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: SSH and deploy
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${DEPLOY_HOST:-}" ] || [ -z "${DEPLOY_USER:-}" ] || [ -z "${DEPLOY_SSH_KEY:-}" ] || [ -z "${DEPLOY_PATH:-}" ] || [ -z "${DEPLOY_KNOWN_HOSTS:-}" ]; then
+            echo "Missing deploy secrets. Set DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY, DEPLOY_PATH, and DEPLOY_KNOWN_HOSTS." >&2
+            exit 1
+          fi
+
+          port="${DEPLOY_PORT:-22}"
+          umask 077
+          ssh_dir="$(mktemp -d)"
+          trap 'rm -rf "$ssh_dir"' EXIT
+          printf '%s\n' "$DEPLOY_SSH_KEY" | tr -d '\r' > "$ssh_dir/id"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" | tr -d '\r' > "$ssh_dir/known_hosts"
+          chmod 600 "$ssh_dir/id" "$ssh_dir/known_hosts"
+
+          if ! grep -q 'PRIVATE KEY' "$ssh_dir/id"; then
+            echo "DEPLOY_SSH_KEY does not look like an OpenSSH private key." >&2
+            exit 1
+          fi
+
+          ssh \
+            -i "$ssh_dir/id" \
+            -p "$port" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$ssh_dir/known_hosts" \
+            -o GlobalKnownHostsFile=/dev/null \
+            -o ConnectTimeout=20 \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=20 \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            bash -s -- "$DEPLOY_PATH" "$DEPLOY_BRANCH" <<'EOF'
+          set -euo pipefail
+
+          deploy_path="$1"
+          deploy_branch="$2"
+          export GIT_TERMINAL_PROMPT=0
+
+          cd "$deploy_path"
+          echo "Deploying ${deploy_branch} in ${deploy_path}"
+
+          status="$(git status --porcelain)"
+          if [ -n "$status" ]; then
+            echo "Deploy aborted: ${deploy_path} has local changes. Commit, stash, or remove them on the droplet. This job does not overwrite them." >&2
+            printf '%s\n' "$status" >&2
+            exit 1
+          fi
+
+          current_branch="$(git rev-parse --abbrev-ref HEAD)"
+          if [ "$current_branch" != "$deploy_branch" ]; then
+            echo "Deploy aborted: checkout is on '${current_branch}', expected '${deploy_branch}'." >&2
+            exit 1
+          fi
+
+          before="$(git rev-parse --short HEAD)"
+          echo "Before: ${before}"
+          git fetch origin
+          git pull --ff-only origin "$deploy_branch"
+          deployed="$(git rev-parse --short HEAD)"
+          subject="$(git log -1 --pretty=%s)"
+          echo "Deployed: ${deployed} (${subject})"
+
+          docker compose up -d --build
+
+          expected="$(docker compose config --services | sort -u)"
+          if [ -z "$expected" ]; then
+            echo "Deploy aborted: docker compose config --services returned nothing." >&2
+            exit 1
+          fi
+          running="$(docker compose ps --status running --format '{{.Service}}' | sort -u)"
+          if [ "$running" != "$expected" ]; then
+            echo "Deploy aborted: not every compose service is running." >&2
+            echo "Expected services:" >&2
+            printf '%s\n' "$expected" >&2
+            echo "Running services:" >&2
+            printf '%s\n' "$running" >&2
+            docker compose ps >&2
+            exit 1
+          fi
+
+          health_url="https://companies.stream/events/health"
+          echo "Checking ${health_url}"
+          ok=0
+          for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
+            if curl --fail --silent --show-error --max-time 15 \
+                --resolve companies.stream:443:127.0.0.1 \
+                "$health_url"; then
+              echo
+              echo "Health check passed on attempt ${attempt}."
+              ok=1
+              break
+            fi
+            if [ "$attempt" -eq 12 ]; then
+              break
+            fi
+            echo "Health check attempt ${attempt}/12 failed; retrying in 5s." >&2
+            sleep 5
+          done
+          if [ "$ok" -ne 1 ]; then
+            echo "Health check never succeeded: ${health_url}" >&2
+            docker compose ps >&2
+            exit 1
+          fi
+
+          docker compose ps
+          docker image prune -f
+          EOF

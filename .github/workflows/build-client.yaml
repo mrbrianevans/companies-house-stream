@@ -1,9 +1,14 @@
 name: 'Frontend'
-on: # build and check any branch changes for the client directory
+# Path-filtered checks for branches other than master. Master runs this
+# workflow via workflow_call from Deploy, then deploys only if it passes.
+on:
   push:
+    branches-ignore:
+      - master
     paths:
       - client-pure/**
       - .github/workflows/build-client.yaml
+  workflow_call:
 
 jobs:
   vite:
