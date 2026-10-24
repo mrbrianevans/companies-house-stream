@@ -49,27 +49,12 @@ services:
     logging:
       driver: local
     depends_on: [ redis ]
-    restart: on-failure:3
+    restart: on-failure:30
     env_file:
       - .env
     stop_grace_period: 4s
     stop_signal: SIGTERM
 
-  persistence:
-    build:
-      context: server
-      dockerfile: Persistence.Dockerfile
-    environment:
-      PUBSUB_REDIS_IP: redis
-      SQLITE_PATH: /data/buffer.db
-    logging:
-      driver: local
-    depends_on: [ redis ]
-    #    restart: never
-    volumes:
-      - persisted_events:/data
-    env_file:
-      - .env
 
 volumes:
   redisdata:
