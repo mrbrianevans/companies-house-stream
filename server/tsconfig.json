@@ -13,11 +13,9 @@
     "esModuleInterop": true,
     // best practices
     "strict": true,
-    // TODO: put to true, fix errors
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "composite": true,
-    "downlevelIteration": true,
     "allowSyntheticDefaultImports": true
   },
   "include": ["src"]

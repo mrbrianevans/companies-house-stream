@@ -1,14 +1,14 @@
-import { Elysia } from "elysia";
-import { redisClient } from "../../utils/getRedisClient";
+import { Elysia } from "elysia"
+import { redisClient } from "../../utils/getRedisClient"
 import {
   JSONRPCMessage,
   McpServer,
   MessageExtraInfo,
   WebStandardStreamableHTTPServerTransport,
-} from "@modelcontextprotocol/server";
-import { z } from "zod";
-import { streamPaths } from "../../streams/streamPaths";
-import { VisitorCounterService } from "../visitorCounter";
+} from "@modelcontextprotocol/server"
+import { z } from "zod"
+import { streamPaths } from "../../streams/streamPaths"
+import { VisitorCounterService } from "../visitorCounter"
 
 const server = new McpServer({
   name: "companies.stream mcp",
@@ -17,33 +17,28 @@ const server = new McpServer({
   title: "Companies Stream",
   description: "Companies Stream MCP for info about Companies House Streaming API",
   icons: [{ src: "https://companies.stream/icon/icon512.png" }],
-});
+})
 
-const transport = new WebStandardStreamableHTTPServerTransport();
+const transport = new WebStandardStreamableHTTPServerTransport()
 transport.onmessage = (message: JSONRPCMessage, extra?: MessageExtraInfo) =>
-  console.log("MCP request:", "method" in message ? message.method : message);
+  console.log("MCP request:", "method" in message ? message.method : message)
 server.registerTool(
   "random_company_numbers",
   {
     title: "Random Company Numbers",
     description: "Returns random UK company numbers",
     inputSchema: z.object({
-      count: z
-        .number()
-        .int()
-        .min(1)
-        .max(100)
-        .describe("How many company numbers to return (1-100)"),
+      count: z.number().int().min(1).max(100).describe("How many company numbers to return (1-100)"),
     }),
   },
   async ({ count }) => {
-    const companyNumbers = await redisClient.sRandMemberCount("companyNumbers", count);
+    const companyNumbers = await redisClient.sRandMemberCount("companyNumbers", count)
 
     return {
       content: [{ type: "text", text: JSON.stringify(companyNumbers, null, 2) }],
-    };
+    }
   },
-);
+)
 
 server.registerTool(
   "get_stream_health",
@@ -54,19 +49,17 @@ server.registerTool(
     inputSchema: z.object({}),
   },
   async () => {
-    const streamsHealth: Record<string, boolean> = {};
+    const streamsHealth: Record<string, boolean> = {}
     for (const streamPath of streamPaths) {
-      const lastHeartbeat = await redisClient
-        .hGet("heartbeats", streamPath)
-        .then((t) => new Date(parseInt(t || "0")));
-      streamsHealth[streamPath] = Date.now() - lastHeartbeat.getTime() < 60_000; // more than 60 seconds indicates stream offline
+      const lastHeartbeat = await redisClient.hGet("heartbeats", streamPath).then((t) => new Date(parseInt(t || "0")))
+      streamsHealth[streamPath] = Date.now() - lastHeartbeat.getTime() < 60_000 // more than 60 seconds indicates stream offline
     }
 
     return {
       content: [{ type: "text", text: JSON.stringify(streamsHealth, null, 2) }],
-    };
+    }
   },
-);
+)
 
 server.registerTool(
   "get_resource_kind_json_schema",
@@ -79,36 +72,33 @@ server.registerTool(
     }),
   },
   async ({ resource_kind }) => {
-    console.log("MCP get schema for resource_kind", resource_kind);
-    const schema = await redisClient.hGet("schemas", resource_kind);
+    console.log("MCP get schema for resource_kind", resource_kind)
+    const schema = await redisClient.hGet("schemas", resource_kind)
     if (!schema)
       return {
         isError: true,
-        content: [
-          { type: "text", text: "resource_kind not found. Try listing resource_kinds first." },
-        ],
-      };
+        content: [{ type: "text", text: "resource_kind not found. Try listing resource_kinds first." }],
+      }
     return {
       content: [{ type: "text", text: schema }],
-    };
+    }
   },
-);
+)
 server.registerTool(
   "list_all_resource_kinds",
   {
     title: "List valid resource_kind values",
-    description:
-      "Returns a list of valid resource_kinds. A stream can contain events of multiple resource kinds.",
+    description: "Returns a list of valid resource_kinds. A stream can contain events of multiple resource kinds.",
     inputSchema: z.object({}),
   },
   async ({}) => {
-    console.log("MCP get resource_kind list");
-    const resourceKinds = await redisClient.hKeys("schemas");
+    console.log("MCP get resource_kind list")
+    const resourceKinds = await redisClient.hKeys("schemas")
     return {
       content: [{ type: "text", text: JSON.stringify(resourceKinds) }],
-    };
+    }
   },
-);
+)
 server.registerTool(
   "list_stream_paths",
   {
@@ -117,12 +107,12 @@ server.registerTool(
     inputSchema: z.object({}),
   },
   async ({}) => {
-    console.log("MCP list stream paths");
+    console.log("MCP list stream paths")
     return {
       content: [{ type: "text", text: JSON.stringify([...streamPaths]) }],
-    };
+    }
   },
-);
+)
 server.registerTool(
   "list_resource_kinds_frequencies_for_stream",
   {
@@ -130,20 +120,17 @@ server.registerTool(
     description:
       "Returns a list of resource_kinds that can appear on the stream along with the relative frequency of each one.",
     inputSchema: z.object({
-      streamPath: z
-        .string()
-        .nonempty()
-        .describe("Specify the stream to get resource_kind frequencies for."),
+      streamPath: z.string().nonempty().describe("Specify the stream to get resource_kind frequencies for."),
     }),
   },
   async ({ streamPath }) => {
-    console.log("MCP get resource_kind frequencies", streamPath);
-    const frequencies = await redisClient.hGetAll(`resourceKinds:${streamPath}`);
+    console.log("MCP get resource_kind frequencies", streamPath)
+    const frequencies = await redisClient.hGetAll(`resourceKinds:${streamPath}`)
     return {
       content: [{ type: "text", text: JSON.stringify(frequencies, null, 2) }],
-    };
+    }
   },
-);
+)
 server.registerTool(
   "get_latest_sample_event",
   {
@@ -155,21 +142,21 @@ server.registerTool(
     }),
   },
   async ({ streamPath }) => {
-    console.log("MCP get latest event", streamPath);
+    console.log("MCP get latest event", streamPath)
     if (streamPaths.has(streamPath)) {
-      const history = await redisClient.xRevRange("events:" + streamPath, "+", "-", { COUNT: 1 });
-      const [event] = history.map((h) => JSON.parse(h.message.event));
+      const history = await redisClient.xRevRange("events:" + streamPath, "+", "-", { COUNT: 1 })
+      const [event] = history.map((h) => JSON.parse(h.message.event))
       return {
         content: [{ type: "text", text: JSON.stringify(event, null, 2) }],
-      };
+      }
     } else {
       return {
         isError: true,
         content: [{ type: "text", text: "Invalid stream path. Try listing stream paths first." }],
-      };
+      }
     }
   },
-);
+)
 server.registerTool(
   "get_stream_daily_event_count",
   {
@@ -186,24 +173,22 @@ server.registerTool(
     }),
   },
   async ({ streamPath }) => {
-    console.log("MCP get event counts", streamPath);
+    console.log("MCP get event counts", streamPath)
     if (streamPaths.has(streamPath)) {
-      const rawCounts = await redisClient.hGetAll(`counts:${streamPath}:daily`);
-      const counts = Object.fromEntries(
-        Object.entries(rawCounts).map(([date, count]) => [date, parseInt(count)]),
-      );
+      const rawCounts = await redisClient.hGetAll(`counts:${streamPath}:daily`)
+      const counts = Object.fromEntries(Object.entries(rawCounts).map(([date, count]) => [date, parseInt(count)]))
       return {
         content: [{ type: "text", text: JSON.stringify(counts, null, 2) }],
-      };
+      }
     } else {
       return {
         isError: true,
         content: [{ type: "text", text: "Invalid stream path. Try listing stream paths first." }],
-      };
+      }
     }
   },
-);
-const visitorCounter = new VisitorCounterService(redisClient);
+)
+const visitorCounter = new VisitorCounterService(redisClient)
 
 server.registerTool(
   "get_all_time_visitor_count",
@@ -214,13 +199,13 @@ server.registerTool(
     inputSchema: z.object({}),
   },
   async ({}) => {
-    console.log("MCP get visitor count");
-    const count = await visitorCounter.getTotalCount();
+    console.log("MCP get visitor count")
+    const count = await visitorCounter.getTotalCount()
     return {
       content: [{ type: "text", text: JSON.stringify(count) }],
-    };
+    }
   },
-);
+)
 server.registerTool(
   "get_visitor_count_for_date",
   {
@@ -237,7 +222,7 @@ server.registerTool(
     }),
   },
   async ({ date }) => {
-    console.log("MCP get visitor count for date", date);
+    console.log("MCP get visitor count for date", date)
     if (new Date(date) < new Date("2023-09-12")) {
       return {
         isError: true,
@@ -247,15 +232,15 @@ server.registerTool(
             text: "Invalid date. Records only began on 2023-09-12. Request a date after that",
           },
         ],
-      };
+      }
     } else {
-      const count = await visitorCounter.getCount(date);
+      const count = await visitorCounter.getCount(date)
       return {
         content: [{ type: "text", text: JSON.stringify({ [date]: count }) }],
-      };
+      }
     }
   },
-);
+)
 server.registerTool(
   "get_recent_responses",
   {
@@ -265,23 +250,23 @@ server.registerTool(
     inputSchema: z.object({}),
   },
   async () => {
-    const responseMessages = await redisClient.xRevRange("ch:responses", "+", "-", { COUNT: 20 });
+    const responseMessages = await redisClient.xRevRange("ch:responses", "+", "-", { COUNT: 20 })
     const responses = responseMessages
       .map((r) => r.message)
       .map(({ headersObject, ...message }) => ({
         ...message,
         ...(headersObject ? { headers: JSON.parse(headersObject) } : {}),
-      }));
+      }))
 
     return {
       content: [{ type: "text", text: JSON.stringify({ responses }) }],
-    };
+    }
   },
-);
-await server.connect(transport);
+)
+await server.connect(transport)
 
 export const mcpRouter = (app: Elysia) => {
   return app
     .get("/mcp", async ({ request }) => transport.handleRequest(request))
-    .post("/mcp", async ({ request }) => transport.handleRequest(request));
-};
+    .post("/mcp", async ({ request }) => transport.handleRequest(request))
+}

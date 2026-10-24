@@ -9,11 +9,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
-      - uses: oven-sh/setup-bun@v1
+        uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
       - name: Install dependencies
         run: bun install --frozen-lockfile
         working-directory: server
       - name: Build server typescript
-        run: bun run build
+        run: bun check
         working-directory: server

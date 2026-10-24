@@ -9,4 +9,4 @@ COPY . .
 
 RUN bun build --compile --minify --sourcemap --target=bun-linux-x64-modern ./src/chStreamToRedis/streamToRedis.ts --outfile streamToRedis
 
-CMD ./streamToRedis
+CMD ["./streamToRedis"]

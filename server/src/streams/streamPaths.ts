@@ -8,4 +8,4 @@ export const streamPaths = new Set([
   "disqualified-officers",
   "company-exemptions",
   "persons-with-significant-control-statements",
-]);
+])

@@ -1,5 +1,5 @@
-import { Elysia, t } from "elysia";
-import { redisClient } from "../../utils/getRedisClient";
+import { Elysia, t } from "elysia"
+import { redisClient } from "../../utils/getRedisClient"
 
 export const miscRouter = (app: Elysia) => {
   /** Returns an array of random company numbers */
@@ -7,9 +7,9 @@ export const miscRouter = (app: Elysia) => {
     .get(
       "/randomCompanyNumbers",
       async ({ query }) => {
-        const { qty } = query;
-        const companyNumbers = await redisClient.sRandMemberCount("companyNumbers", qty ?? 1);
-        return companyNumbers;
+        const { qty } = query
+        const companyNumbers = await redisClient.sRandMemberCount("companyNumbers", qty ?? 1)
+        return companyNumbers
       },
       {
         query: t.Optional(
@@ -25,21 +25,18 @@ export const miscRouter = (app: Elysia) => {
       },
     )
     .get("/schemas", async () => {
-      const schemasRaw = await redisClient.hGetAll("schemas");
+      const schemasRaw = await redisClient.hGetAll("schemas")
       const schemas = Object.fromEntries(
-        Object.entries(schemasRaw).map(([schemaName, schemaString]) => [
-          schemaName,
-          JSON.parse(schemaString),
-        ]),
-      );
-      return schemas;
+        Object.entries(schemasRaw).map(([schemaName, schemaString]) => [schemaName, JSON.parse(schemaString)]),
+      )
+      return schemas
     })
     .get("/responses", async () => {
-      const responseMessages = await redisClient.xRevRange("ch:responses", "+", "-", { COUNT: 20 });
-      const responses = responseMessages.map((r) => r.message);
+      const responseMessages = await redisClient.xRevRange("ch:responses", "+", "-", { COUNT: 20 })
+      const responses = responseMessages.map((r) => r.message)
       return responses.map(({ headersObject, ...message }) => ({
         ...message,
         ...(headersObject ? { headers: JSON.parse(headersObject) } : {}),
-      }));
-    });
-};
+      }))
+    })
+}

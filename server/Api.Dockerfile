@@ -11,4 +11,4 @@ RUN bun build --compile --minify --sourcemap --target=bun-linux-x64-modern ./src
 
 EXPOSE 3000
 
-CMD ./apiServer
+CMD ["./apiServer"]

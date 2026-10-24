@@ -1,21 +1,21 @@
-import { getCompanyNumber } from "./saveCompanyNumber";
-import { expect, describe, it } from "bun:test";
-import { AnyEvent } from "../types/eventTypes";
+import { getCompanyNumber } from "./saveCompanyNumber"
+import { expect, describe, it } from "bun:test"
+import { AnyEvent } from "../types/eventTypes"
 
 describe("get company number from events", () => {
   it("should get company number from filing event", () => {
-    const companyNumber = getCompanyNumber(sampleEvents.filings, "filings");
-    expect(companyNumber).toBe("10620794");
-  });
+    const companyNumber = getCompanyNumber(sampleEvents.filings, "filings")
+    expect(companyNumber).toBe("10620794")
+  })
   it("should get company number from companies event", () => {
-    const companyNumber = getCompanyNumber(sampleEvents.companies, "companies");
-    expect(companyNumber).toBe("05954546");
-  });
+    const companyNumber = getCompanyNumber(sampleEvents.companies, "companies")
+    expect(companyNumber).toBe("05954546")
+  })
   it("should get company number from exemptions event", () => {
-    const companyNumber = getCompanyNumber(sampleEvents.exemptions, "company-exemptions");
-    expect(companyNumber).toBe("14438833");
-  });
-});
+    const companyNumber = getCompanyNumber(sampleEvents.exemptions, "company-exemptions")
+    expect(companyNumber).toBe("14438833")
+  })
+})
 
 const sampleEvents: Record<string, AnyEvent> = {
   filings: {
@@ -131,4 +131,4 @@ const sampleEvents: Record<string, AnyEvent> = {
       type: "changed",
     },
   },
-} as const;
+} as const
