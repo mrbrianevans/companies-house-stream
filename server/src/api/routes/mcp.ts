@@ -267,5 +267,7 @@ const mcpHandler = createMcpHandler(createMcpServer, {
 })
 
 export const mcpRouter = (app: Elysia) => {
-  return app.all("/mcp", ({ request }) => mcpHandler.fetch(request))
+  // The SDK reads the raw body itself, so Elysia must not parse it first. Elysia infers body usage from the
+  // handler's source, which is unreliable after `bun build --minify`, so parsing is disabled explicitly.
+  return app.all("/mcp", ({ request }) => mcpHandler.fetch(request), { parse: "none" })
 }
